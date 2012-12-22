@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Noisetracks</string>
+    <string name="ACCOUNT_TYPE">com.stahlnow.noisetracks</string>
+    <string name="AUTHTOKEN_TYPE">com.stahlnow.noisetracks</string>
+    
+    <!-- menu -->
+	<string name="hello_world">Hello, Noise.</string>
+	<string name="menu_start_tracking">START TRACKING</string>
+	<string name="menu_stop_tracking">STOP TRACKING</string>
+	<string name="menu_search">SEARCH</string>
+
+    <!-- Permission label -->
+    <string name="permlab_ntAuthPassword">Access the password for Noisetracks account</string>
+    <!-- Permission description -->
+    <string name="permdesc_ntAuthPassword">Allows applications direct access to the password for the
+        Noisetracks account you have configured.</string>
+    <!-- Permission label -->
+    <string name="permlab_ntAuth">View configured accounts.</string>
+    <!-- Permission description -->
+    <string name="permdesc_ntAuth">Allows applications to see the username of the configured Noisetracks account.</string>
+
+    <!-- AuthenticatorActivity -->    
+    <string name="username_hint">Username</string>
+    <string name="password_hint">Password</string>
+    <string name="signin_button">SIGN IN</string>
+    <string name="signup_button">SIGN UP WITH EMAIL</string>
+    <!-- Message shown in progress dialog while app connects to the server -->
+    <string name="ui_activity_authenticating">Authenticating\u2026</string>
+    <!-- Message shown in dialog if the username or password is invalid. -->
+    <string name="login_activity_loginfail_text_both">The username or password isn\'t valid. A Noisetracks account is required. Please try again. </string>
+    <!-- Message shown in dialog if the password is invalid -->
+    <string name="login_activity_loginfail_text_pwonly">You entered the wrong password or your account has changed. Please re-enter your password.</string>
+    <!-- Message shown in dialog to prompt the user for their password -->
+    <string name="login_activity_loginfail_text_pwmissing">Type the password for this account.</string>
+    
+</resources>

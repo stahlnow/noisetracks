@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <style name="scrollbar" parent="android:Theme">
+        <item name="android:scrollbarFadeDuration">250</item>
+        <item name="android:scrollHorizontally">false</item>
+        <item name="android:scrollbars">vertical</item>
+        <item name="android:scrollbarThumbVertical">@drawable/scroll_thumb</item>
+
+        <!-- <item name="android:scrollbarTrackVertical">@drawable/scroll_track</item> -->
+
+    </style>
+
+</resources>

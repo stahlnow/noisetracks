@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@color/background_dark"
+    android:gravity="center_horizontal"
+    android:orientation="vertical" >
+
+    <ImageView
+        android:contentDescription="@string/app_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="48dip"
+        android:background="@drawable/sign_in_logo" />
+
+    <TextView
+        android:id="@+id/message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="5dip"
+        android:layout_marginLeft="@dimen/input_margin_left_right"
+        android:layout_marginRight="@dimen/input_margin_left_right"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+    <EditText
+        android:id="@+id/username_edit"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/input_margin_left_right"
+        android:layout_marginRight="@dimen/input_margin_left_right"
+        android:hint="@string/username_hint"
+        android:inputType="textEmailAddress"
+        android:scrollHorizontally="true"
+        android:singleLine="false"
+        android:textColor="#fff"
+        android:textColorHint="#aaa"
+        android:typeface="sans" />
+
+    <EditText
+        android:id="@+id/password_edit"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/input_margin_left_right"
+        android:layout_marginRight="@dimen/input_margin_left_right"
+        android:layout_marginTop="5dp"
+        android:hint="@string/password_hint"
+        android:imeOptions="actionDone"
+        android:inputType="textPassword"
+        android:scrollHorizontally="true"
+        android:singleLine="true"
+        android:textColor="#fff"
+        android:textColorHint="#aaa"
+        android:typeface="sans" />
+
+    <Button
+        android:id="@+id/sign_in_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginLeft="@dimen/input_margin_left_right"
+        android:layout_marginRight="@dimen/input_margin_left_right"
+        android:layout_marginTop="10dp"
+        android:height="60dip"
+        android:minWidth="100dip"
+        android:onClick="handleLogin"
+        android:text="@string/signin_button"
+        android:textColor="#ddd"
+        android:textSize="6pt" />
+
+</LinearLayout>

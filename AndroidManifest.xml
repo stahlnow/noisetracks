@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest package="com.stahlnow.noisetracks"
+    android:versionCode="1"
+    android:versionName="1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-sdk android:minSdkVersion="8" android:targetSdkVersion="16"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
+    <uses-permission android:name="android.permission.MANAGE_ACCOUNTS"/>   
+    <uses-permission android:name="android.permission.USE_CREDENTIALS" />
+    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <uses-permission android:name="android.permission.READ_SYNC_STATS" />
+    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
+    <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />  
+
+    <application
+        android:name="NoisetracksApplication"
+        android:label="@string/app_name"
+        android:icon="@drawable/logo"
+        android:theme="@style/CustomTheme.Light">
+        <uses-library android:name="com.google.android.maps" />
+        <!-- The Noisetracks content provider represents a database for tracking data which is synced to the noisetracks cloud -->
+        <provider android:name=".provider.NoisetracksProvider"
+            android:authorities="com.stahlnow.noisetracks.provider"
+            android:syncable="true"
+            android:exported="false">
+            <grant-uri-permission android:pathPattern=".*" />
+        </provider>
+        <!-- The authenticator service: manage Noisetracks accounts -->
+        <service android:name=".authenticator.AuthenticationService"
+            android:exported="false">
+            <intent-filter>
+                <action
+                    android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
+        </service>
+        <!-- The sync service: upload data to the server -->
+        <service android:name=".syncadapter.SyncService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter" />
+            </intent-filter>
+            <meta-data
+                android:name="android.content.SyncAdapter"
+                android:resource="@xml/syncadapter" />
+        </service>
+        
+        <!-- The recording/tracking service -->
+        <service android:name=".service.NoisetracksService"/>
+        
+        <!-- The recording receiver/alarm -->
+        <receiver android:name=".receivers.RecordingReceiver" />
+        
+        <!-- Launcher Activity -->
+        <activity android:name=".ui.Noisetracks">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <!-- User Activity -->
+        <activity
+            android:name=".ui.Tabs"
+            android:configChanges="orientation|keyboardHidden"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="noisetracks.intent.view" />
+                <action android:name="android.intent.action.EDIT" />
+                <action android:name="android.intent.action.PICK" />
+				<category android:name="android.intent.category.DEFAULT" />
+				<data android:mimeType="vnd.android.cursor.dir/vnd.noisetracks.entry" />
+            </intent-filter>
+             <intent-filter>
+                <action android:name="android.intent.action.GET_CONTENT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.android.cursor.item/vnd.noisetracks.entry" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ui.ProfileActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.android.cursor.item/vnd.noisetracks.entry" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ui.EntryActivity">
+        </activity>
+        <!-- The Authentication/Account Activity -->
+        <activity
+            android:name=".authenticator.AuthenticatorActivity"
+            android:configChanges="keyboardHidden"
+            android:excludeFromRecents="true">
+            <!--
+                No intent-filter here! This activity is only ever launched by
+                someone who explicitly knows the class name
+            -->
+        </activity>
+        
+    </application>
+
+</manifest>

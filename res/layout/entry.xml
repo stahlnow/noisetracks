@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/entry"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/entry"
+    android:orientation="horizontal"
+    android:padding="0dp" >
+
+    <LinearLayout
+        android:id="@+id/entry_spectrogram_layout"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" >
+
+        <ImageView
+            android:id="@+id/entry_spectrogram"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="4dp"
+            android:scaleType="fitXY"
+            android:src="@drawable/ic_action_done" 
+            android:contentDescription="@null" />
+        
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/entry_mugshot_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_marginTop="10dip"
+        android:layout_marginBottom="10dip"
+        android:layout_marginLeft="10dip"
+        android:layout_marginRight="5dip" >
+
+        <ImageView
+            android:id="@+id/entry_mugshot"
+            android:layout_width="48dip"
+            android:layout_height="48dip"
+            android:contentDescription="@null" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/entry_username"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/entry_mugshot_layout"
+        android:layout_toRightOf="@+id/entry_mugshot_layout"
+        android:textSize="10dp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/entry_recorded_ago"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignTop="@+id/entry_mugshot_layout"
+        android:layout_marginRight="10dp"
+        android:gravity="right"
+        android:textSize="10dp" />
+
+</RelativeLayout>
