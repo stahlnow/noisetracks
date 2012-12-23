@@ -1,9 +1,14 @@
 package com.stahlnow.noisetracks.ui;
 
+import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
+import com.stahlnow.noisetracks.client.SQLLoaderCallbacks;
+import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -38,12 +43,19 @@ public class EntryActivity extends FragmentActivity implements OnRefreshListener
 
 		mPager = mPullToRefreshViewPager.getRefreshableView();
 
-		// set adapter
-		Cursor cursor = getContentResolver().query(Entries.CONTENT_URI, NoisetracksProvider.READ_ENTRY_PROJECTION, null, null, Entries.DEFAULT_SORT_ORDER);
+		String select = getIntent().getExtras().getString(SQLLoaderCallbacks.SELECT);
+		
+		Cursor cursor = getContentResolver().query(
+				Entries.CONTENT_URI,
+				NoisetracksProvider.READ_ENTRY_PROJECTION,
+				select,
+				null,
+				Entries.DEFAULT_SORT_ORDER
+		);
 		
 		mAdapter = new EntryPagerAdapter<EntryDetailFragment>(getSupportFragmentManager(), EntryDetailFragment.class, NoisetracksProvider.READ_ENTRY_PROJECTION, cursor);
 		mPager.setAdapter(mAdapter);
-		mPager.setCurrentItem((int) getIntent().getExtras().getLong("item") - 1, false); // select item	
+		mPager.setCurrentItem(getIntent().getExtras().getInt("item"), false); // select item	
 	
 	}
 	
@@ -110,6 +122,8 @@ public class EntryActivity extends FragmentActivity implements OnRefreshListener
 
 	public static class EntryDetailFragment extends Fragment {
 		
+		private HttpImageManager mHttpImageManager;
+		
 		public static EntryDetailFragment newInstance() {
 			EntryDetailFragment f = new EntryDetailFragment();
 			return f;
@@ -118,6 +132,7 @@ public class EntryActivity extends FragmentActivity implements OnRefreshListener
 		@Override
 		public void onCreate(Bundle savedInstanceState) {
 			super.onCreate(savedInstanceState);
+			this.mHttpImageManager = NoisetracksApplication.getHttpImageManager();
 		}
 
 		/**
@@ -132,6 +147,24 @@ public class EntryActivity extends FragmentActivity implements OnRefreshListener
 			TextView recorded_ago = (TextView) v.findViewById(R.id.entry_recorded_ago);
 			ImageView spectrogram = (ImageView) v.findViewById(R.id.entry_spectrogram);
 
+			//holder.mugshot.setImageResource(R.drawable.default_image);
+			Uri mugshotUri = Uri.parse(getArguments().getString("mugshot"));
+			if (mugshotUri != null){
+				Bitmap bitmap = mHttpImageManager.loadImage(new HttpImageManager.LoadRequest(mugshotUri, mugshot));
+				if (bitmap != null) {
+					mugshot.setImageBitmap(bitmap);
+			    }
+			}
+			
+			//holder.spectrogram.setImageResource(R.drawable.default_image);
+			Uri specUri = Uri.parse(getArguments().getString("spectrogram"));
+			if (specUri != null){
+				Bitmap bitmap = mHttpImageManager.loadImage(new HttpImageManager.LoadRequest(specUri, spectrogram));
+				if (bitmap != null) {
+					spectrogram.setImageBitmap(bitmap);
+			    }
+			}
+			
 			username.setText(getArguments().getString("username"));
 			recorded_ago.setText(getArguments().getString("recorded"));
 			

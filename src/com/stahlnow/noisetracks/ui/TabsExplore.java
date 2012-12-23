@@ -108,17 +108,9 @@ public class TabsExplore extends FragmentActivity {
 		public void onListItemClick (ListView l, View v, int position, long id) {
 			super.onListItemClick(l, v, position, id);
 			
-			/*
-			// Constructs a new URI from the incoming URI and the row ID
-	        Uri uri = ContentUris.withAppendedId(getActivity().getIntent().getData(), id);
-	        AppLog.logString(uri.toString());
-	        startActivity(new Intent("noisetracks.intent.view", uri));
-			*/
-			
-			AppLog.logString("pos: " + l.getItemIdAtPosition(position));
-			
 			Intent i = new Intent(getActivity().getApplicationContext(), EntryActivity.class);
-			i.putExtra("item", l.getItemIdAtPosition(position));
+			i.putExtra(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.SELECT_ENTRIES); 	// select all entries
+			i.putExtra("item", position - l.getHeaderViewsCount());						// position for the cursor
 			startActivity(i);
 			
 			/*
@@ -204,7 +196,9 @@ public class TabsExplore extends FragmentActivity {
             			R.id.entry_username,
             			R.id.entry_recorded_ago,
             			R.id.entry_spectrogram },            	
-                    0); // flags
+                    0,	// flags
+                    true // mugshot is clickable
+                    ); 
             setListAdapter(mAdapter);
             
             // Start out with a progress indicator.
@@ -221,8 +215,6 @@ public class TabsExplore extends FragmentActivity {
 	        mPullToRefreshView.setOnRefreshListener(new OnRefreshListener<ListView>() {
 	            @Override
 	            public void onRefresh(PullToRefreshBase<ListView> refreshView) {
-	            	
-	            	AppLog.logString("Explore onRefresh");
 	            	
 	            	// Call api
 	            	if (!mAdapter.isEmpty()) { // if list not empty

@@ -153,6 +153,12 @@ public final class NoisetracksContract {
          */
         public static final String COLUMN_NAME_USERNAME = "username";
         
+        /**
+         * Column name for the uuid
+         * <P>Type: TEXT</P>
+         */
+        public static final String COLUMN_NAME_UUID = "uuid";
+        
         
     }
 }

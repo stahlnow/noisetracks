@@ -41,7 +41,7 @@ public class NoisetracksProvider extends ContentProvider {
     /**
      * The database version
      */
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 4;
 
     /**
      * A projection map used to select columns from the database
@@ -64,6 +64,7 @@ public class NoisetracksProvider extends ContentProvider {
         Entries.COLUMN_NAME_RESOURCE_URI,
         Entries.COLUMN_NAME_MUGSHOT,
         Entries.COLUMN_NAME_USERNAME,
+        Entries.COLUMN_NAME_UUID,
         Entries.COLUMN_NAME_UPLOADED
     };
     
@@ -133,6 +134,7 @@ public class NoisetracksProvider extends ContentProvider {
         sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_RESOURCE_URI, NoisetracksContract.Entries.COLUMN_NAME_RESOURCE_URI);
         sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_MUGSHOT, NoisetracksContract.Entries.COLUMN_NAME_MUGSHOT);
         sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_USERNAME, NoisetracksContract.Entries.COLUMN_NAME_USERNAME);
+        sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_UUID, NoisetracksContract.Entries.COLUMN_NAME_UUID);
         sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_UPLOADED, NoisetracksContract.Entries.COLUMN_NAME_UPLOADED);
 
         
@@ -170,7 +172,9 @@ public class NoisetracksProvider extends ContentProvider {
                    + NoisetracksContract.Entries.COLUMN_NAME_RESOURCE_URI + " TEXT,"
                    + NoisetracksContract.Entries.COLUMN_NAME_MUGSHOT + " TEXT,"
                    + NoisetracksContract.Entries.COLUMN_NAME_USERNAME + " TEXT,"
-                   + NoisetracksContract.Entries.COLUMN_NAME_UPLOADED + " INTEGER"
+                   + NoisetracksContract.Entries.COLUMN_NAME_UUID + " TEXT,"
+                   + NoisetracksContract.Entries.COLUMN_NAME_UPLOADED + " INTEGER,"
+                   + "UNIQUE(" + NoisetracksContract.Entries.COLUMN_NAME_UUID + ")" //  ON CONFLICT IGNORE
                    + ");");
        }
 
@@ -391,19 +395,21 @@ public class NoisetracksProvider extends ContentProvider {
             values.put(NoisetracksContract.Entries.COLUMN_NAME_RECORDED, sdf.format(new Date()));
         }
         
-        // If the values map doesn't contain 'uploaded', set it to 0 (not uploaded) 
+        // If the values map doesn't contain 'uploaded', set it to 1 (uploaded)
+        // Entries created by the user must have set it to 0 so the syncadapter will upload it.
         if (values.containsKey(NoisetracksContract.Entries.COLUMN_NAME_UPLOADED) == false) {
-            values.put(NoisetracksContract.Entries.COLUMN_NAME_UPLOADED, 0);
+            values.put(NoisetracksContract.Entries.COLUMN_NAME_UPLOADED, 1);
         }
 
         // Opens the database object in "write" mode.
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
 
         // Performs the insert and returns the ID of the new entry.
-        long rowId = db.insert(
+        long rowId = db.insertWithOnConflict(
             NoisetracksContract.Entries.TABLE_NAME,        	// The table to insert into.
             NoisetracksContract.Entries.COLUMN_NAME_FILENAME,	// A hack, SQLite sets this column value to null, if values is empty.
-            values                           				// A map of column names, and the values to insert into the columns.
+            values,                           				// A map of column names, and the values to insert into the columns.
+            SQLiteDatabase.CONFLICT_IGNORE					// Ignore items that have already been inserted.
         );
 
         // If the insert succeeded, the row ID exists.

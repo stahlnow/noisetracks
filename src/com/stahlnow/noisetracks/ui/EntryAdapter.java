@@ -4,6 +4,8 @@ import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
+import com.stahlnow.noisetracks.utility.AppLog;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -27,13 +29,16 @@ public class EntryAdapter extends SimpleCursorAdapter {
 	private Activity mContext;
 	private HttpImageManager mHttpImageManager;
 	private LayoutInflater mInflater;
+	private boolean mMugshotClickable;
 
-	public EntryAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flags) {
+	public EntryAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flags, boolean mugshotClickable) {
 		super(context, layout, c, from, to, flags);
 
 		this.mContext = (Activity) context;
 		this.mHttpImageManager = NoisetracksApplication.getHttpImageManager();
 		this.mInflater = LayoutInflater.from(context);
+		
+		this.mMugshotClickable = mugshotClickable;
 		
 	}
 
@@ -90,16 +95,20 @@ public class EntryAdapter extends SimpleCursorAdapter {
 			holder.username.setText(getCursor().getString(getCursor().getColumnIndex(Entries.COLUMN_NAME_USERNAME)));
 			holder.recorded_ago.setText(getCursor().getString(getCursor().getColumnIndex(Entries.COLUMN_NAME_RECORDED)));
 			
-			holder.mugshot.setOnClickListener(new OnClickListener() {
-				
-				@Override
-				public void onClick(View v) {
-					// mugshot was clicked, open profile
-					Intent i = new Intent(mContext, ProfileActivity.class);
-					i.putExtra("username", holder.username.getText());
-					mContext.startActivity(i);
-				}
-			});
+			
+			
+			if (mMugshotClickable) {			
+				holder.mugshot.setOnClickListener(new OnClickListener() {
+					
+					@Override
+					public void onClick(View v) {
+						// mugshot was clicked, open profile
+						Intent i = new Intent(mContext, ProfileActivity.class);
+						i.putExtra("username", holder.username.getText());
+						mContext.startActivity(i);
+					}
+				});
+			}
 		}
 		
 		return convertView;		

@@ -11,6 +11,7 @@ import com.stahlnow.noisetracks.client.Entry;
 import com.stahlnow.noisetracks.client.RESTLoaderCallbacks;
 import com.stahlnow.noisetracks.client.SQLLoaderCallbacks;
 import com.stahlnow.noisetracks.helper.ProgressWheel;
+import com.stahlnow.noisetracks.provider.NoisetracksProvider;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.utility.AppLog;
 
@@ -52,7 +53,7 @@ public class ProfileActivity extends FragmentActivity {
 
 		//private static ArrayList<Entry> entries = new ArrayList<Entry>(); 
 				
-		private EntryArrayAdapter mAdapter;
+		private EntryAdapter mAdapter;
 		private PullToRefreshListView mPullToRefreshView;
 		private boolean mListShown;
         private TextView mEmpty;
@@ -108,22 +109,9 @@ public class ProfileActivity extends FragmentActivity {
             setListShown(false);
             
             // create array adapter
-            mAdapter = new EntryArrayAdapter(getActivity(), R.layout.entry);
-            setListAdapter(mAdapter);
-            
-            Bundle params = new Bundle();
-	        params.putString("format", "json");				// we need json format
-	        params.putString("order_by", "created");		// oldest first, entries are inserted at top of array
-	        params.putString("audiofile__status", "1");		// only get entries with status = Done
-	        params.putString("user__username", getArguments().getString("username"));	// only entries from specific user
-        	Bundle argsEntries = new Bundle();
-        	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
-        	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-        	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), this, mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-    		getLoaderManager().initLoader(RESTLoaderCallbacks.ENTRIES, argsEntries, r);
-            
-            
-            /*
+            //mAdapter = new EntryArrayAdapter(getActivity(), R.layout.entry);
+            //setListAdapter(mAdapter);
+         
             // Create an empty adapter we will use to display the loaded data.
             mAdapter = new EntryAdapter(
             		getActivity(), // context
@@ -139,15 +127,30 @@ public class ProfileActivity extends FragmentActivity {
             			R.id.entry_username,
             			R.id.entry_recorded_ago,
             			R.id.entry_spectrogram },            	
-                    0); // flags
+                    0, // flags
+                    false  // mugshot is clickable
+                    );
             setListAdapter(mAdapter);
             
+            // Prepare and init the sql loader for user entries
             Bundle args = new Bundle();
-            args.putStringArray(SQLLoaderCallbacks.PROJECTION, SQLLoaderCallbacks.PROJECTION_ENTRIES);
+            args.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_ENTRY_PROJECTION);
             args.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.selectEntriesFromUser(getArguments().getString("username")));
             SQLLoaderCallbacks sql = new SQLLoaderCallbacks(this.getActivity(), mAdapter, (ListFragment)this, mEmpty, mPadding, mHeader, mFooter);
-            getActivity().getSupportLoaderManager().initLoader(200, args, sql); // TODO rename arg0 (1) to something meaningful 
-            */
+            getActivity().getSupportLoaderManager().initLoader(1, args, sql);	
+            
+            // Prepare and init REST loader
+            Bundle params = new Bundle();
+	        params.putString("format", "json");				// we need json format
+	        params.putString("order_by", "created");		// oldest first, entries are inserted at top of array
+	        params.putString("audiofile__status", "1");		// only get entries with status = Done
+	        params.putString("user__username", getArguments().getString("username"));	// only entries from specific user
+        	Bundle argsEntries = new Bundle();
+        	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
+        	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
+        	//RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), this, mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+        	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+    		//getLoaderManager().initLoader(RESTLoaderCallbacks.ENTRIES, argsEntries, r);
             
             
 	        // Set a listener to be invoked when the list should be refreshed.
@@ -157,8 +160,10 @@ public class ProfileActivity extends FragmentActivity {
 	            	AppLog.logString("Profile onRefresh");
 	            	// Call api
 	            	if (!mAdapter.isEmpty()) { // if list not empty
-	            		Entry e = mAdapter.getItem(0);// get latest entry
-	            		String created = e.getCreatedString();
+	            		//Entry e = mAdapter.getItem(0);// get latest entry
+	            		//String created = e.getCreatedString();
+	            		Cursor cursor = (Cursor) getListAdapter().getItem(0); // get latest entry
+		    	        String created = cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_CREATED));
 		            	Bundle params = new Bundle();
 		    	        params.putString("format", "json");				// we need json format
 		    	        params.putString("order_by", "created");		// oldest first, entries are inserted at top of array
@@ -169,7 +174,8 @@ public class ProfileActivity extends FragmentActivity {
 		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	// Initialize RESTLoader for refresh view.		    
-		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), ProfileListFragment.this, mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+		            	//RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), ProfileListFragment.this, mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
 		            	getActivity().getSupportLoaderManager().restartLoader(RESTLoaderCallbacks.ENTRIES_NEWER, argsEntriesNewer, r);
 	            	} else {
 	            		Bundle params = new Bundle();
@@ -180,7 +186,8 @@ public class ProfileActivity extends FragmentActivity {
 		            	Bundle argsEntries = new Bundle();
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), ProfileListFragment.this, mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+		            	//RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), ProfileListFragment.this, mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
 		            	getActivity().getSupportLoaderManager().restartLoader(RESTLoaderCallbacks.ENTRIES, argsEntries, r);
 	            	}
 	            }
@@ -191,8 +198,10 @@ public class ProfileActivity extends FragmentActivity {
 				public void onLastItemVisible() {
 					
 					if (!mAdapter.isEmpty()) { // if list not empty
-						Entry e = mAdapter.getItem(mAdapter.getCount()-1); // get last entry
-	            		String created = e.getCreatedString();
+						//Entry e = mAdapter.getItem(mAdapter.getCount()-1); // get last entry
+	            		//String created = e.getCreatedString();
+						Cursor cursor = (Cursor) getListAdapter().getItem(getListAdapter().getCount()-1); // get last entry
+		    	        String created = cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_CREATED));
 		            	Bundle params = new Bundle();
 		    	        params.putString("format", "json");				// we need json format
 		    	        params.putString("order_by", "-created");		// newest first, entries are added to end of array
@@ -202,7 +211,8 @@ public class ProfileActivity extends FragmentActivity {
 		    	        Bundle argsEntriesOlder = new Bundle();
 		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), ProfileListFragment.this, mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+		            	//RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), ProfileListFragment.this, mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
 		            	getActivity().getSupportLoaderManager().restartLoader(RESTLoaderCallbacks.ENTRIES_OLDER, argsEntriesOlder, r);
 	            	}
 					
@@ -233,9 +243,10 @@ public class ProfileActivity extends FragmentActivity {
 			super.onListItemClick(l, v, position, id);
 			
 			Intent i = new Intent(getActivity().getApplicationContext(), EntryActivity.class);
-			i.putExtra("item", l.getItemIdAtPosition(position));
-			
+			i.putExtra(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.selectEntriesFromUser(getArguments().getString("username")));
+			i.putExtra("item", position - l.getHeaderViewsCount());
 			startActivity(i);
+			
 		}
 		
 		

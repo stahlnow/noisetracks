@@ -46,6 +46,11 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 		this.mFooter = footer;
 	}
 	
+	/**
+	 * Generates selection argument for query with only user entries
+	 * @param username The username 
+	 * @return The selection argument
+	 */
 	public static String selectEntriesFromUser(String username) {
 		return "((" + Entries.COLUMN_NAME_FILENAME + " NOTNULL) AND (" + Entries.COLUMN_NAME_FILENAME + " != '' ) AND (" + Entries.COLUMN_NAME_USERNAME + " == '" + username + "' ))";
 	}

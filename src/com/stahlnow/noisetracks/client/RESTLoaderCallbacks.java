@@ -85,6 +85,7 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	 * @param header
 	 * @param footer
 	 */
+	/*
 	public RESTLoaderCallbacks(Context c, ListFragment list, EntryArrayAdapter adapter, PullToRefreshListView pullToRefreshView, TextView empty,
 			TextView padding, View header, View footer) {
 		super();
@@ -98,10 +99,10 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 		this.mHeader = header;
 		this.mFooter = footer;
 	}
+	*/
 
 	@Override
     public Loader<RESTLoader.RESTResponse> onCreateLoader(int id, Bundle args) {
-		AppLog.logString("RESTLoaderCallbacks onCreateLoader with id " + id);
 		
         if (args != null && args.containsKey(ARGS_URI) && args.containsKey(ARGS_PARAMS)) {
         	
@@ -116,8 +117,6 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 
     @Override
     public void onLoadFinished(Loader<RESTLoader.RESTResponse> loader, RESTLoader.RESTResponse data) {
-    	
-    	AppLog.logString("RESTLoaderCallbacks onLoadFinished with id " + loader.getId());
     	
     	if (data != null) {
     		
@@ -163,6 +162,7 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
     	// Set updated text	    	
     	mPullToRefreshView.setLastUpdatedLabel("Last updated: " + DateUtils.formatDateTime(mContext, System.currentTimeMillis(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_ABBREV_TIME));
 	    
+    	/*
     	if (mEntryArrayAdapter != null) {
     		
     		mListFragment.setListShown(true);
@@ -179,6 +179,7 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	    		mEmpty.setText("");
 	    	}
     	}
+    	*/
     	
     	if (mEntryAdapter != null) {
 	    	if (mEntryAdapter.isEmpty()) {
@@ -197,11 +198,11 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 
     @Override
     public void onLoaderReset(Loader<RESTLoader.RESTResponse> loader) {
-    	AppLog.logString("RESTLoaderCallbacks onLoaderReset");
-    	
+    	/*
     	if (mEntryArrayAdapter != null) {
         	mEntryArrayAdapter.clear(); 
         }
+        */
     	if (mEntryAdapter != null) {
     		mEntryAdapter.changeCursor(null);
     	}
@@ -218,11 +219,12 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
             //TimeZone zurichTZ = TimeZone.getTimeZone("Europe/Zurich");
             //sdf.setTimeZone(zurichTZ);
             
-            
+            /*
             if (mEntryArrayAdapter != null) {    // if we have an array adapter, remove all items
             	if (removeItems)
             		mEntryArrayAdapter.clear(); 
             }
+            */
             
             for (int i = 0; i < entries.length(); i++) {
                 JSONObject entry = entries.getJSONObject(i);
@@ -230,6 +232,7 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
                 JSONArray location = entry.getJSONObject("geometry").getJSONArray("coordinates");
                 try {
                 	
+                	/*
                 	// if we operate with an array
                 	if (mEntryArrayAdapter != null) {
                 		
@@ -257,12 +260,9 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	                    			entry.getString("resource_uri")
 	                    			), 0); // insert on top
                 		}
-                		
-               		
                 	}
-                	
+                	*/
                 	if (mEntryAdapter != null) {               
-                		AppLog.logString("insert " + i);
 	                	ContentValues values = new ContentValues();
 	                	values.put(Entries.COLUMN_NAME_FILENAME, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("file"));
 	                	values.put(Entries.COLUMN_NAME_SPECTROGRAM, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("spectrogram"));
@@ -279,6 +279,8 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	                	
 						values.put(Entries.COLUMN_NAME_MUGSHOT, user.getString("mugshot"));
 						values.put(Entries.COLUMN_NAME_USERNAME, user.getString("username"));
+						
+						values.put(Entries.COLUMN_NAME_UUID, entry.getString("uuid"));
 						
 						// add entry to database
 						mContext.getContentResolver().insert(Entries.CONTENT_URI, values);

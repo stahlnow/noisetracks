@@ -23,19 +23,15 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
 import com.stahlnow.noisetracks.R;
-import com.stahlnow.noisetracks.utility.AppLog;
-
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AuthenticatorException;
 import android.accounts.OperationCanceledException;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.content.AsyncTaskLoader;
 import android.util.Log;
-import android.widget.LinearLayout.LayoutParams;
 
 public class RESTLoader extends AsyncTaskLoader<RESTLoader.RESTResponse> {
     private static final String TAG = RESTLoader.class.getName();

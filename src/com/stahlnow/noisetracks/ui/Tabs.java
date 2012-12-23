@@ -37,12 +37,6 @@ public class Tabs extends FragmentActivity {
         
         // set default settings
      	AppSettings.setLoggingInterval(this, 1); // each minute
-     	
-        // If there is no data associated with the Intent, sets the data to the default URI, which accesses the entries.
-        Intent intent = getIntent();
-        if (intent.getData() == null) {
-            intent.setData(Entries.CONTENT_ID_URI_BASE);
-        }
         
         // setup view
         setContentView(R.layout.main);
