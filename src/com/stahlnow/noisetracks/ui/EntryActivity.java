@@ -1,11 +1,16 @@
 package com.stahlnow.noisetracks.ui;
 
+import java.text.ParseException;
+import java.util.Date;
+
 import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.client.SQLLoaderCallbacks;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
+import com.stahlnow.noisetracks.utility.AppLog;
+
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -17,6 +22,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -84,6 +90,7 @@ public class EntryActivity extends FragmentActivity implements OnRefreshListener
 	            return null;
 	 
 	        mCursor.moveToPosition(position);
+
 	        F frag;
 	        try {
 	            frag = mFragmentClass.newInstance();
@@ -148,25 +155,41 @@ public class EntryActivity extends FragmentActivity implements OnRefreshListener
 			ImageView spectrogram = (ImageView) v.findViewById(R.id.entry_spectrogram);
 
 			//holder.mugshot.setImageResource(R.drawable.default_image);
-			Uri mugshotUri = Uri.parse(getArguments().getString("mugshot"));
-			if (mugshotUri != null){
-				Bitmap bitmap = mHttpImageManager.loadImage(new HttpImageManager.LoadRequest(mugshotUri, mugshot));
-				if (bitmap != null) {
-					mugshot.setImageBitmap(bitmap);
-			    }
+			String mug = getArguments().getString("mugshot");
+			if (mug != null) {
+				Uri mugshotUri = Uri.parse(mug);
+				if (mugshotUri != null){
+					Bitmap bitmap = mHttpImageManager.loadImage(new HttpImageManager.LoadRequest(mugshotUri, mugshot));
+					if (bitmap != null) {
+						mugshot.setImageBitmap(bitmap);
+				    }
+				}
 			}
 			
 			//holder.spectrogram.setImageResource(R.drawable.default_image);
-			Uri specUri = Uri.parse(getArguments().getString("spectrogram"));
-			if (specUri != null){
-				Bitmap bitmap = mHttpImageManager.loadImage(new HttpImageManager.LoadRequest(specUri, spectrogram));
-				if (bitmap != null) {
-					spectrogram.setImageBitmap(bitmap);
-			    }
+			String spect = getArguments().getString("spectrogram");
+			if (spect != null) {
+				Uri specUri = Uri.parse(spect);
+				if (specUri != null){
+					Bitmap bitmap = mHttpImageManager.loadImage(new HttpImageManager.LoadRequest(specUri, spectrogram));
+					if (bitmap != null) {
+						spectrogram.setImageBitmap(bitmap);
+				    }
+				}
 			}
 			
 			username.setText(getArguments().getString("username"));
-			recorded_ago.setText(getArguments().getString("recorded"));
+			
+			String recorded = getArguments().getString("recorded");
+			if (recorded != null) {
+				try {
+					Date d = NoisetracksApplication.SDF.parse(recorded);
+					String rec_ago = DateUtils.getRelativeTimeSpanString(d.getTime(), System.currentTimeMillis(), 0L, DateUtils.FORMAT_ABBREV_ALL).toString();
+					recorded_ago.setText(rec_ago);
+				} catch (ParseException e) {			
+					AppLog.logString("Failed to parse recorded date: " + e.toString());
+				}
+			}
 			
 			return v;
 		}

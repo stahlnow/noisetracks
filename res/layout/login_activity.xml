@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!-- android:background="@color/background_dark" -->
+
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="@color/background_dark"
+    
     android:gravity="center_horizontal"
     android:orientation="vertical" >
-
+
     <ImageView
         android:contentDescription="@string/app_name"
         android:layout_width="wrap_content"
@@ -21,7 +24,7 @@
         android:layout_marginLeft="@dimen/input_margin_left_right"
         android:layout_marginRight="@dimen/input_margin_left_right"
         android:textAppearance="?android:attr/textAppearanceSmall" />
-
+
     <EditText
         android:id="@+id/username_edit"
         android:layout_width="fill_parent"
@@ -35,8 +38,7 @@
         android:textColor="#fff"
         android:textColorHint="#aaa"
         android:typeface="sans" />
-
-    <EditText
+    <EditText
         android:id="@+id/password_edit"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
@@ -51,7 +53,7 @@
         android:textColor="#fff"
         android:textColorHint="#aaa"
         android:typeface="sans" />
-
+
     <Button
         android:id="@+id/sign_in_button"
         android:layout_width="match_parent"

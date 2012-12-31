@@ -1,19 +1,13 @@
 package com.stahlnow.noisetracks.client;
 
-import java.util.Date;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-import com.google.android.maps.GeoPoint;
 import com.handmark.pulltorefresh.library.PullToRefreshListView;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.ui.EntryAdapter;
-import com.stahlnow.noisetracks.ui.EntryArrayAdapter;
 import com.stahlnow.noisetracks.utility.AppLog;
 import com.stahlnow.noisetracks.utility.AppSettings;
 
@@ -21,7 +15,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.Loader;
 import android.text.format.DateUtils;
@@ -41,16 +34,12 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	public static final Uri URI_ENTRIES = Uri.parse(AppSettings.DOMAIN + "/api/v1/entry/");
     
     private Context mContext;
+    private EntryAdapter mEntryAdapter = null;
     private PullToRefreshListView mPullToRefreshView;
     private TextView mEmpty;
     private TextView mPadding;
     private View mHeader;
     private View mFooter;
-    
-    // these members are initialized only based on the specific constructer, otherwise they are null
-    private EntryAdapter mEntryAdapter = null;
-    private EntryArrayAdapter mEntryArrayAdapter = null;
-    private ListFragment mListFragment = null;
     
     /**
      * Constructor with Simple Cursor Adapter
@@ -67,39 +56,12 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 		super();
 		this.mContext = c;
 		this.mEntryAdapter = adapter;
-		this.mEntryArrayAdapter = null;
 		this.mPullToRefreshView = pullToRefreshView;
 		this.mEmpty = empty;
 		this.mPadding = padding;
 		this.mHeader = header;
 		this.mFooter = footer;
 	}
-	
-	/**
-	 * Constructor with Array Adapter
-	 * @param c
-	 * @param adapter
-	 * @param pullToRefreshView
-	 * @param empty
-	 * @param padding
-	 * @param header
-	 * @param footer
-	 */
-	/*
-	public RESTLoaderCallbacks(Context c, ListFragment list, EntryArrayAdapter adapter, PullToRefreshListView pullToRefreshView, TextView empty,
-			TextView padding, View header, View footer) {
-		super();
-		this.mContext = c;
-		this.mListFragment = list;
-		this.mEntryAdapter = null;
-		this.mEntryArrayAdapter = adapter;
-		this.mPullToRefreshView = pullToRefreshView;
-		this.mEmpty = empty;
-		this.mPadding = padding;
-		this.mHeader = header;
-		this.mFooter = footer;
-	}
-	*/
 
 	@Override
     public Loader<RESTLoader.RESTResponse> onCreateLoader(int id, Bundle args) {
@@ -126,7 +88,6 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	        // check to see if we got an HTTP 200 code and have some data.
 	        if (code == 200 && !json.equals("")) {
 	            
-	            // fill list with entries
 	            switch (loader.getId()) {
 	            case ENTRIES:
 	            	if (mEntryAdapter != null) {
@@ -134,26 +95,20 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	            			break;
 	            		}
 	            	}
-	            	addEntriesFromJSON(json, false, true); // insert on top, remove items
+	            	addEntriesFromJSON(json);	// fill list with entries
 	            	break;
 	            case ENTRIES_OLDER:
-	            	addEntriesFromJSON(json, true, false); // insert at end, no remove
-	            	break;
 	            case ENTRIES_NEWER:
-	            	addEntriesFromJSON(json, false, false); // insert on top, no remove
+	            	addEntriesFromJSON(json);	// fill list with entries
 	            	break;
 	            default:
 	            	break;
 	            }
 	            
-	        }
-	        else {
+	        } else {
 	        	Toast.makeText(mContext, "Failed to load data from Server.", Toast.LENGTH_SHORT).show();
 	        }
-	        
-    	}
-    	
-    	else {
+    	} else {
     		Toast.makeText(mContext, "Failed to load data from Server.\nCheck your internet settings.", Toast.LENGTH_SHORT).show();        
     	}
     	
@@ -161,26 +116,7 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
     	mPullToRefreshView.onRefreshComplete();
     	// Set updated text	    	
     	mPullToRefreshView.setLastUpdatedLabel("Last updated: " + DateUtils.formatDateTime(mContext, System.currentTimeMillis(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_ABBREV_TIME));
-	    
-    	/*
-    	if (mEntryArrayAdapter != null) {
-    		
-    		mListFragment.setListShown(true);
-    		
-	    	if (mEntryArrayAdapter.isEmpty()) {
-	    		mPadding.setVisibility(View.INVISIBLE);
-	        	mHeader.setVisibility(View.INVISIBLE);
-	        	mFooter.setVisibility(View.INVISIBLE);
-	    		mEmpty.setText("Pull to refresh.");
-	    	} else {
-	    		mPadding.setVisibility(View.VISIBLE);
-	        	mHeader.setVisibility(View.VISIBLE);
-	        	mFooter.setVisibility(View.VISIBLE);
-	    		mEmpty.setText("");
-	    	}
-    	}
-    	*/
-    	
+
     	if (mEntryAdapter != null) {
 	    	if (mEntryAdapter.isEmpty()) {
 	    		mPadding.setVisibility(View.INVISIBLE);
@@ -198,98 +134,53 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 
     @Override
     public void onLoaderReset(Loader<RESTLoader.RESTResponse> loader) {
-    	/*
-    	if (mEntryArrayAdapter != null) {
-        	mEntryArrayAdapter.clear(); 
-        }
-        */
     	if (mEntryAdapter != null) {
     		mEntryAdapter.changeCursor(null);
     	}
     }
     
-    private void addEntriesFromJSON(String json, boolean insertAtEnd, boolean removeItems) {
+    private void addEntriesFromJSON(String json) {
     	
     	try {
             JSONObject entryWrapper = (JSONObject) new JSONTokener(json).nextValue();
+            JSONObject meta 		= entryWrapper.getJSONObject("meta");
             JSONArray entries     	= entryWrapper.getJSONArray("objects");
-          
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
-            
-            //TimeZone zurichTZ = TimeZone.getTimeZone("Europe/Zurich");
-            //sdf.setTimeZone(zurichTZ);
-            
-            /*
-            if (mEntryArrayAdapter != null) {    // if we have an array adapter, remove all items
-            	if (removeItems)
-            		mEntryArrayAdapter.clear(); 
-            }
-            */
             
             for (int i = 0; i < entries.length(); i++) {
                 JSONObject entry = entries.getJSONObject(i);
                 JSONObject user = entry.getJSONObject("user");
-                JSONArray location = entry.getJSONObject("geometry").getJSONArray("coordinates");
-                try {
-                	
-                	/*
-                	// if we operate with an array
-                	if (mEntryArrayAdapter != null) {
-                		
-                		if (insertAtEnd) {
-                			mEntryArrayAdapter.add(new Entry(
-                        			sdf.parse(entry.getString("created").substring(0,23)),
-                        			sdf.parse(entry.getString("created").substring(0,23)), // TODO change api to provide 'recorded'
-                        			AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("file"),
-                        			new GeoPoint((int)(location.getDouble(1) * 1E6),(int)(location.getDouble(0) * 1E6)),
-                        			user.getString("username"),
-                        			user.getString("mugshot"),
-                        			AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("spectrogram"),
-                        			entry.getString("resource_uri")
-                        			));
-                		} else {
-                		
-	                		mEntryArrayAdapter.insert(new Entry(
-	                    			sdf.parse(entry.getString("created").substring(0,23)),
-	                    			sdf.parse(entry.getString("created").substring(0,23)), // TODO change api to provide 'recorded'
-	                    			AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("file"),
-	                    			new GeoPoint((int)(location.getDouble(1) * 1E6),(int)(location.getDouble(0) * 1E6)),
-	                    			user.getString("username"),
-	                    			user.getString("mugshot"),
-	                    			AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("spectrogram"),
-	                    			entry.getString("resource_uri")
-	                    			), 0); // insert on top
-                		}
-                	}
-                	*/
-                	if (mEntryAdapter != null) {               
-	                	ContentValues values = new ContentValues();
-	                	values.put(Entries.COLUMN_NAME_FILENAME, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("file"));
-	                	values.put(Entries.COLUMN_NAME_SPECTROGRAM, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("spectrogram"));
-	                	values.put(Entries.COLUMN_NAME_LATITUDE, location.getDouble(1));
-	                	values.put(Entries.COLUMN_NAME_LONGITUDE, location.getDouble(0));
-	                	
-	                	values.put(Entries.COLUMN_NAME_CREATED, entry.getString("created").substring(0,23));
-	                	
-	                	Date recorded = sdf.parse(entry.getString("created").substring(0,23)); // TODO change to recorded
-	                	String rec_ago = DateUtils.getRelativeTimeSpanString(recorded.getTime(), System.currentTimeMillis(), 0L, DateUtils.FORMAT_ABBREV_ALL).toString();
-	                	values.put(Entries.COLUMN_NAME_RECORDED, rec_ago);
-	                	
-	                	values.put(Entries.COLUMN_NAME_RESOURCE_URI, entry.getString("resource_uri"));
-	                	
-						values.put(Entries.COLUMN_NAME_MUGSHOT, user.getString("mugshot"));
-						values.put(Entries.COLUMN_NAME_USERNAME, user.getString("username"));
-						
-						values.put(Entries.COLUMN_NAME_UUID, entry.getString("uuid"));
-						
-						// add entry to database
-						mContext.getContentResolver().insert(Entries.CONTENT_URI, values);
-                	}
-						
-				} catch (ParseException e) {
-					AppLog.logString("Error parsing creation date string: " + e.toString());
+                JSONArray location = entry.getJSONObject("location").getJSONArray("coordinates");
+                
+				if (mEntryAdapter != null) {               
+					ContentValues values = new ContentValues();
+					values.put(Entries.COLUMN_NAME_FILENAME, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("file"));
+					values.put(Entries.COLUMN_NAME_SPECTROGRAM, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("spectrogram"));
+					values.put(Entries.COLUMN_NAME_LATITUDE, location.getDouble(1));
+					values.put(Entries.COLUMN_NAME_LONGITUDE, location.getDouble(0));
+					values.put(Entries.COLUMN_NAME_CREATED, entry.getString("created").substring(0,23));					
+					values.put(Entries.COLUMN_NAME_RECORDED, entry.getString("recorded").substring(0,23));
+					values.put(Entries.COLUMN_NAME_RESOURCE_URI, entry.getString("resource_uri"));
+					values.put(Entries.COLUMN_NAME_MUGSHOT, user.getString("mugshot"));
+					values.put(Entries.COLUMN_NAME_USERNAME, user.getString("username"));
+					values.put(Entries.COLUMN_NAME_UUID, entry.getString("uuid"));
+					// add entry to database
+					mContext.getContentResolver().insert(Entries.CONTENT_URI, values);
 				}
             }
+            
+            // hack: add 'load more' special entry
+            if (meta.getString("next") != "null") {
+            	ContentValues values = new ContentValues();
+            	values.put(Entries.COLUMN_NAME_FILENAME, "load");
+            	String created = entries.getJSONObject(entries.length()-1).getString("created").substring(0,23);
+            	values.put(Entries.COLUMN_NAME_CREATED, created); // set created to last entry, so the 'load more' entry appears right after the last entry we loaded.
+            	values.putNull(Entries.COLUMN_NAME_RECORDED); // set recorded to null
+            	values.put(Entries.COLUMN_NAME_RESOURCE_URI, meta.getString("next")); // special: resorce uri is value of 'next'
+            	String username = entries.getJSONObject(entries.length()-1).getJSONObject("user").getString("username");
+            	values.put(Entries.COLUMN_NAME_USERNAME, username);
+            	mContext.getContentResolver().insert(Entries.CONTENT_URI, values);
+            }
+            
         }
         catch (JSONException e) {
             AppLog.logString("Failed to parse JSON. " + e.toString());

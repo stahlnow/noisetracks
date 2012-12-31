@@ -39,7 +39,7 @@ public class AppSettings {
 	
 	public static String getUser(Context context) {
 		SharedPreferences pref = context.getSharedPreferences(NOISETRACK_PREF_NAME, 0);
-		return pref.getString(SETTING_USER, "");
+		return pref.getString(SETTING_USER, ""); // TODO
 	}
 	
 

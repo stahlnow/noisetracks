@@ -8,12 +8,11 @@ import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.support.v4.widget.SimpleCursorAdapter;
 import android.view.View;
 import android.widget.TextView;
 
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
-import com.stahlnow.noisetracks.utility.AppLog;
+import com.stahlnow.noisetracks.ui.EntryAdapter;
 
 public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 	
@@ -22,19 +21,20 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 	// selection args
 	public static final String SELECT = "select";
 	public static final String SELECT_ENTRIES = "((" + Entries.COLUMN_NAME_FILENAME + " NOTNULL) AND (" + Entries.COLUMN_NAME_FILENAME + " != '' ))";
+	public static final String SELECT_ENTRIES_WITHOUT_LOAD_MORE = "((" + Entries.COLUMN_NAME_FILENAME + " NOTNULL) AND (" + Entries.COLUMN_NAME_FILENAME + " != 'load' ))";
 	
 	// projection
 	public static final String PROJECTION = "projection";
 	
 	private Context mContext;
-	private SimpleCursorAdapter mAdapter;
+	private EntryAdapter mAdapter;
 	private ListFragment mListFragment;
 	private TextView mEmpty;
 	private TextView mPadding;
     private View mHeader;
     private View mFooter;
 	
-	public SQLLoaderCallbacks(Context c, SimpleCursorAdapter adapter, ListFragment fragment, TextView empty,
+	public SQLLoaderCallbacks(Context c, EntryAdapter adapter, ListFragment fragment, TextView empty,
 			TextView padding, View header, View footer) {
 		super();
 		this.mContext = c;
@@ -51,12 +51,15 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 	 * @param username The username 
 	 * @return The selection argument
 	 */
-	public static String selectEntriesFromUser(String username) {
-		return "((" + Entries.COLUMN_NAME_FILENAME + " NOTNULL) AND (" + Entries.COLUMN_NAME_FILENAME + " != '' ) AND (" + Entries.COLUMN_NAME_USERNAME + " == '" + username + "' ))";
+	public static String selectEntriesFromUser(String username, boolean loadmore) {
+		if (loadmore) {
+			return "((" + Entries.COLUMN_NAME_FILENAME + " NOTNULL) AND (" + Entries.COLUMN_NAME_FILENAME + " != '' ) AND (" + Entries.COLUMN_NAME_USERNAME + " == '" + username + "' ))";
+		} else {
+			return "((" + Entries.COLUMN_NAME_FILENAME + " NOTNULL) AND (" + Entries.COLUMN_NAME_FILENAME + " != '' ) AND (" + Entries.COLUMN_NAME_USERNAME + " == '" + username + "' ) AND (" + Entries.COLUMN_NAME_FILENAME + " != 'load' ))";
+		}
 	}
     
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-		AppLog.logString("SQLLoaderCallbacks onCreateLoader");
         return new CursorLoader(
         		mContext,						// context
         		ENTRIES,						// content uri
@@ -68,10 +71,8 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
     }
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-    	    	
-    	AppLog.logString("SQLLoaderCallbacks onLoadFinished");
     	
-    	mAdapter.changeCursor(data); 
+    	mAdapter.swapCursor(data);
     	
     	if (mAdapter.isEmpty()) {
     		mPadding.setVisibility(View.INVISIBLE);
@@ -94,6 +95,6 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
     }
 
     public void onLoaderReset(Loader<Cursor> loader) {
-        mAdapter.changeCursor(null);
+    	mAdapter.swapCursor(null);
     }
 }

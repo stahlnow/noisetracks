@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- light theme colors -->
+    <color name="background_light">#ffeeeeee</color>
+    <color name="rimColor_light">#33000000</color>
+
+    <!-- dark theme colors -->
+    <color name="background_dark">#ff000000</color>
+    <color name="rimColor_dark">#33333333</color>
+
+    <!-- colors / styles -->
+    <color name="indicator">#ffe33535</color>
+    <color name="transparent">#00000000</color>
+    <color name="white">#ffffffff</color>
+    <color name="light_grey">#ffcccccc</color>
+    <color name="dark_grey">#ff333333</color>
+    <color name="black">#ff000000</color>
+
+</resources>

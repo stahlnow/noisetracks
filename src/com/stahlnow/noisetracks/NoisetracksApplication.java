@@ -1,6 +1,8 @@
 package com.stahlnow.noisetracks;
 
 
+import java.text.SimpleDateFormat;
+
 import com.stahlnow.noisetracks.helper.httpimage.FileSystemPersistence;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
 
@@ -16,6 +18,8 @@ public class NoisetracksApplication extends Application {
 
 	public static final String LOG_TAG = "Noisetracks";
 	public static final String BASEDIR = "/sdcard/Noisetracks";
+	
+	public static SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
 	
 	private static NoisetracksApplication instance = null;
 	

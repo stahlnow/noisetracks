@@ -19,7 +19,6 @@ import android.widget.TextView;
 
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.authenticator.AuthenticationService;
-import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.utility.AppSettings;
 
 public class Tabs extends FragmentActivity {
@@ -45,7 +44,7 @@ public class Tabs extends FragmentActivity {
         mViewPager = (ViewPager)findViewById(R.id.pager);
         mTabsAdapter = new TabsAdapter(this, mTabHost, mViewPager);      
         // add explore tab
-        mTabsAdapter.addTab(mTabHost.newTabSpec("explore").setIndicator("Explore"), TabsExplore.ExploreListFragment.class, null);
+        mTabsAdapter.addTab(mTabHost.newTabSpec("explore").setIndicator("Explore"), FeedActivity.FeedListFragment.class, null);
         // add profile tab (Me)
         Bundle profile_args = new Bundle();
         profile_args.putString("username", "stahl");
@@ -53,7 +52,7 @@ public class Tabs extends FragmentActivity {
         
         for (int i = 0;i < mTabHost.getTabWidget().getChildCount(); i++) 
         {
-        	mTabHost.getTabWidget().getChildAt(i).setBackground(getResources().getDrawable(R.drawable.tab_indicator));
+        	mTabHost.getTabWidget().getChildAt(i).setBackground(getResources().getDrawable(R.drawable.tab_indicator_ab_noisetracks));
         	TextView tv = (TextView) mTabHost.getTabWidget().getChildAt(i).findViewById(android.R.id.title);
             tv.setTextColor(getResources().getColor(R.color.light_grey));
         }

@@ -1,11 +1,11 @@
 package com.stahlnow.noisetracks.client;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import android.text.format.DateUtils;
 
 import com.google.android.maps.GeoPoint;
+import com.stahlnow.noisetracks.NoisetracksApplication;
 
 public class Entry {
 	
@@ -55,8 +55,7 @@ public class Entry {
 	public Date getCreated() { return this.created; }
 	
 	public String getCreatedString() {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
-		return sdf.format(created); 
+		return NoisetracksApplication.SDF.format(created); 
 	}
 	
 	public Date getRecorded() { return this.recorded; }

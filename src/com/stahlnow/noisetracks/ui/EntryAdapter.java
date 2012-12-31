@@ -1,8 +1,13 @@
 package com.stahlnow.noisetracks.ui;
 
+import java.text.ParseException;
+import java.util.Date;
+
 import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
+import com.stahlnow.noisetracks.helper.ImageHelper;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
+import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager.BitmapFilter;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.utility.AppLog;
 
@@ -11,12 +16,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.net.Uri;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.SimpleCursorAdapter;
+import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -24,7 +26,11 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-public class EntryAdapter extends SimpleCursorAdapter { 
+public class EntryAdapter extends SimpleCursorAdapter implements BitmapFilter { 
+	
+	private static final int VIEW_TYPE_ENTRY = 0x0;
+	private static final int VIEW_TYPE_LOAD_MORE = 0x1;
+	private static final int NUM_VIEW_TYPES = 2; // total different views
 	
 	private Activity mContext;
 	private HttpImageManager mHttpImageManager;
@@ -36,6 +42,7 @@ public class EntryAdapter extends SimpleCursorAdapter {
 
 		this.mContext = (Activity) context;
 		this.mHttpImageManager = NoisetracksApplication.getHttpImageManager();
+		this.mHttpImageManager.setBitmapFilter(this);
 		this.mInflater = LayoutInflater.from(context);
 		
 		this.mMugshotClickable = mugshotClickable;
@@ -43,60 +50,94 @@ public class EntryAdapter extends SimpleCursorAdapter {
 	}
 
 	public static class ViewHolder {
+		// entry
 		public ImageView spectrogram;
 		public ImageView mugshot;
 		public TextView username;
 		public TextView recorded_ago;
+		// 'load more' entry
+		public TextView load_more;
+	}
+	
+	@Override
+	public int getItemViewType(int position) {
+		//Cursor c = (Cursor) getItem(position);
+		Cursor c = getCursor();
+		c.moveToPosition(position);
+	    if (!c.getString(c.getColumnIndex(Entries.COLUMN_NAME_FILENAME)).contains("load")) {
+	    	return VIEW_TYPE_ENTRY;
+	    } else {
+	    	return VIEW_TYPE_LOAD_MORE;
+	    }
+	}
+	
+	@Override
+	public int getViewTypeCount() {
+	    return NUM_VIEW_TYPES;
 	}
 
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
 
 		final ViewHolder holder;
-
-		if (convertView == null) {
-			mInflater = mContext.getLayoutInflater();
-			convertView = mInflater.inflate(R.layout.entry, null);
-
-			holder = new ViewHolder();
-			holder.spectrogram = (ImageView) convertView.findViewById(R.id.entry_spectrogram);
-			holder.mugshot = (ImageView) convertView.findViewById(R.id.entry_mugshot);
-			holder.username = (TextView) convertView.findViewById(R.id.entry_username);
-			holder.recorded_ago = (TextView) convertView.findViewById(R.id.entry_recorded_ago);
-
-			convertView.setTag(holder);
-			
-		} else {
-			holder = (ViewHolder) convertView.getTag();
-		}
-
+		
 		getCursor().moveToPosition(position);
-
-		if (getCursor() != null) {
-			
+	
+		int type = getItemViewType(position);
+        
+		switch (type) {
+        
+        case VIEW_TYPE_ENTRY:
+        	if (convertView == null) {
+        		convertView = mInflater.inflate(R.layout.entry, null);
+                holder = new ViewHolder();
+                holder.spectrogram = (ImageView) convertView.findViewById(R.id.entry_spectrogram);
+    			holder.mugshot = (ImageView) convertView.findViewById(R.id.entry_mugshot);
+    			holder.username = (TextView) convertView.findViewById(R.id.entry_username);
+    			holder.recorded_ago = (TextView) convertView.findViewById(R.id.entry_recorded_ago);
+    			convertView.setTag(holder);
+        	} else {
+        		holder = (ViewHolder) convertView.getTag();
+        	}
+            
 			//holder.mugshot.setImageResource(R.drawable.default_image);
-			Uri mugshotUri = Uri.parse(getCursor().getString(getCursor().getColumnIndex(Entries.COLUMN_NAME_MUGSHOT)));
-			if (mugshotUri != null){
-				Bitmap bitmap = mHttpImageManager.loadImage(new HttpImageManager.LoadRequest(mugshotUri, holder.mugshot));
-				if (bitmap != null) {
-					holder.mugshot.setImageBitmap(bitmap);
-			    }
+			String mugshot = getCursor().getString(getCursor().getColumnIndex(Entries.COLUMN_NAME_MUGSHOT));
+			if (mugshot != null) {
+				Uri mugshotUri = Uri.parse(mugshot);
+				if (mugshotUri != null){
+					Bitmap bitmap = mHttpImageManager.loadImage(new HttpImageManager.LoadRequest(mugshotUri, holder.mugshot));
+					if (bitmap != null) {
+						holder.mugshot.setImageBitmap(bitmap);
+				    }
+				}
 			}
 			
 			//holder.spectrogram.setImageResource(R.drawable.default_image);
-			Uri specUri = Uri.parse(getCursor().getString(getCursor().getColumnIndex(Entries.COLUMN_NAME_SPECTROGRAM)));
-			if (specUri != null){
-				Bitmap bitmap = mHttpImageManager.loadImage(new HttpImageManager.LoadRequest(specUri, holder.spectrogram));
-				if (bitmap != null) {
-					holder.spectrogram.setImageBitmap(bitmap);
-			    }
+			String spectrogram = getCursor().getString(getCursor().getColumnIndex(Entries.COLUMN_NAME_SPECTROGRAM));
+			if (spectrogram != null) {
+				Uri specUri = Uri.parse(spectrogram);
+				if (specUri != null){
+					Bitmap bitmap = mHttpImageManager.loadImage(new HttpImageManager.LoadRequest(specUri, holder.spectrogram));
+					if (bitmap != null) {
+						holder.spectrogram.setImageBitmap(bitmap);
+				    }
+				}
 			}
 			
 			holder.username.setText(getCursor().getString(getCursor().getColumnIndex(Entries.COLUMN_NAME_USERNAME)));
-			holder.recorded_ago.setText(getCursor().getString(getCursor().getColumnIndex(Entries.COLUMN_NAME_RECORDED)));
 			
+			String recorded = getCursor().getString(getCursor().getColumnIndex(Entries.COLUMN_NAME_RECORDED));
+			if (recorded != null) {
+				try {
+					Date d = NoisetracksApplication.SDF.parse(recorded);
+					String rec_ago = DateUtils.getRelativeTimeSpanString(d.getTime(), System.currentTimeMillis(), 0L, DateUtils.FORMAT_ABBREV_ALL).toString();
+					holder.recorded_ago.setText(rec_ago);
+				} catch (ParseException e) {			
+					AppLog.logString("Failed to parse recorded date: " + e.toString());
+				}
+			}
 			
-			
+			final String usr = holder.username.getText().toString();
 			if (mMugshotClickable) {			
 				holder.mugshot.setOnClickListener(new OnClickListener() {
 					
@@ -104,14 +145,32 @@ public class EntryAdapter extends SimpleCursorAdapter {
 					public void onClick(View v) {
 						// mugshot was clicked, open profile
 						Intent i = new Intent(mContext, ProfileActivity.class);
-						i.putExtra("username", holder.username.getText());
+						i.putExtra("username", usr);
 						mContext.startActivity(i);
 					}
 				});
 			}
-		}
+            break;
+        case VIEW_TYPE_LOAD_MORE:
+        	if (convertView == null) {
+	        	convertView = mInflater.inflate(R.layout.load_more, null);
+	        	holder = new ViewHolder();
+				holder.load_more = (TextView) convertView.findViewById(R.id.load_more);
+				convertView.setTag(holder);
+        	} else {
+    			holder = (ViewHolder) convertView.getTag();
+    		} 
+        	break;
+        default:
+        	break;
+        }
 		
 		return convertView;		
+	}
+
+	@Override
+	public Bitmap filter(Bitmap in) {
+		return ImageHelper.transformBitmap(in, 5, false);
 	}
 	
 	/*

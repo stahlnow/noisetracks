@@ -20,7 +20,6 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 
@@ -41,7 +40,7 @@ public class NoisetracksProvider extends ContentProvider {
     /**
      * The database version
      */
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 5;
 
     /**
      * A projection map used to select columns from the database
@@ -161,20 +160,20 @@ public class NoisetracksProvider extends ContentProvider {
         */
        @Override
        public void onCreate(SQLiteDatabase db) {
-           db.execSQL("CREATE TABLE " + NoisetracksContract.Entries.TABLE_NAME + " ("
-                   + NoisetracksContract.Entries._ID + " INTEGER PRIMARY KEY,"
-                   + NoisetracksContract.Entries.COLUMN_NAME_FILENAME + " TEXT,"
-                   + NoisetracksContract.Entries.COLUMN_NAME_SPECTROGRAM + " TEXT,"
-                   + NoisetracksContract.Entries.COLUMN_NAME_CREATED + " TEXT,"
-                   + NoisetracksContract.Entries.COLUMN_NAME_LATITUDE + " REAL,"
-                   + NoisetracksContract.Entries.COLUMN_NAME_LONGITUDE + " REAL,"
-                   + NoisetracksContract.Entries.COLUMN_NAME_RECORDED + " TEXT,"
-                   + NoisetracksContract.Entries.COLUMN_NAME_RESOURCE_URI + " TEXT,"
-                   + NoisetracksContract.Entries.COLUMN_NAME_MUGSHOT + " TEXT,"
-                   + NoisetracksContract.Entries.COLUMN_NAME_USERNAME + " TEXT,"
-                   + NoisetracksContract.Entries.COLUMN_NAME_UUID + " TEXT,"
-                   + NoisetracksContract.Entries.COLUMN_NAME_UPLOADED + " INTEGER,"
-                   + "UNIQUE(" + NoisetracksContract.Entries.COLUMN_NAME_UUID + ")" //  ON CONFLICT IGNORE
+           db.execSQL("CREATE TABLE " + Entries.TABLE_NAME + " ("
+                   + Entries._ID + " INTEGER PRIMARY KEY,"
+                   + Entries.COLUMN_NAME_FILENAME + " TEXT,"
+                   + Entries.COLUMN_NAME_SPECTROGRAM + " TEXT,"
+                   + Entries.COLUMN_NAME_CREATED + " TEXT,"
+                   + Entries.COLUMN_NAME_LATITUDE + " REAL,"
+                   + Entries.COLUMN_NAME_LONGITUDE + " REAL,"
+                   + Entries.COLUMN_NAME_RECORDED + " TEXT,"
+                   + Entries.COLUMN_NAME_RESOURCE_URI + " TEXT,"
+                   + Entries.COLUMN_NAME_MUGSHOT + " TEXT,"
+                   + Entries.COLUMN_NAME_USERNAME + " TEXT,"
+                   + Entries.COLUMN_NAME_UUID + " TEXT,"
+                   + Entries.COLUMN_NAME_UPLOADED + " INTEGER,"
+                   + "UNIQUE(" + Entries.COLUMN_NAME_UUID + ")" //  ON CONFLICT IGNORE
                    + ");");
        }
 
@@ -193,7 +192,7 @@ public class NoisetracksProvider extends ContentProvider {
                    + newVersion + ", which will destroy all old data");
 
            // Kills the table and existing data
-           db.execSQL("DROP TABLE IF EXISTS " + NoisetracksContract.Entries.TABLE_NAME);
+           db.execSQL("DROP TABLE IF EXISTS " + Entries.TABLE_NAME);
 
            // Recreates the database with a new version
            onCreate(db);
@@ -232,7 +231,7 @@ public class NoisetracksProvider extends ContentProvider {
 
        // Constructs a new query builder and sets its table name
        SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
-       qb.setTables(NoisetracksContract.Entries.TABLE_NAME);
+       qb.setTables(Entries.TABLE_NAME);
 
        /**
         * Choose the projection and adjust the "where" clause based on URI pattern-matching.
@@ -240,7 +239,6 @@ public class NoisetracksProvider extends ContentProvider {
        switch (sUriMatcher.match(uri)) {
            // If the incoming URI is for entries, chooses the Entries projection
            case ENTRIES:
-        	   AppLog.logString("query all entries with uri " + uri.toString());
                qb.setProjectionMap(sEntriesProjectionMap);
                break;
 
@@ -252,10 +250,10 @@ public class NoisetracksProvider extends ContentProvider {
         	   AppLog.logString("query single entry with uri" + uri.toString());
                qb.setProjectionMap(sEntriesProjectionMap);
                qb.appendWhere(
-                   NoisetracksContract.Entries._ID +    // the name of the ID column
+                   Entries._ID +    // the name of the ID column
                    "=" +
                    // the position of the entry ID itself in the incoming URI
-                   uri.getPathSegments().get(NoisetracksContract.Entries.ENTRY_ID_PATH_POSITION));
+                   uri.getPathSegments().get(Entries.ENTRY_ID_PATH_POSITION));
                break;
 
            default:
@@ -267,7 +265,7 @@ public class NoisetracksProvider extends ContentProvider {
        String orderBy;
        // If no sort order is specified, uses the default
        if (TextUtils.isEmpty(sortOrder)) {
-           orderBy = NoisetracksContract.Entries.DEFAULT_SORT_ORDER;
+           orderBy = Entries.DEFAULT_SORT_ORDER;
        } else {
            // otherwise, uses the incoming sort order
            orderBy = sortOrder;
@@ -314,11 +312,11 @@ public class NoisetracksProvider extends ContentProvider {
 
            // If the pattern is for entries or live folders, returns the general content type.
            case ENTRIES:
-               return NoisetracksContract.Entries.CONTENT_TYPE;
+               return Entries.CONTENT_TYPE;
 
            // If the pattern is for entry IDs, returns the entry ID content type.
            case ENTRY_ID:
-               return NoisetracksContract.Entries.CONTENT_ITEM_TYPE;
+               return Entries.CONTENT_ITEM_TYPE;
 
            // If the URI pattern doesn't match any permitted patterns, throws an exception.
            default:
@@ -384,21 +382,46 @@ public class NoisetracksProvider extends ContentProvider {
         // If the incoming values map is not null, uses it for the new values.
         if (initialValues != null) {
             values = new ContentValues(initialValues);
-
         } else {
         	throw new IllegalArgumentException("Wrong ContentValues");
         }
-
-        // If the values map doesn't contain entry recording date, sets the value to 'now'.
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        if (values.containsKey(NoisetracksContract.Entries.COLUMN_NAME_RECORDED) == false) {
-            values.put(NoisetracksContract.Entries.COLUMN_NAME_RECORDED, sdf.format(new Date()));
-        }
         
+        // put default value or null if key is missing
+        if (values.containsKey(Entries.COLUMN_NAME_FILENAME) == false) {
+        	values.putNull(Entries.COLUMN_NAME_FILENAME);
+        }
+        if (values.containsKey(Entries.COLUMN_NAME_CREATED) == false) {
+        	values.putNull(Entries.COLUMN_NAME_CREATED);
+        }
+        if (values.containsKey(Entries.COLUMN_NAME_LATITUDE) == false) {
+        	values.putNull(Entries.COLUMN_NAME_LATITUDE);
+        }
+        if (values.containsKey(Entries.COLUMN_NAME_LONGITUDE) == false) {
+        	values.putNull(Entries.COLUMN_NAME_LONGITUDE);
+        }
+        if (values.containsKey(Entries.COLUMN_NAME_MUGSHOT) == false) {
+        	values.putNull(Entries.COLUMN_NAME_MUGSHOT);
+        }
+        // If the values map doesn't contain entry recording date, sets the value to 'now'.
+        if (values.containsKey(Entries.COLUMN_NAME_RECORDED) == false) {
+            values.put(Entries.COLUMN_NAME_RECORDED, NoisetracksApplication.SDF.format(new Date()));
+        }
+        if (values.containsKey(Entries.COLUMN_NAME_RESOURCE_URI) == false) {
+        	values.putNull(Entries.COLUMN_NAME_RESOURCE_URI);
+        }
+        if (values.containsKey(Entries.COLUMN_NAME_SPECTROGRAM) == false) {
+        	values.putNull(Entries.COLUMN_NAME_SPECTROGRAM);
+        }
         // If the values map doesn't contain 'uploaded', set it to 1 (uploaded)
         // Entries created by the user must have set it to 0 so the syncadapter will upload it.
-        if (values.containsKey(NoisetracksContract.Entries.COLUMN_NAME_UPLOADED) == false) {
-            values.put(NoisetracksContract.Entries.COLUMN_NAME_UPLOADED, 1);
+        if (values.containsKey(Entries.COLUMN_NAME_UPLOADED) == false) {
+            values.put(Entries.COLUMN_NAME_UPLOADED, 1);
+        }
+        if (values.containsKey(Entries.COLUMN_NAME_USERNAME) == false) {
+        	values.put(Entries.COLUMN_NAME_USERNAME, "");
+        }
+        if (values.containsKey(Entries.COLUMN_NAME_UUID) == false) {
+        	values.put(Entries.COLUMN_NAME_UUID, ""); // TODO generate unique uuid
         }
 
         // Opens the database object in "write" mode.
@@ -406,16 +429,16 @@ public class NoisetracksProvider extends ContentProvider {
 
         // Performs the insert and returns the ID of the new entry.
         long rowId = db.insertWithOnConflict(
-            NoisetracksContract.Entries.TABLE_NAME,        	// The table to insert into.
-            NoisetracksContract.Entries.COLUMN_NAME_FILENAME,	// A hack, SQLite sets this column value to null, if values is empty.
+            Entries.TABLE_NAME,        	// The table to insert into.
+            Entries.COLUMN_NAME_FILENAME,	// A hack, SQLite sets this column value to null, if values is empty.
             values,                           				// A map of column names, and the values to insert into the columns.
-            SQLiteDatabase.CONFLICT_IGNORE					// Ignore items that have already been inserted.
+            SQLiteDatabase.CONFLICT_REPLACE					// Replace items that have already been inserted.
         );
 
         // If the insert succeeded, the row ID exists.
         if (rowId > 0) {
             // Creates a URI with the entry ID pattern and the new row ID appended to it.
-            Uri trackUri = ContentUris.withAppendedId(NoisetracksContract.Entries.CONTENT_ID_URI_BASE, rowId);
+            Uri trackUri = ContentUris.withAppendedId(Entries.CONTENT_ID_URI_BASE, rowId);
 
             // Notifies observers registered against this provider that the data changed.
             // SyncAdapter will try to upload new data to the cloud.
