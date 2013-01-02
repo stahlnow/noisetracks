@@ -12,7 +12,7 @@ public final class NoisetracksContract {
     }
 
     /**
-     * Tracks table contract
+     * Entries table contract
      */
     public static final class Entries implements BaseColumns {
 
@@ -161,4 +161,132 @@ public final class NoisetracksContract {
         
         
     }
+
+    
+    /**
+     * Profiles table contract
+     */
+    public static final class Profiles implements BaseColumns {
+
+        // This class cannot be instantiated
+        private Profiles() {}
+
+        /**
+         * The table name offered by this provider
+         */
+        public static final String TABLE_NAME = "profiles";
+
+        /*
+         * URI definitions
+         */
+
+        /**
+         * The scheme part for this provider's URI
+         */
+        private static final String SCHEME = "content://";
+
+        /**
+         * Path parts for the URIs
+         */
+
+        /**
+         * Path part for the Profiles URI
+         */
+        private static final String PATH_PROFILES = "/profiles";
+
+        /**
+         * Path part for the Profile ID URI
+         */
+        private static final String PATH_PROFILE_ID = "/profiles/";
+
+        /**
+         * 0-relative position of a profile ID segment in the path part of a profile ID URI
+         */
+        public static final int PROFILE_ID_PATH_POSITION = 1;
+
+        /**
+         * The content:// style URL for this table
+         */
+        public static final Uri CONTENT_URI =  Uri.parse(SCHEME + AUTHORITY + PATH_PROFILES);
+
+        /**
+         * The content URI base for a single profile. Callers must
+         * append a numeric profile id to this Uri to retrieve a profile
+         */
+        public static final Uri CONTENT_ID_URI_BASE = Uri.parse(SCHEME + AUTHORITY + PATH_PROFILE_ID);
+
+        /**
+         * The content URI match pattern for a single profile, specified by its ID. Use this to match
+         * incoming URIs or to construct an Intent.
+         */
+        public static final Uri CONTENT_ID_URI_PATTERN = Uri.parse(SCHEME + AUTHORITY + PATH_PROFILE_ID + "/#");
+
+        /*
+         * MIME type definitions
+         */
+
+        /**
+         * The MIME type of {@link #CONTENT_URI} providing a directory of profiles.
+         */
+        public static final String CONTENT_TYPE = "vnd.android.cursor.dir/vnd.noisetracks.profile";
+
+        /**
+         * The MIME type of a {@link #CONTENT_URI} sub-directory of a single
+         * profile.
+         */
+        public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/vnd.noisetracks.profile";
+
+        /**
+         * The default sort order for this table
+         */
+        public static final String DEFAULT_SORT_ORDER = "username DESC";
+
+        /*
+         * Column definitions
+         */
+
+        /**
+         * Column name for the username of the profile
+         * <P>Type: TEXT</P>
+         */
+        public static final String COLUMN_NAME_USERNAME = "username";
+        
+        /**
+         * Column name for the mugshot URL
+         * <P>Type: TEXT</P>
+         */
+        public static final String COLUMN_NAME_MUGSHOT = "mugshot";
+        
+        /**
+         * Column name for the bio
+         * <P>Type: TEXT</P>
+         */
+        public static final String COLUMN_NAME_BIO = "bio";
+        
+        /**
+         * Column name for the name
+         * <P>Type: TEXT</P>
+         */
+        public static final String COLUMN_NAME_NAME = "name";
+
+        /**
+         * Column name for the number of uploaded tracks
+         * <P>Type: INTEGER	</P>
+         */
+        public static final String COLUMN_NAME_TRACKS = "tracks";
+        
+        /**
+         * Column name for the website
+         * <P>Type: TEXT</P>
+         */
+        public static final String COLUMN_NAME_WEBSITE = "website";
+        
+        /**
+         * Column name for the e-mail, only visible to user
+         * <P>Type: TEXT</P>
+         */
+        public static final String COLUMN_NAME_EMAIL = "email";
+        
+    }
+
 }

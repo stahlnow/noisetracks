@@ -101,7 +101,9 @@
         <!-- The Authentication/Account Activity -->
         <activity
             android:name=".authenticator.AuthenticatorActivity"
+            android:theme="@style/noisetracksFullscreen"
             android:configChanges="keyboardHidden"
+            android:windowSoftInputMode="adjustPan|stateAlwaysHidden"
             android:excludeFromRecents="true">
             <!--
                 No intent-filter here! This activity is only ever launched by

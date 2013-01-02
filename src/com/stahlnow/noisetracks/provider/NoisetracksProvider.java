@@ -4,6 +4,7 @@ package com.stahlnow.noisetracks.provider;
 import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.provider.NoisetracksContract;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
+import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
 import com.stahlnow.noisetracks.utility.AppLog;
 
 import android.content.ContentProvider;
@@ -40,13 +41,13 @@ public class NoisetracksProvider extends ContentProvider {
     /**
      * The database version
      */
-    private static final int DATABASE_VERSION = 5;
+    private static final int DATABASE_VERSION = 6;
 
     /**
-     * A projection map used to select columns from the database
+     * Projection maps used to select columns from the database
      */
     private static HashMap<String, String> sEntriesProjectionMap;
-
+    private static HashMap<String, String> sProfilesProjectionMap;
 
     
     /**
@@ -74,16 +75,29 @@ public class NoisetracksProvider extends ContentProvider {
     private static final int READ_ENTRY_RECORDED_INDEX = 6;
     */
     
+    /**
+     * Standard projection for the columns of a profile.
+     */
+    public static final String[] READ_PROFILE_PROJECTION = new String[] {
+    	Profiles._ID,
+    	Profiles.COLUMN_NAME_USERNAME,
+    	Profiles.COLUMN_NAME_MUGSHOT,
+    	Profiles.COLUMN_NAME_BIO,
+    	Profiles.COLUMN_NAME_NAME,
+    	Profiles.COLUMN_NAME_TRACKS,
+        Profiles.COLUMN_NAME_WEBSITE,
+        Profiles.COLUMN_NAME_EMAIL
+    };
     
     /*
      * Constants used by the Uri matcher to choose an action based on the pattern
      * of the incoming URI
      */
-    // The incoming URI matches the Entries URI pattern
-    private static final int ENTRIES = 1;
 
-    // The incoming URI matches the Track ID URI pattern
-    private static final int ENTRY_ID = 2;
+    private static final int ENTRIES = 1;	    // The incoming URI matches the Entries URI pattern
+    private static final int ENTRY_ID = 2;	    // The incoming URI matches the Entry ID URI pattern
+    private static final int PROFILES = 3;	    // The incoming URI matches the Profiles URI pattern
+    private static final int PROFILE_ID = 4;	    // The incoming URI matches the Profile ID URI pattern
 
     /**
      * A UriMatcher instance
@@ -112,32 +126,45 @@ public class NoisetracksProvider extends ContentProvider {
         // to a entry ID operation
         sUriMatcher.addURI(NoisetracksContract.AUTHORITY, "entries/#", ENTRY_ID);
 
-        /*
-         * Creates and initializes a projection map that returns all columns
-         */
+        // Add a pattern that routes URIs terminated with "profiles" to a PROFILES operation
+        sUriMatcher.addURI(NoisetracksContract.AUTHORITY, "profiles", PROFILES);
 
-        // Creates a new projection map instance. The map returns a column name
+        // Add a pattern that routes URIs terminated with "profiles" plus an integer
+        // to a profile ID operation
+        sUriMatcher.addURI(NoisetracksContract.AUTHORITY, "profiles/#", PROFILE_ID);
+
+        
+        /*
+         * Creates and initializes projection map for each table that returns all columns
+         */
+        
+        // Creates new projection map instances. The maps return a column name
         // given a string. The two are usually equal.
         sEntriesProjectionMap = new HashMap<String, String>();
 
-        // Maps the string "_ID" to the column name "_ID"
-        sEntriesProjectionMap.put(NoisetracksContract.Entries._ID, NoisetracksContract.Entries._ID);
+        sEntriesProjectionMap.put(Entries._ID, Entries._ID);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_FILENAME, Entries.COLUMN_NAME_FILENAME);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_SPECTROGRAM, Entries.COLUMN_NAME_SPECTROGRAM);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_CREATED, Entries.COLUMN_NAME_CREATED);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_LATITUDE, Entries.COLUMN_NAME_LATITUDE);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_LONGITUDE, Entries.COLUMN_NAME_LONGITUDE);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_RECORDED, Entries.COLUMN_NAME_RECORDED);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_RESOURCE_URI, Entries.COLUMN_NAME_RESOURCE_URI);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_MUGSHOT, Entries.COLUMN_NAME_MUGSHOT);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_USERNAME, Entries.COLUMN_NAME_USERNAME);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_UUID, Entries.COLUMN_NAME_UUID);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_UPLOADED, Entries.COLUMN_NAME_UPLOADED);
 
-        // Maps other columns
-        sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_FILENAME, NoisetracksContract.Entries.COLUMN_NAME_FILENAME);
-        sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_SPECTROGRAM, NoisetracksContract.Entries.COLUMN_NAME_SPECTROGRAM);
-        sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_CREATED, NoisetracksContract.Entries.COLUMN_NAME_CREATED);
-        sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_LATITUDE, NoisetracksContract.Entries.COLUMN_NAME_LATITUDE);
-        sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_LONGITUDE, NoisetracksContract.Entries.COLUMN_NAME_LONGITUDE);
-        sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_RECORDED, NoisetracksContract.Entries.COLUMN_NAME_RECORDED);
-        sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_RESOURCE_URI, NoisetracksContract.Entries.COLUMN_NAME_RESOURCE_URI);
-        sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_MUGSHOT, NoisetracksContract.Entries.COLUMN_NAME_MUGSHOT);
-        sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_USERNAME, NoisetracksContract.Entries.COLUMN_NAME_USERNAME);
-        sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_UUID, NoisetracksContract.Entries.COLUMN_NAME_UUID);
-        sEntriesProjectionMap.put(NoisetracksContract.Entries.COLUMN_NAME_UPLOADED, NoisetracksContract.Entries.COLUMN_NAME_UPLOADED);
-
-        
-        
+        // Same for profiles table.
+        sProfilesProjectionMap = new HashMap<String, String>();
+        sProfilesProjectionMap.put(Profiles._ID, Profiles._ID);
+        sProfilesProjectionMap.put(Profiles.COLUMN_NAME_USERNAME, Profiles.COLUMN_NAME_USERNAME);
+        sProfilesProjectionMap.put(Profiles.COLUMN_NAME_MUGSHOT, Profiles.COLUMN_NAME_MUGSHOT);
+        sProfilesProjectionMap.put(Profiles.COLUMN_NAME_BIO, Profiles.COLUMN_NAME_BIO);
+        sProfilesProjectionMap.put(Profiles.COLUMN_NAME_NAME, Profiles.COLUMN_NAME_NAME);
+        sProfilesProjectionMap.put(Profiles.COLUMN_NAME_TRACKS, Profiles.COLUMN_NAME_TRACKS);
+        sProfilesProjectionMap.put(Profiles.COLUMN_NAME_WEBSITE, Profiles.COLUMN_NAME_WEBSITE);
+        sProfilesProjectionMap.put(Profiles.COLUMN_NAME_EMAIL, Profiles.COLUMN_NAME_EMAIL);
     }
 
     /**
@@ -148,7 +175,6 @@ public class NoisetracksProvider extends ContentProvider {
    static class DatabaseHelper extends SQLiteOpenHelper {
 
        DatabaseHelper(Context context) {
-
            // calls the super constructor, requesting the default cursor factory.
            super(context, DATABASE_NAME, null, DATABASE_VERSION);
        }
@@ -173,7 +199,19 @@ public class NoisetracksProvider extends ContentProvider {
                    + Entries.COLUMN_NAME_USERNAME + " TEXT,"
                    + Entries.COLUMN_NAME_UUID + " TEXT,"
                    + Entries.COLUMN_NAME_UPLOADED + " INTEGER,"
-                   + "UNIQUE(" + Entries.COLUMN_NAME_UUID + ")" //  ON CONFLICT IGNORE
+                   + "UNIQUE(" + Entries.COLUMN_NAME_UUID + ")" //  ON CONFLICT REPLACE see insert(...)
+                   + ");");
+           
+           db.execSQL("CREATE TABLE " + Profiles.TABLE_NAME + " ("
+                   + Profiles._ID + " INTEGER PRIMARY KEY,"
+                   + Profiles.COLUMN_NAME_USERNAME + " TEXT,"
+                   + Profiles.COLUMN_NAME_MUGSHOT + " TEXT,"
+                   + Profiles.COLUMN_NAME_BIO + " TEXT,"
+                   + Profiles.COLUMN_NAME_NAME + " TEXT,"
+                   + Profiles.COLUMN_NAME_TRACKS + " INT,"
+                   + Profiles.COLUMN_NAME_WEBSITE + " TEXT,"
+                   + Profiles.COLUMN_NAME_EMAIL + " TEXT,"
+                   + "UNIQUE(" + Entries.COLUMN_NAME_USERNAME + ")" //  ON CONFLICT REPLACE see insert(...)
                    + ");");
        }
 
@@ -191,8 +229,9 @@ public class NoisetracksProvider extends ContentProvider {
            Log.w(TAG, "Upgrading database from version " + oldVersion + " to "
                    + newVersion + ", which will destroy all old data");
 
-           // Kills the table and existing data
+           // Kills the tables and existing data
            db.execSQL("DROP TABLE IF EXISTS " + Entries.TABLE_NAME);
+           db.execSQL("DROP TABLE IF EXISTS " + Profiles.TABLE_NAME);
 
            // Recreates the database with a new version
            onCreate(db);
@@ -231,7 +270,6 @@ public class NoisetracksProvider extends ContentProvider {
 
        // Constructs a new query builder and sets its table name
        SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
-       qb.setTables(Entries.TABLE_NAME);
 
        /**
         * Choose the projection and adjust the "where" clause based on URI pattern-matching.
@@ -239,6 +277,7 @@ public class NoisetracksProvider extends ContentProvider {
        switch (sUriMatcher.match(uri)) {
            // If the incoming URI is for entries, chooses the Entries projection
            case ENTRIES:
+        	   qb.setTables(Entries.TABLE_NAME);
                qb.setProjectionMap(sEntriesProjectionMap);
                break;
 
@@ -247,13 +286,23 @@ public class NoisetracksProvider extends ContentProvider {
             * it selects that single entry
             */
            case ENTRY_ID:
-        	   AppLog.logString("query single entry with uri" + uri.toString());
+        	   qb.setTables(Entries.TABLE_NAME);
                qb.setProjectionMap(sEntriesProjectionMap);
                qb.appendWhere(
                    Entries._ID +    // the name of the ID column
                    "=" +
                    // the position of the entry ID itself in the incoming URI
                    uri.getPathSegments().get(Entries.ENTRY_ID_PATH_POSITION));
+               break;
+               
+           case PROFILES:
+        	   qb.setTables(Profiles.TABLE_NAME);
+               qb.setProjectionMap(sProfilesProjectionMap);
+               break;
+           case PROFILE_ID:
+        	   qb.setTables(Profiles.TABLE_NAME);
+               qb.setProjectionMap(sProfilesProjectionMap);
+               qb.appendWhere(Profiles._ID + "=" + uri.getPathSegments().get(Profiles.PROFILE_ID_PATH_POSITION));
                break;
 
            default:
@@ -262,10 +311,20 @@ public class NoisetracksProvider extends ContentProvider {
        }
 
 
-       String orderBy;
+       String orderBy = "";
        // If no sort order is specified, uses the default
        if (TextUtils.isEmpty(sortOrder)) {
-           orderBy = Entries.DEFAULT_SORT_ORDER;
+    	   switch (sUriMatcher.match(uri)) {
+    	   case ENTRIES:
+    	   case ENTRY_ID:
+    		   orderBy = Entries.DEFAULT_SORT_ORDER;
+    		   break;
+    	   case PROFILES:
+    	   case PROFILE_ID:
+    		   orderBy = Profiles.DEFAULT_SORT_ORDER;
+    		   break;
+    	   }
+           
        } else {
            // otherwise, uses the incoming sort order
            orderBy = sortOrder;
@@ -317,6 +376,12 @@ public class NoisetracksProvider extends ContentProvider {
            // If the pattern is for entry IDs, returns the entry ID content type.
            case ENTRY_ID:
                return Entries.CONTENT_ITEM_TYPE;
+               
+           case PROFILES:
+               return Profiles.CONTENT_TYPE;
+               
+           case PROFILE_ID:
+               return Profiles.CONTENT_ITEM_TYPE;
 
            // If the URI pattern doesn't match any permitted patterns, throws an exception.
            default:
@@ -342,13 +407,15 @@ public class NoisetracksProvider extends ContentProvider {
          */
         switch (sUriMatcher.match(uri)) {
 
-            // If the pattern is for entries, return null. Data streams are not
+            // If the pattern is for entries or profiles, return null. Data streams are not
             // supported for this type of URI.
             case ENTRIES:
+            case PROFILES:
+            case PROFILE_ID:
                 return null;
 
             // If the pattern is for entry IDs and the MIME filter is audio/wave, then return
-            // audio/wave
+            // audio/wave TODO: not implemented
             case ENTRY_ID:
                 return null;
 
@@ -371,14 +438,9 @@ public class NoisetracksProvider extends ContentProvider {
     @Override
     public Uri insert(Uri uri, ContentValues initialValues) {
 
-        // Validates the incoming URI. Only the full provider URI is allowed for inserts.
-        if (sUriMatcher.match(uri) != ENTRIES) {
-            throw new IllegalArgumentException("Unknown URI " + uri);
-        }
-
         // A map to hold the new record's values.
         ContentValues values;
-
+        
         // If the incoming values map is not null, uses it for the new values.
         if (initialValues != null) {
             values = new ContentValues(initialValues);
@@ -386,6 +448,68 @@ public class NoisetracksProvider extends ContentProvider {
         	throw new IllegalArgumentException("Wrong ContentValues");
         }
         
+        // Opens the database object in "write" mode.
+        SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+
+    	switch (sUriMatcher.match(uri)) {
+    	case ENTRIES:
+            // If the values map doesn't contain entry recording date, sets the value to 'now'.
+            if (values.containsKey(Entries.COLUMN_NAME_RECORDED) == false) {
+                values.put(Entries.COLUMN_NAME_RECORDED, NoisetracksApplication.SDF.format(new Date()));
+            }
+            // If the values map doesn't contain 'uploaded', set it to 1 (uploaded)
+            // Entries created by the user must have set it to 0 so the syncadapter will upload it.
+            if (values.containsKey(Entries.COLUMN_NAME_UPLOADED) == false) {
+                values.put(Entries.COLUMN_NAME_UPLOADED, 1);
+            }
+            if (values.containsKey(Entries.COLUMN_NAME_USERNAME) == false) {
+            	values.put(Entries.COLUMN_NAME_USERNAME, "");
+            }
+            if (values.containsKey(Entries.COLUMN_NAME_UUID) == false) {
+            	values.put(Entries.COLUMN_NAME_UUID, ""); // TODO generate unique uuid
+            }
+            
+            // Performs the insert and returns the ID of the new entry.
+            long rowId = db.insertWithOnConflict(
+                Entries.TABLE_NAME,        	// The table to insert into.
+                Entries.COLUMN_NAME_FILENAME,	// A hack, SQLite sets this column value to null, if values is empty.
+                values,                           				// A map of column names, and the values to insert into the columns.
+                SQLiteDatabase.CONFLICT_REPLACE					// Replace items that have already been inserted.
+            );
+
+            // If the insert succeeded, the row ID exists.
+            if (rowId > 0) {
+                // Creates a URI with the entry ID pattern and the new row ID appended to it.
+                Uri trackUri = ContentUris.withAppendedId(Entries.CONTENT_ID_URI_BASE, rowId);
+                // Notifies observers registered against this provider that the data changed.               
+                getContext().getContentResolver().notifyChange(trackUri, null, false);
+                return trackUri;
+            }
+
+    		break;
+    	case PROFILES:
+    		// Performs the insert and returns the ID of the new entry.
+            long rowIdProfile = db.insertWithOnConflict(
+                Profiles.TABLE_NAME,        	// The table to insert into.
+                Profiles.COLUMN_NAME_USERNAME,	// A hack, SQLite sets this column value to null, if values is empty.
+                values,                           				// A map of column names, and the values to insert into the columns.
+                SQLiteDatabase.CONFLICT_REPLACE					// Replace items that have already been inserted.
+            );
+            // If the insert succeeded, the row ID exists.
+            if (rowIdProfile > 0) {
+                // Creates a URI with the entry ID pattern and the new row ID appended to it.
+                Uri profileUri = ContentUris.withAppendedId(Profiles.CONTENT_ID_URI_BASE, rowIdProfile);
+                // Notifies observers registered against this provider that the data changed.
+                getContext().getContentResolver().notifyChange(profileUri, null, false);
+                return profileUri;
+            }
+    		break;
+    	default:
+    		throw new IllegalArgumentException("Unknown URI " + uri);
+    	}
+    	
+
+        /*
         // put default value or null if key is missing
         if (values.containsKey(Entries.COLUMN_NAME_FILENAME) == false) {
         	values.putNull(Entries.COLUMN_NAME_FILENAME);
@@ -402,50 +526,14 @@ public class NoisetracksProvider extends ContentProvider {
         if (values.containsKey(Entries.COLUMN_NAME_MUGSHOT) == false) {
         	values.putNull(Entries.COLUMN_NAME_MUGSHOT);
         }
-        // If the values map doesn't contain entry recording date, sets the value to 'now'.
-        if (values.containsKey(Entries.COLUMN_NAME_RECORDED) == false) {
-            values.put(Entries.COLUMN_NAME_RECORDED, NoisetracksApplication.SDF.format(new Date()));
-        }
         if (values.containsKey(Entries.COLUMN_NAME_RESOURCE_URI) == false) {
         	values.putNull(Entries.COLUMN_NAME_RESOURCE_URI);
         }
         if (values.containsKey(Entries.COLUMN_NAME_SPECTROGRAM) == false) {
         	values.putNull(Entries.COLUMN_NAME_SPECTROGRAM);
         }
-        // If the values map doesn't contain 'uploaded', set it to 1 (uploaded)
-        // Entries created by the user must have set it to 0 so the syncadapter will upload it.
-        if (values.containsKey(Entries.COLUMN_NAME_UPLOADED) == false) {
-            values.put(Entries.COLUMN_NAME_UPLOADED, 1);
-        }
-        if (values.containsKey(Entries.COLUMN_NAME_USERNAME) == false) {
-        	values.put(Entries.COLUMN_NAME_USERNAME, "");
-        }
-        if (values.containsKey(Entries.COLUMN_NAME_UUID) == false) {
-        	values.put(Entries.COLUMN_NAME_UUID, ""); // TODO generate unique uuid
-        }
-
-        // Opens the database object in "write" mode.
-        SQLiteDatabase db = mOpenHelper.getWritableDatabase();
-
-        // Performs the insert and returns the ID of the new entry.
-        long rowId = db.insertWithOnConflict(
-            Entries.TABLE_NAME,        	// The table to insert into.
-            Entries.COLUMN_NAME_FILENAME,	// A hack, SQLite sets this column value to null, if values is empty.
-            values,                           				// A map of column names, and the values to insert into the columns.
-            SQLiteDatabase.CONFLICT_REPLACE					// Replace items that have already been inserted.
-        );
-
-        // If the insert succeeded, the row ID exists.
-        if (rowId > 0) {
-            // Creates a URI with the entry ID pattern and the new row ID appended to it.
-            Uri trackUri = ContentUris.withAppendedId(Entries.CONTENT_ID_URI_BASE, rowId);
-
-            // Notifies observers registered against this provider that the data changed.
-            // SyncAdapter will try to upload new data to the cloud.
-            getContext().getContentResolver().notifyChange(trackUri, null, true);
-            return trackUri;
-        }
-
+        */
+        
         // If the insert didn't succeed, then the rowID is <= 0. Throws an exception.
         throw new SQLException("Failed to insert row into " + uri);
     }
@@ -479,7 +567,7 @@ public class NoisetracksProvider extends ContentProvider {
             // based on the incoming "where" columns and arguments.
             case ENTRIES:
                 count = db.delete(
-                    NoisetracksContract.Entries.TABLE_NAME,  // The database table name
+                    Entries.TABLE_NAME,  // The database table name
                     where,                     // The incoming where clause column names
                     whereArgs                  // The incoming where clause values
                 );
@@ -494,10 +582,10 @@ public class NoisetracksProvider extends ContentProvider {
                  * desired entry ID.
                  */
                 finalWhere =
-                        NoisetracksContract.Entries._ID +                              // The ID column name
+                        Entries._ID +                              // The ID column name
                         " = " +                                          // test for equality
                         uri.getPathSegments().                           // the incoming entry ID
-                            get(NoisetracksContract.Entries.ENTRY_ID_PATH_POSITION)
+                            get(Entries.ENTRY_ID_PATH_POSITION)
                 ;
 
                 // If there were additional selection criteria, append them to the final
@@ -508,7 +596,7 @@ public class NoisetracksProvider extends ContentProvider {
 
                 // Performs the delete.
                 count = db.delete(
-                		NoisetracksContract.Entries.TABLE_NAME,  // The database table name.
+                		Entries.TABLE_NAME,  // The database table name.
                     finalWhere,                // The final WHERE clause
                     whereArgs                  // The incoming where clause values.
                 );
@@ -566,7 +654,7 @@ public class NoisetracksProvider extends ContentProvider {
 
                 // Does the update and returns the number of rows updated.
                 count = db.update(
-                	NoisetracksContract.Entries.TABLE_NAME, // The database table name.
+                	Entries.TABLE_NAME, 	  // The database table name.
                     values,                   // A map of column names and new values to use.
                     where,                    // The where clause column names.
                     whereArgs                 // The where clause column values to select on.
@@ -582,10 +670,10 @@ public class NoisetracksProvider extends ContentProvider {
                  * entry ID.
                  */
                 finalWhere =
-                		NoisetracksContract.Entries._ID +                  // The ID column name
+                		Entries._ID +                  // The ID column name
                         " = " +                                          // test for equality
                         uri.getPathSegments().                           // the incoming entry ID
-                            get(NoisetracksContract.Entries.ENTRY_ID_PATH_POSITION)
+                            get(Entries.ENTRY_ID_PATH_POSITION)
                 ;
 
                 // If there were additional selection criteria, append them to the final WHERE
@@ -597,7 +685,7 @@ public class NoisetracksProvider extends ContentProvider {
 
                 // Does the update and returns the number of rows updated.
                 count = db.update(
-                	NoisetracksContract.Entries.TABLE_NAME, // The database table name.
+                	Entries.TABLE_NAME, // The database table name.
                     values,                   // A map of column names and new values to use.
                     finalWhere,               // The final WHERE clause to use
                                               // placeholders for whereArgs
@@ -605,12 +693,37 @@ public class NoisetracksProvider extends ContentProvider {
                                               // null if the values are in the where argument.
                 );
                 break;
+                
+            case PROFILE_ID:
+
+                finalWhere =
+                		Profiles._ID +                  				// The ID column name
+                        " = " +                                         // test for equality
+                        uri.getPathSegments().                          // the incoming profile ID
+                            get(Profiles.PROFILE_ID_PATH_POSITION)
+                ;
+
+                // If there were additional selection criteria, append them to the final WHERE clause
+                if (where !=null) {
+                    finalWhere = finalWhere + " AND " + where;
+                }
+
+
+                // Does the update and returns the number of rows updated.
+                count = db.update(
+                	Profiles.TABLE_NAME,	  // The database table name.
+                    values,                   // A map of column names and new values to use.
+                    finalWhere,               // The final WHERE clause to use placeholders for whereArgs
+                    whereArgs                 // The where clause column values to select on, or null if the values are in the where argument.
+                );
+                break;
+                
             // If the incoming pattern is invalid, throws an exception.
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
         }
 
-        /*Gets a handle to the content resolver object for the current context, and notifies it
+        /* Gets a handle to the content resolver object for the current context, and notifies it
          * that the incoming URI changed. The object passes this along to the resolver framework,
          * and observers that have registered themselves for the provider are notified.
          */

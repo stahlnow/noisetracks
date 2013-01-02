@@ -28,9 +28,9 @@
     <!-- Message shown in progress dialog while app connects to the server -->
     <string name="ui_activity_authenticating">Authenticating\u2026</string>
     <!-- Message shown in dialog if the username or password is invalid. -->
-    <string name="login_activity_loginfail_text_both">The username or password isn\'t valid. A Noisetracks account is required. Please try again. </string>
+    <string name="login_activity_loginfail_text_both">Sorry, username or password isn\'t valid.</string>
     <!-- Message shown in dialog if the password is invalid -->
-    <string name="login_activity_loginfail_text_pwonly">You entered the wrong password or your account has changed. Please re-enter your password.</string>
+    <string name="login_activity_loginfail_text_pwonly">You entered the wrong password.</string>
     <!-- Message shown in dialog to prompt the user for their password -->
     <string name="login_activity_loginfail_text_pwmissing">Type the password for this account.</string>
     

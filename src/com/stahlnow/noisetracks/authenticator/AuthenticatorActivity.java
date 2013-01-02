@@ -23,9 +23,11 @@ import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.text.TextUtils;
+import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -116,6 +118,9 @@ public class AuthenticatorActivity extends FragmentActivity {
         mMessage = (TextView) findViewById(R.id.message);
         mUsernameEdit = (EditText) findViewById(R.id.username_edit);
         mPasswordEdit = (EditText) findViewById(R.id.password_edit);
+        // hack to change typeface, typeface argument in xml resource is not working.
+        mPasswordEdit.setTypeface(Typeface.SANS_SERIF);
+        mPasswordEdit.setTransformationMethod(new PasswordTransformationMethod());
 
         mUsernameEdit.setText(mUsername);
         mMessage.setText(getMessage());

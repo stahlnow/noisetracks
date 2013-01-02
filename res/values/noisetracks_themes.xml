@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Generated with http://android-holo-colors.com -->
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!-- parent="android:Theme.Light" -->
+  <style name="noisetracks" parent="@android:style/Theme.Holo.Light.DarkActionBar">
+
+    <item name="android:editTextStyle">@style/EditTextnoisetracks</item>
+
+    <item name="android:autoCompleteTextViewStyle">@style/AutoCompleteTextViewnoisetracks</item>
+
+    <item name="android:checkboxStyle">@style/CheckBoxnoisetracks</item>
+
+    <item name="android:radioButtonStyle">@style/RadioButtonnoisetracks</item>
+
+    <item name="android:buttonStyle">@style/Buttonnoisetracks</item>
+
+    <item name="android:imageButtonStyle">@style/ImageButtonnoisetracks</item>
+
+    <item name="android:spinnerStyle">@style/Spinnernoisetracks</item>
+
+    <item name="android:dropDownSpinnerStyle">@style/Spinnernoisetracks.DropDown</item>
+
+    <item name="android:spinnerDropDownItemStyle">@style/SpinnerDropDownItemnoisetracks</item>
+
+    <item name="android:progressBarStyleHorizontal">@style/ProgressBarnoisetracks</item>
+
+    <item name="android:seekBarStyle">@style/SeekBarnoisetracks</item>
+
+    <item name="android:ratingBarStyle">@style/RatingBarnoisetracks</item>
+
+    <item name="android:ratingBarStyleIndicator">@style/RatingBarBignoisetracks</item>
+
+    <item name="android:ratingBarStyleSmall">@style/RatingBarSmallnoisetracks</item>
+
+    <item name="android:buttonStyleToggle">@style/Togglenoisetracks</item>
+
+    <item name="android:listViewStyle">@style/ListViewnoisetracks</item>
+
+    <item name="android:listViewWhiteStyle">@style/ListViewnoisetracks.White</item>
+
+    <item name="android:spinnerItemStyle">@style/SpinnerItemnoisetracks</item>
+
+  </style>
+  
+  <!-- added: different parent for fullscreen view -->
+  <style name="noisetracksFullscreen" parent="@android:style/Theme.Light.NoTitleBar.Fullscreen">
+
+    <item name="android:editTextStyle">@style/EditTextnoisetracks</item>
+
+    <item name="android:autoCompleteTextViewStyle">@style/AutoCompleteTextViewnoisetracks</item>
+
+    <item name="android:checkboxStyle">@style/CheckBoxnoisetracks</item>
+
+    <item name="android:radioButtonStyle">@style/RadioButtonnoisetracks</item>
+
+    <item name="android:buttonStyle">@style/Buttonnoisetracks</item>
+
+    <item name="android:imageButtonStyle">@style/ImageButtonnoisetracks</item>
+
+    <item name="android:spinnerStyle">@style/Spinnernoisetracks</item>
+
+    <item name="android:dropDownSpinnerStyle">@style/Spinnernoisetracks.DropDown</item>
+
+    <item name="android:spinnerDropDownItemStyle">@style/SpinnerDropDownItemnoisetracks</item>
+
+    <item name="android:progressBarStyleHorizontal">@style/ProgressBarnoisetracks</item>
+
+    <item name="android:seekBarStyle">@style/SeekBarnoisetracks</item>
+
+    <item name="android:ratingBarStyle">@style/RatingBarnoisetracks</item>
+
+    <item name="android:ratingBarStyleIndicator">@style/RatingBarBignoisetracks</item>
+
+    <item name="android:ratingBarStyleSmall">@style/RatingBarSmallnoisetracks</item>
+
+    <item name="android:buttonStyleToggle">@style/Togglenoisetracks</item>
+
+    <item name="android:listViewStyle">@style/ListViewnoisetracks</item>
+
+    <item name="android:listViewWhiteStyle">@style/ListViewnoisetracks.White</item>
+
+    <item name="android:spinnerItemStyle">@style/SpinnerItemnoisetracks</item>
+
+  </style>
+
+</resources>

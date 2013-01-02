@@ -6,7 +6,9 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import com.handmark.pulltorefresh.library.PullToRefreshListView;
+import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
+import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
 import com.stahlnow.noisetracks.ui.EntryAdapter;
 import com.stahlnow.noisetracks.utility.AppLog;
 import com.stahlnow.noisetracks.utility.AppSettings;
@@ -24,14 +26,11 @@ import android.widget.Toast;
 
 public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RESTResponse> {
 	
-	public static final int ENTRIES = 100;
-	public static final int ENTRIES_NEWER = 200;
-	public static final int ENTRIES_OLDER = 300;
-	
 	public static final String ARGS_URI    = "com.stahlnow.noisetracks.ARGS_URI";
 	public static final String ARGS_PARAMS = "com.stahlnow.noisetracks.ARGS_PARAMS";
     
 	public static final Uri URI_ENTRIES = Uri.parse(AppSettings.DOMAIN + "/api/v1/entry/");
+	public static final Uri URI_PROFILES = Uri.parse(AppSettings.DOMAIN + "/api/v1/profile/");
     
     private Context mContext;
     private EntryAdapter mEntryAdapter = null;
@@ -89,7 +88,7 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	        if (code == 200 && !json.equals("")) {
 	            
 	            switch (loader.getId()) {
-	            case ENTRIES:
+	            case NoisetracksApplication.ENTRIES_REST_LOADER:
 	            	if (mEntryAdapter != null) {
 	            		if (!mEntryAdapter.isEmpty()) { // if the sql table is not empty, don't insert anything
 	            			break;
@@ -97,9 +96,12 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	            	}
 	            	addEntriesFromJSON(json);	// fill list with entries
 	            	break;
-	            case ENTRIES_OLDER:
-	            case ENTRIES_NEWER:
+	            case NoisetracksApplication.ENTRIES_OLDER_REST_LOADER:
+	            case NoisetracksApplication.ENTRIES_NEWER_REST_LOADER:
 	            	addEntriesFromJSON(json);	// fill list with entries
+	            	break;
+	            case NoisetracksApplication.PROFILE_REST_LOADER:
+	            	addProfilesFromJSON(json);
 	            	break;
 	            default:
 	            	break;
@@ -151,21 +153,21 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
                 JSONObject user = entry.getJSONObject("user");
                 JSONArray location = entry.getJSONObject("location").getJSONArray("coordinates");
                 
-				if (mEntryAdapter != null) {               
-					ContentValues values = new ContentValues();
-					values.put(Entries.COLUMN_NAME_FILENAME, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("file"));
-					values.put(Entries.COLUMN_NAME_SPECTROGRAM, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("spectrogram"));
-					values.put(Entries.COLUMN_NAME_LATITUDE, location.getDouble(1));
-					values.put(Entries.COLUMN_NAME_LONGITUDE, location.getDouble(0));
-					values.put(Entries.COLUMN_NAME_CREATED, entry.getString("created").substring(0,23));					
-					values.put(Entries.COLUMN_NAME_RECORDED, entry.getString("recorded").substring(0,23));
-					values.put(Entries.COLUMN_NAME_RESOURCE_URI, entry.getString("resource_uri"));
-					values.put(Entries.COLUMN_NAME_MUGSHOT, user.getString("mugshot"));
-					values.put(Entries.COLUMN_NAME_USERNAME, user.getString("username"));
-					values.put(Entries.COLUMN_NAME_UUID, entry.getString("uuid"));
-					// add entry to database
-					mContext.getContentResolver().insert(Entries.CONTENT_URI, values);
-				}
+				             
+				ContentValues values = new ContentValues();
+				values.put(Entries.COLUMN_NAME_FILENAME, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("file"));
+				values.put(Entries.COLUMN_NAME_SPECTROGRAM, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("spectrogram"));
+				values.put(Entries.COLUMN_NAME_LATITUDE, location.getDouble(1));
+				values.put(Entries.COLUMN_NAME_LONGITUDE, location.getDouble(0));
+				values.put(Entries.COLUMN_NAME_CREATED, entry.getString("created").substring(0,23));					
+				values.put(Entries.COLUMN_NAME_RECORDED, entry.getString("recorded").substring(0,23));
+				values.put(Entries.COLUMN_NAME_RESOURCE_URI, entry.getString("resource_uri"));
+				values.put(Entries.COLUMN_NAME_MUGSHOT, user.getString("mugshot"));
+				values.put(Entries.COLUMN_NAME_USERNAME, user.getString("username"));
+				values.put(Entries.COLUMN_NAME_UUID, entry.getString("uuid"));
+				// add entry to database
+				mContext.getContentResolver().insert(Entries.CONTENT_URI, values);
+				
             }
             
             // hack: add 'load more' special entry
@@ -186,6 +188,45 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
             AppLog.logString("Failed to parse JSON. " + e.toString());
         }
     	
+    }
+    
+    private void addProfilesFromJSON(String json) {
+    	try {
+            JSONObject profileWrapper = (JSONObject) new JSONTokener(json).nextValue();
+            JSONObject meta 		= profileWrapper.getJSONObject("meta");
+            JSONArray profiles     	= profileWrapper.getJSONArray("objects");
+            
+            for (int i = 0; i < profiles.length(); i++) {
+                JSONObject profile = profiles.getJSONObject(i);
+                JSONObject user = profile.getJSONObject("user");
+                
+				              
+				ContentValues values = new ContentValues();
+					
+				values.put(Profiles.COLUMN_NAME_USERNAME, user.getString("username"));
+					
+				try {
+					values.put(Profiles.COLUMN_NAME_EMAIL, user.getString("email"));
+				}
+				catch (JSONException e) {
+			         // email is only visible to logged in user
+			    }
+					
+				values.put(Profiles.COLUMN_NAME_MUGSHOT, user.getString("mugshot"));
+					
+				values.put(Profiles.COLUMN_NAME_BIO, profile.getString("bio"));
+				values.put(Profiles.COLUMN_NAME_NAME, profile.getString("name"));
+				values.put(Profiles.COLUMN_NAME_TRACKS, profile.getInt("tracks"));
+				values.put(Profiles.COLUMN_NAME_WEBSITE, profile.getString("website"));
+					
+				// add entry to database
+				mContext.getContentResolver().insert(Profiles.CONTENT_URI, values);
+				
+            }
+        }
+        catch (JSONException e) {
+            AppLog.logString("Failed to parse JSON. " + e.toString());
+        }
     }
     
 

@@ -1,9 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/profile_activity"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical">
+    android:orientation="vertical" >
+
+    <ImageView
+        android:id="@+id/profile_mugshot"
+        android:layout_width="80dip"
+        android:layout_height="80dip"
+        android:paddingTop="10dp"
+        android:layout_gravity="center_horizontal"
+        android:contentDescription="@null" />
+
+    <TextView
+        android:id="@+id/profile_username"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:textSize="14dp"
+        android:textStyle="bold" />
 
     <LinearLayout
         android:id="@+id/entries_progressContainer"
@@ -22,14 +40,13 @@
             android:layout_gravity="center"
             ProgressWheel:barLength="60dp"
             ProgressWheel:barWidth="5dp"
-            ProgressWheel:rimWidth="2dp"
             ProgressWheel:radius="2dp"
+            ProgressWheel:rimWidth="2dp"
             ProgressWheel:text="Loading\u2026"
             ProgressWheel:textSize="14sp" />
-        
-    </LinearLayout>
+    </LinearLayout> 
 
-    <FrameLayout
+    <LinearLayout
         android:id="@+id/entries_listContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
@@ -47,15 +64,14 @@
             android:paddingLeft="7dp"
             android:paddingRight="7dp"
             android:scrollbars="none"
-            android:soundEffectsEnabled="false"
-             />
+            android:soundEffectsEnabled="false" />
         <!--
         ptr:ptrHeaderTextColor="#ffcccccc"
         
     	android:scrollbarStyle="outsideInset"
     	android:translationX="5dp"
     	android:scrollbarThumbVertical="@drawable/scroll_thumb"
-        android:fadeScrollbars="false"
+        android:fadeScrollbars="false"
         -->
 
         <TextView
@@ -63,6 +79,6 @@
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
             android:gravity="center" />
-    </FrameLayout>
+    </LinearLayout>
 
-</FrameLayout>
+</LinearLayout>

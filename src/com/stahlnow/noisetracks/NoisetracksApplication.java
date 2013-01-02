@@ -17,14 +17,28 @@ import android.support.v4.util.LruCache;
 public class NoisetracksApplication extends Application {
 
 	public static final String LOG_TAG = "Noisetracks";
-	public static final String BASEDIR = "/sdcard/Noisetracks";
+	public static final String BASEDIR = "/sdcard/Noisetracks"; // TODO find correct storage place for cache and temp files
 	
+	// The global date format used everywhere.
 	public static SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
 	
+	// The global SQL loader ids.
+	public static final int ENTRIES_SQL_LOADER_FEED = 0;
+	public static final int ENTRIES_SQL_LOADER_PROFILE = 2;
+	public static final int PROFILE_LIST_SQL_LOADER = 3;
+	public static final int PROFILE_SQL_LOADER = 3;
+	
+	// The global REST loader ids.
+	public static final int ENTRIES_REST_LOADER = 100;
+	public static final int ENTRIES_NEWER_REST_LOADER = 200;
+	public static final int ENTRIES_OLDER_REST_LOADER = 300;
+	public static final int PROFILE_LIST_REST_LOADER = 400;
+	public static final int PROFILE_REST_LOADER = 500;
+	
+	// Provide an instance for our static accessors
 	private static NoisetracksApplication instance = null;
 	
-
-	// keep references to our global resources
+	// Keep references to our global resources.
 	private static LruCache<String, Bitmap> mBitmapCache = null;
 	private static ImageCache mImageCache = null;
 	private static HttpImageManager mHttpImageManager;
@@ -32,7 +46,6 @@ public class NoisetracksApplication extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		// provide an instance for our static accessors
 		instance = this;
 	}
 	

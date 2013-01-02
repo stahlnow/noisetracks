@@ -11,12 +11,17 @@ import android.support.v4.content.Loader;
 import android.view.View;
 import android.widget.TextView;
 
+import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
+import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
 import com.stahlnow.noisetracks.ui.EntryAdapter;
+import com.stahlnow.noisetracks.ui.ProfileActivity;
+import com.stahlnow.noisetracks.ui.ProfileActivity.ProfileListFragment;
 
 public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 	
-	public static final Uri ENTRIES = Entries.CONTENT_URI; // defines content provider uri for entries
+	//public static final Uri ENTRIES = Entries.CONTENT_URI; // defines content provider uri for entries
+	//public static final Uri PROFILES = Profiles.CONTENT_URI; // defines content provider uri for profiles
 	
 	// selection args
 	public static final String SELECT = "select";
@@ -58,43 +63,87 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 			return "((" + Entries.COLUMN_NAME_FILENAME + " NOTNULL) AND (" + Entries.COLUMN_NAME_FILENAME + " != '' ) AND (" + Entries.COLUMN_NAME_USERNAME + " == '" + username + "' ) AND (" + Entries.COLUMN_NAME_FILENAME + " != 'load' ))";
 		}
 	}
+	
+	public static String selectProfileForUser(String username) {
+		return "((" + Profiles.COLUMN_NAME_USERNAME + " NOTNULL) AND (" + Profiles.COLUMN_NAME_USERNAME + " == '" + username + "' ))";
+	}
     
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        return new CursorLoader(
-        		mContext,						// context
-        		ENTRIES,						// content uri
-                args.getStringArray(PROJECTION),// projection
-                args.getString(SELECT),			// selection criteria
-                null,							// selection args
-                Entries.DEFAULT_SORT_ORDER);	// sorting
+		switch(id) {
+		case NoisetracksApplication.ENTRIES_SQL_LOADER_FEED:
+			return new CursorLoader(
+	        		mContext,						// context
+	        		Entries.CONTENT_URI,			// content uri
+	                args.getStringArray(PROJECTION),// projection
+	                args.getString(SELECT),			// selection criteria
+	                null,							// selection args
+	                Entries.DEFAULT_SORT_ORDER);	// sorting
+		case NoisetracksApplication.ENTRIES_SQL_LOADER_PROFILE:
+			return new CursorLoader(
+	        		mContext,						// context
+	        		Entries.CONTENT_URI,			// content uri
+	                args.getStringArray(PROJECTION),// projection
+	                args.getString(SELECT),			// selection criteria
+	                null,							// selection args
+	                Entries.DEFAULT_SORT_ORDER);	// sorting
+		case NoisetracksApplication.PROFILE_SQL_LOADER:
+			return new CursorLoader(
+	        		mContext,						// context
+	        		Profiles.CONTENT_URI,			// content uri
+	                args.getStringArray(PROJECTION),// projection
+	                args.getString(SELECT),			// selection criteria
+	                null,							// selection args
+	                Profiles.DEFAULT_SORT_ORDER);	// sorting
+		default:
+			return null; // shouldn't happen
+		}
+			
         
     }
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
     	
-    	mAdapter.swapCursor(data);
-    	
-    	if (mAdapter.isEmpty()) {
-    		mPadding.setVisibility(View.INVISIBLE);
-        	mHeader.setVisibility(View.INVISIBLE);
-        	mFooter.setVisibility(View.INVISIBLE);
-    		mEmpty.setText("Pull to refresh");
-    	} else {
-    		mPadding.setVisibility(View.VISIBLE);
-        	mHeader.setVisibility(View.VISIBLE);
-        	mFooter.setVisibility(View.VISIBLE);
-    		mEmpty.setText("");
+    	switch(loader.getId()) {
+    	case NoisetracksApplication.ENTRIES_SQL_LOADER_FEED: 	// entries for feed
+    	case NoisetracksApplication.ENTRIES_SQL_LOADER_PROFILE: // entries for profile
+    		mAdapter.swapCursor(data);
+        	
+        	if (mAdapter.isEmpty()) {
+        		mPadding.setVisibility(View.INVISIBLE);
+            	mHeader.setVisibility(View.INVISIBLE);
+            	mFooter.setVisibility(View.INVISIBLE);
+        		mEmpty.setText("Pull to refresh");
+        	} else {
+        		mPadding.setVisibility(View.VISIBLE);
+            	mHeader.setVisibility(View.VISIBLE);
+            	mFooter.setVisibility(View.VISIBLE);
+        		mEmpty.setText("");
+        	}
+        	
+            if (mListFragment.isResumed()) {
+            	mListFragment.setListShown(true);
+            } else {
+            	mListFragment.setListShownNoAnimation(true);
+            }
+    		break;
+    	case NoisetracksApplication.PROFILE_SQL_LOADER: // single profile
+    		ProfileListFragment plf = (ProfileListFragment)mListFragment;
+    		plf.setProfileHeader(data);
+    		break;
+    	default:
+    		break;
     	}
-    	
-        if (mListFragment.isResumed()) {
-        	mListFragment.setListShown(true);
-        } else {
-        	mListFragment.setListShownNoAnimation(true);
-        }
         
     }
 
     public void onLoaderReset(Loader<Cursor> loader) {
-    	mAdapter.swapCursor(null);
+    	switch(loader.getId()) {
+    	case NoisetracksApplication.ENTRIES_SQL_LOADER_FEED: // entries for feed
+    	case NoisetracksApplication.ENTRIES_SQL_LOADER_PROFILE: // entries for profile
+    		mAdapter.swapCursor(null);
+    		break;
+    	default:
+    		break;
+    	}
     }
 }

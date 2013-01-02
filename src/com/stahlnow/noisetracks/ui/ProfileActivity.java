@@ -4,10 +4,13 @@ import com.handmark.pulltorefresh.library.PullToRefreshBase;
 import com.handmark.pulltorefresh.library.PullToRefreshListView;
 import com.handmark.pulltorefresh.library.PullToRefreshBase.OnLastItemVisibleListener;
 import com.handmark.pulltorefresh.library.PullToRefreshBase.OnRefreshListener;
+import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.client.RESTLoaderCallbacks;
 import com.stahlnow.noisetracks.client.SQLLoaderCallbacks;
 import com.stahlnow.noisetracks.helper.ProgressWheel;
+import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
+import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.utility.AppLog;
@@ -19,6 +22,8 @@ import android.support.v4.app.ListFragment;
 import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.CursorIndexOutOfBoundsException;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -28,6 +33,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AnimationUtils;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -50,24 +56,34 @@ public class ProfileActivity extends FragmentActivity {
 	}	
 
 	public static class ProfileListFragment extends ListFragment {
-
-		//private static ArrayList<Entry> entries = new ArrayList<Entry>(); 
-				
-		private EntryAdapter mAdapter;
-		private PullToRefreshListView mPullToRefreshView;
-		private boolean mListShown;
-        private TextView mEmpty;
-        private View mProgressContainer;
-        private ProgressWheel mProgressWheel;
-        private View mListContainer;
-        private View mHeader;
-        private View mFooter;
-        private TextView mPadding;
+		
+		/**
+		 * Header Views
+		 */
+		private ImageView mMugshot;							// mugshot
+		private TextView mUsername;							// username
+		
+		/**
+		 * List Views
+		 */
+		private PullToRefreshListView mPullToRefreshView; 	// pull to refresh view
+		private EntryAdapter mAdapter;						// cursor adapter for db
+		private boolean mListShown;		
+        private TextView mEmpty;							// shown if list is empty
+        private View mProgressContainer; 					// progress wheel container
+        private ProgressWheel mProgressWheel; 				// progress wheel
+        private View mListContainer;						// list container
+        private View mHeader;								// list header (with rounded corners)
+        private View mFooter;								// list footer (with rounded corners)
+        private TextView mPadding;							// top padding for list header
 		
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 			
 		    View root = inflater.inflate(R.layout.profile_activity, container, false);
+		    
+		    mMugshot = (ImageView)root.findViewById(R.id.profile_mugshot);
+		    mUsername = (TextView)root.findViewById(R.id.profile_username);
 		    
 		    mProgressContainer = root.findViewById(R.id.entries_progressContainer);
 		    mProgressWheel = (ProgressWheel) root.findViewById(R.id.pw_spinner);
@@ -107,10 +123,6 @@ public class ProfileActivity extends FragmentActivity {
 		    
 		    // Start out with a progress indicator.
             setListShown(false);
-            
-            // create array adapter
-            //mAdapter = new EntryArrayAdapter(getActivity(), R.layout.entry);
-            //setListAdapter(mAdapter);
          
             // Create an empty adapter we will use to display the loaded data.
             mAdapter = new EntryAdapter(
@@ -133,24 +145,33 @@ public class ProfileActivity extends FragmentActivity {
             setListAdapter(mAdapter);
             
             // Prepare and init the sql loader for user entries
-            Bundle args = new Bundle();
-            args.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_ENTRY_PROJECTION);
-            args.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.selectEntriesFromUser(getArguments().getString("username"), true));
-            SQLLoaderCallbacks sql = new SQLLoaderCallbacks(this.getActivity(), mAdapter, (ListFragment)this, mEmpty, mPadding, mHeader, mFooter);
-            getActivity().getSupportLoaderManager().initLoader(1, args, sql);	
+            Bundle argsEntriesSQL = new Bundle();
+            argsEntriesSQL.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_ENTRY_PROJECTION);
+            argsEntriesSQL.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.selectEntriesFromUser(getArguments().getString("username"), true));
+            SQLLoaderCallbacks sqlentries = new SQLLoaderCallbacks(this.getActivity(), mAdapter, (ListFragment)this, mEmpty, mPadding, mHeader, mFooter);
+            getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_SQL_LOADER_PROFILE, argsEntriesSQL, sqlentries);
             
-            // Prepare and init REST loader
+            
+            // Prepare and init the sql loader for user profile data
+            Bundle argsProfileSQL = new Bundle();
+            argsProfileSQL.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_PROFILE_PROJECTION);
+            argsProfileSQL.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.selectProfileForUser(getArguments().getString("username")));
+            SQLLoaderCallbacks sqlprofile = new SQLLoaderCallbacks(this.getActivity(), mAdapter, (ListFragment)this, mEmpty, mPadding, mHeader, mFooter);
+            getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.PROFILE_SQL_LOADER, argsProfileSQL, sqlprofile);	
+            
+            
+            // Prepare and init REST loader for entries
             Bundle params = new Bundle();
 	        params.putString("format", "json");				// we need json format
 	        params.putString("order_by", "-created");		// newest first
 	        params.putString("audiofile__status", "1");		// only get entries with status = Done
 	        params.putString("user__username", getArguments().getString("username"));	// only entries from specific user
-        	Bundle argsEntries = new Bundle();
-        	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
-        	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
+        	Bundle argsEntriesREST = new Bundle();
+        	argsEntriesREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
+        	argsEntriesREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
         	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-    		getLoaderManager().initLoader(RESTLoaderCallbacks.ENTRIES, argsEntries, r);
-            
+    		getLoaderManager().initLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntriesREST, r);
+    		
             
 	        // Set a listener to be invoked when the list should be refreshed.
 	        mPullToRefreshView.setOnRefreshListener(new OnRefreshListener<ListView>() {
@@ -172,7 +193,7 @@ public class ProfileActivity extends FragmentActivity {
 		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	// Initialize RESTLoader for refresh view.		    
 		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-		            	getActivity().getSupportLoaderManager().restartLoader(RESTLoaderCallbacks.ENTRIES_NEWER, argsEntriesNewer, r);
+		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_NEWER_REST_LOADER, argsEntriesNewer, r);
 	            	} else {
 	            		Bundle params = new Bundle();
 		    	        params.putString("format", "json");				// we need json format
@@ -183,7 +204,7 @@ public class ProfileActivity extends FragmentActivity {
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-		            	getActivity().getSupportLoaderManager().restartLoader(RESTLoaderCallbacks.ENTRIES, argsEntries, r);
+		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
 	            	}
 	            }
 	        });
@@ -205,13 +226,48 @@ public class ProfileActivity extends FragmentActivity {
 		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-		            	getActivity().getSupportLoaderManager().restartLoader(RESTLoaderCallbacks.ENTRIES_OLDER, argsEntriesOlder, r);
+		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntriesOlder, r);
 	            	}
 					
 				}
 			});
             
         }
+		
+		public void setProfileHeader(Cursor data) {
+			try  {
+				data.moveToFirst();
+				// Set mugshot image
+				//mMugshot.setImageResource(R.drawable.default_image); // TODO set default image
+				String mugshot = data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_MUGSHOT));
+				if (mugshot != null) {
+					Uri mugshotUri = Uri.parse(mugshot);
+					if (mugshotUri != null){
+						Bitmap bitmap = NoisetracksApplication.getHttpImageManager().loadImage(new HttpImageManager.LoadRequest(mugshotUri, mMugshot));
+						if (bitmap != null) {
+							mMugshot.setImageBitmap(bitmap);
+					    }
+					}
+				}
+				mUsername.setText(data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_USERNAME)));
+			}
+			
+			catch (Exception e) {
+				
+				AppLog.logString("Could not load from db, will try loading with REST client...");
+				
+				// Prepare and init REST loader for profile
+	            Bundle paramsProfile = new Bundle();
+	            paramsProfile.putString("format", "json");				// we need json format
+	            paramsProfile.putString("user__username", getArguments().getString("username"));	// get profile for specific user
+	        	Bundle argsProfileREST = new Bundle();
+	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_PROFILES);
+	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, paramsProfile);
+	        	RESTLoaderCallbacks rp = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+	    		getLoaderManager().initLoader(NoisetracksApplication.PROFILE_REST_LOADER, argsProfileREST, rp);
+	    		
+			}
+		}
 		
 		@Override
 		public void onListItemClick (ListView l, View v, int position, long id) {
@@ -234,7 +290,7 @@ public class ProfileActivity extends FragmentActivity {
 	            			Uri.parse(AppSettings.DOMAIN + c.getString(c.getColumnIndex(Entries.COLUMN_NAME_RESOURCE_URI)))); // resource uri contains 'next' from last api call
 	            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 	            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-	            	getActivity().getSupportLoaderManager().restartLoader(RESTLoaderCallbacks.ENTRIES_OLDER, argsEntries, r);
+	            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntries, r);
 	            	
 				}
 				// start entry activity

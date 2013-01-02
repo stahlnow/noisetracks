@@ -21,6 +21,8 @@ import android.view.ViewGroup;
 import android.view.animation.AnimationUtils;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.client.RESTLoaderCallbacks;
 import com.stahlnow.noisetracks.client.SQLLoaderCallbacks;
@@ -155,7 +157,7 @@ public class FeedActivity extends FragmentActivity {
             args.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_ENTRY_PROJECTION);
             args.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.SELECT_ENTRIES);
             SQLLoaderCallbacks sql = new SQLLoaderCallbacks(this.getActivity(), mAdapter, (ListFragment)this, mEmpty, mPadding, mHeader, mFooter);
-            getActivity().getSupportLoaderManager().initLoader(0, args, sql);
+            getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_SQL_LOADER_FEED, args, sql);
             
             // Prepare and init REST loader
             Bundle params = new Bundle();
@@ -166,7 +168,7 @@ public class FeedActivity extends FragmentActivity {
         	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
         	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
         	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-    		getLoaderManager().initLoader(RESTLoaderCallbacks.ENTRIES, argsEntries, r);
+    		getLoaderManager().initLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
 
 	        
 	        // Set a listener to be invoked when the list should be refreshed.
@@ -187,7 +189,7 @@ public class FeedActivity extends FragmentActivity {
 		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-		            	getActivity().getSupportLoaderManager().restartLoader(RESTLoaderCallbacks.ENTRIES_NEWER, argsEntriesNewer, r);
+		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_NEWER_REST_LOADER, argsEntriesNewer, r);
 	            	} else {
 	            		Bundle params = new Bundle();
 		    	        params.putString("format", "json");				// we need json format
@@ -197,7 +199,7 @@ public class FeedActivity extends FragmentActivity {
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-		            	getActivity().getSupportLoaderManager().restartLoader(RESTLoaderCallbacks.ENTRIES, argsEntries, r);
+		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
 	            	}
 	            }
 	        });
@@ -219,7 +221,7 @@ public class FeedActivity extends FragmentActivity {
 		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-		            	getActivity().getSupportLoaderManager().restartLoader(RESTLoaderCallbacks.ENTRIES_OLDER, argsEntriesOlder, r);
+		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntriesOlder, r);
 	            	}
 					
 				}
@@ -248,7 +250,7 @@ public class FeedActivity extends FragmentActivity {
 	            			Uri.parse(AppSettings.DOMAIN + c.getString(c.getColumnIndex(Entries.COLUMN_NAME_RESOURCE_URI)))); // resource uri contains 'next' from last api call
 	            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 	            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-	            	getActivity().getSupportLoaderManager().restartLoader(RESTLoaderCallbacks.ENTRIES_OLDER, argsEntries, r);
+	            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntries, r);
 	            	
 				}
 				// start entry activity

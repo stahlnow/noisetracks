@@ -18,7 +18,8 @@
 
 <resources>
 
-    <style name="Theme.noisetracks" parent="@android:style/Theme.Holo.Light.DarkActionBar">
+     <!-- @android:style/Theme.Holo.Light.DarkActionBar -->
+    <style name="Theme.noisetracks" parent="@style/noisetracks">
         <item name="android:actionBarItemBackground">@drawable/selectable_background_noisetracks</item>
         <item name="android:popupMenuStyle">@style/noisetracks_PopupMenu</item>
         <item name="android:dropDownListViewStyle">@style/noisetracks_DropDownListView</item>
