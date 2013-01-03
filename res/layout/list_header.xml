@@ -1,20 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
-    android:translationY="1dp"
+    android:layout_height="wrap_content"
     android:background="@drawable/entry_header"
-    android:orientation="vertical" >
+    android:translationY="1dp" >
 
-    <LinearLayout
+    <TextView
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical" >
-
-        <TextView
-            android:layout_width="fill_parent"
-            android:layout_height="10dp"
-            android:height="10dp"
-            android:text="" />
-    </LinearLayout>
+        android:layout_height="10dp"
+        android:height="10dp"
+        android:text="" />
 
 </LinearLayout>

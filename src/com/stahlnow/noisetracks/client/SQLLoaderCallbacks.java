@@ -2,7 +2,6 @@ package com.stahlnow.noisetracks.client;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
@@ -15,7 +14,6 @@ import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
 import com.stahlnow.noisetracks.ui.EntryAdapter;
-import com.stahlnow.noisetracks.ui.ProfileActivity;
 import com.stahlnow.noisetracks.ui.ProfileActivity.ProfileListFragment;
 
 public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {

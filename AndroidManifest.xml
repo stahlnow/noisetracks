@@ -85,6 +85,7 @@
                 <data android:mimeType="vnd.android.cursor.item/vnd.noisetracks.entry" />
             </intent-filter>
         </activity>
+        <!-- Profile View -->
         <activity
             android:name=".ui.ProfileActivity"
             android:exported="false">
@@ -95,13 +96,18 @@
                 <data android:mimeType="vnd.android.cursor.item/vnd.noisetracks.entry" />
             </intent-filter>
         </activity>
+        <!-- Single Entry View -->
         <activity
             android:name=".ui.EntryActivity">
+        </activity>
+        <!-- Settings activity -->
+        <activity
+            android:name=".utility.SettingsActivity">
         </activity>
         <!-- The Authentication/Account Activity -->
         <activity
             android:name=".authenticator.AuthenticatorActivity"
-            android:theme="@style/noisetracksFullscreen"
+            
             android:configChanges="keyboardHidden"
             android:windowSoftInputMode="adjustPan|stateAlwaysHidden"
             android:excludeFromRecents="true">

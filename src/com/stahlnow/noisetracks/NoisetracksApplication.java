@@ -3,21 +3,17 @@ package com.stahlnow.noisetracks;
 
 import java.text.SimpleDateFormat;
 
+import com.stahlnow.noisetracks.authenticator.AuthenticationService;
 import com.stahlnow.noisetracks.helper.httpimage.FileSystemPersistence;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
+import com.stahlnow.noisetracks.provider.NoisetracksProvider;
+import com.stahlnow.noisetracks.utility.AppLog;
 
-import edu.mit.mobile.android.imagecache.ImageCache;
-import android.app.ActivityManager;
 import android.app.Application;
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Bitmap.CompressFormat;
-import android.support.v4.util.LruCache;
 
 public class NoisetracksApplication extends Application {
 
 	public static final String LOG_TAG = "Noisetracks";
-	public static final String BASEDIR = "/sdcard/Noisetracks"; // TODO find correct storage place for cache and temp files
 	
 	// The global date format used everywhere.
 	public static SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
@@ -39,14 +35,38 @@ public class NoisetracksApplication extends Application {
 	private static NoisetracksApplication instance = null;
 	
 	// Keep references to our global resources.
-	private static LruCache<String, Bitmap> mBitmapCache = null;
-	private static ImageCache mImageCache = null;
+	private static FileSystemPersistence mFileSystemPersistence;
 	private static HttpImageManager mHttpImageManager;
+	
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		
+		// create new cache
+		mFileSystemPersistence = new FileSystemPersistence(this.getCacheDir().toString());
+		
+		AppLog.logString("cache dir is: " + getCacheDir().toString());
+		
 		instance = this;
+	}
+	
+	public static void logout() {
+		AppLog.logString("Logging out...");
+		
+		// remove account from device
+		AuthenticationService.removeAccount(getInstance().getApplicationContext());
+		
+		// delete database
+		getInstance().getApplicationContext().deleteDatabase(NoisetracksProvider.DATABASE_NAME);
+		
+		// delete cache directory
+		if (mFileSystemPersistence != null)
+			mFileSystemPersistence.clear();
+		
+		// collect garbage, exit
+		System.gc();
+		System.exit(0);
 	}
 	
 	/**
@@ -65,31 +85,13 @@ public class NoisetracksApplication extends Application {
 		if (mHttpImageManager == null) {
 			checkInstance();
 			// init HttpImageManager manager.
-			mHttpImageManager = new HttpImageManager(
-					HttpImageManager.createDefaultMemoryCache(), 
-					new FileSystemPersistence(BASEDIR));
+			mHttpImageManager = new HttpImageManager(HttpImageManager.createDefaultMemoryCache(), mFileSystemPersistence);
 		}
 		return mHttpImageManager;
 	}
 	
-	public static ImageCache getImageCache() {
-		if (mImageCache == null) {
-			checkInstance();
-			//mImageCache = ImageCache.getInstance(instance);
-			mImageCache = new ImageCache(instance, CompressFormat.PNG, 100);
-		}
-		return mImageCache;
-	}
-	
-	public static LruCache<String, Bitmap> getBitmapCache() {
-		if (mBitmapCache == null) {
-			checkInstance();
-			// Pick cache size based on memory class of device			
-	        final ActivityManager am = (ActivityManager) instance.getSystemService(Context.ACTIVITY_SERVICE);
-	        final int memoryClassBytes = am.getMemoryClass() * 1024 * 1024;
-	        mBitmapCache = new LruCache<String, Bitmap>(memoryClassBytes / 2);
-		}
-		return mBitmapCache;
+	public static FileSystemPersistence getFileSystemPersistence() {
+		return mFileSystemPersistence;
 	}
 
 	private static void checkInstance() {

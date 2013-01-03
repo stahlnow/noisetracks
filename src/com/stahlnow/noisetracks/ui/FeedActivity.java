@@ -13,9 +13,6 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ListFragment;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AnimationUtils;
@@ -106,7 +103,7 @@ public class FeedActivity extends FragmentActivity {
 		    super.onActivityCreated(savedInstanceState);
 		    
 		    // We have a menu item to show in action bar.
-		    setHasOptionsMenu(true);	
+		    //setHasOptionsMenu(true);	
 		    
 		    player = new MediaPlayer();
 		    player.setOnCompletionListener(onCompletion);
@@ -311,27 +308,6 @@ public class FeedActivity extends FragmentActivity {
 	    public void setListShownNoAnimation(boolean shown) {
 	        setListShown(shown, false);
 	    }
-	    
-	    
-	    
-	    @Override
-		public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-			inflater.inflate(R.menu.sub_menu_me, menu);
-		}
-
-		@Override
-		public boolean onOptionsItemSelected(MenuItem item) {
-			switch (item.getItemId()) {
-			case R.id.sub_menu_me_add:
-				// remove all entries from db
-	        	//getActivity().getContentResolver().delete(Entries.CONTENT_URI, null, null);
-				// remove db
-				//getActivity().deleteDatabase("noisetracks.db");
-				return true;
-			default:
-				return super.onOptionsItemSelected(item);
-			}
-		}
 	    
 	    
 	    private MediaPlayer.OnCompletionListener onCompletion = new MediaPlayer.OnCompletionListener() {

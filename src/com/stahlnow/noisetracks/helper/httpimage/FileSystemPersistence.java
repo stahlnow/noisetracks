@@ -23,6 +23,7 @@ package com.stahlnow.noisetracks.helper.httpimage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+
 import android.graphics.Bitmap;
 import android.util.Log;
 

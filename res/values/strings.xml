@@ -8,6 +8,7 @@
 	<string name="hello_world">Hello, Noise.</string>
 	<string name="menu_start_tracking">START TRACKING</string>
 	<string name="menu_stop_tracking">STOP TRACKING</string>
+	<string name="menu_settings">SETTINGS</string>
 	<string name="menu_search">SEARCH</string>
 
     <!-- Permission label -->

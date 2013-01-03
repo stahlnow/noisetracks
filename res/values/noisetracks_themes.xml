@@ -4,7 +4,8 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
 
   <!-- parent="android:Theme.Light" -->
-  <style name="noisetracks" parent="@android:style/Theme.Holo.Light.DarkActionBar">
+  <!-- parent="@android:style/Theme.Holo.Light.DarkActionBar" -->
+  <style name="noisetracks" parent="Theme.Sherlock.Light">
 
     <item name="android:editTextStyle">@style/EditTextnoisetracks</item>
 

@@ -10,7 +10,7 @@
     <color name="rimColor_dark">#33333333</color>
 
     <!-- colors / styles -->
-    <color name="indicator">#ffe33535</color>
+    <color name="indicator">#CCffee00</color>
     <color name="transparent">#00000000</color>
     <color name="white">#ffffffff</color>
     <color name="light_grey">#ffcccccc</color>

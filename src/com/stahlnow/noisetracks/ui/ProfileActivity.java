@@ -19,17 +19,14 @@ import com.stahlnow.noisetracks.utility.AppSettings;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ListFragment;
+import android.text.Html;
 import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.CursorIndexOutOfBoundsException;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AnimationUtils;
@@ -60,8 +57,9 @@ public class ProfileActivity extends FragmentActivity {
 		/**
 		 * Header Views
 		 */
+		private View mProfileHeader;						// profile header view
 		private ImageView mMugshot;							// mugshot
-		private TextView mUsername;							// username
+		private TextView mProfileHeaderText;				// username, tracks, ...
 		
 		/**
 		 * List Views
@@ -82,9 +80,6 @@ public class ProfileActivity extends FragmentActivity {
 			
 		    View root = inflater.inflate(R.layout.profile_activity, container, false);
 		    
-		    mMugshot = (ImageView)root.findViewById(R.id.profile_mugshot);
-		    mUsername = (TextView)root.findViewById(R.id.profile_username);
-		    
 		    mProgressContainer = root.findViewById(R.id.entries_progressContainer);
 		    mProgressWheel = (ProgressWheel) root.findViewById(R.id.pw_spinner);
 		    mProgressWheel.spin();
@@ -103,9 +98,15 @@ public class ProfileActivity extends FragmentActivity {
             super.onActivityCreated(savedInstanceState);
             
             // We have a menu item to show in action bar.
-		    setHasOptionsMenu(true);	
-            
-            // add header padding
+		    //setHasOptionsMenu(true);	
+		    
+            // add profile header
+		    mProfileHeader = getLayoutInflater(savedInstanceState).inflate(R.layout.profile_header, null, false);
+		    this.getListView().addHeaderView(mProfileHeader);
+		    mMugshot = (ImageView)mProfileHeader.findViewById(R.id.profile_mugshot);
+		    mProfileHeaderText = (TextView)mProfileHeader.findViewById(R.id.profile_header_text);
+		    
+            // add list header and padding
 		    mPadding = new TextView(this.getActivity());
 		    mPadding.setHeight(15);
 		    mPadding.setVisibility(View.INVISIBLE);
@@ -249,7 +250,11 @@ public class ProfileActivity extends FragmentActivity {
 					    }
 					}
 				}
-				mUsername.setText(data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_USERNAME)));
+				mProfileHeaderText.setText(Html.fromHtml(
+						"<b>" + data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_USERNAME)) + "</b>" +  "<br />" + 
+			            "<b>" + data.getInt(data.getColumnIndex(Profiles.COLUMN_NAME_TRACKS)) + "</b>" +
+						"<font color=\"#FF777777\"> TRACKS </font>" +
+						"<br />"));
 			}
 			
 			catch (Exception e) {
@@ -304,22 +309,6 @@ public class ProfileActivity extends FragmentActivity {
 			}
 		}
 		
-		@Override
-		public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-			inflater.inflate(R.menu.sub_menu_me, menu);
-		}
-
-		@Override
-		public boolean onOptionsItemSelected(MenuItem item) {
-			switch (item.getItemId()) {
-			case R.id.sub_menu_me_add:
-				// remove all entries from db
-	        	getActivity().getContentResolver().delete(Entries.CONTENT_URI, null, null);
-				return true;
-			default:
-				return super.onOptionsItemSelected(item);
-			}
-		}
 		
 		public void setListShown(boolean shown, boolean animate) {
 	    				

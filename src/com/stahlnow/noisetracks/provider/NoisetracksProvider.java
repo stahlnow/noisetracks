@@ -5,8 +5,6 @@ import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.provider.NoisetracksContract;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
-import com.stahlnow.noisetracks.utility.AppLog;
-
 import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -36,7 +34,7 @@ public class NoisetracksProvider extends ContentProvider {
     /**
      * The database that the provider uses as its underlying data store
      */
-    private static final String DATABASE_NAME = "noisetracks.db";
+    public static final String DATABASE_NAME = "noisetracks.db";
 
     /**
      * The database version
