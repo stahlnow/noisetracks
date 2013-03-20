@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ListFragment;
+import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -52,7 +53,9 @@ public class FeedActivity extends FragmentActivity {
 
     public static class FeedListFragment extends ListFragment
     {
-        private EntryAdapter mAdapter;
+    	private RESTLoaderCallbacks r;
+    	
+        private EntryAdapter mEntryAdapter;
         private PullToRefreshListView mPullToRefreshView;
         private boolean mListShown;
         private TextView mEmpty;
@@ -102,6 +105,8 @@ public class FeedActivity extends FragmentActivity {
 		public void onActivityCreated(Bundle savedInstanceState) {
 		    super.onActivityCreated(savedInstanceState);
 		    
+		    r = new RESTLoaderCallbacks(getActivity(), this);
+		    
 		    // We have a menu item to show in action bar.
 		    //setHasOptionsMenu(true);	
 		    
@@ -127,7 +132,7 @@ public class FeedActivity extends FragmentActivity {
 		    
 		    
 		    // Create an empty adapter we will use to display the loaded data.
-            mAdapter = new EntryAdapter(
+            mEntryAdapter = new EntryAdapter(
             		getActivity(), // context
                     R.layout.entry, // layout
                     null, // cursor
@@ -144,7 +149,7 @@ public class FeedActivity extends FragmentActivity {
                     0,	// flags
                     true // mugshot is clickable
                     ); 
-            setListAdapter(mAdapter);
+            setListAdapter(mEntryAdapter);
             
             // Start out with a progress indicator.
             setListShown(false);
@@ -153,7 +158,7 @@ public class FeedActivity extends FragmentActivity {
             Bundle args = new Bundle();
             args.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_ENTRY_PROJECTION);
             args.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.SELECT_ENTRIES);
-            SQLLoaderCallbacks sql = new SQLLoaderCallbacks(this.getActivity(), mAdapter, (ListFragment)this, mEmpty, mPadding, mHeader, mFooter);
+            SQLLoaderCallbacks sql = new SQLLoaderCallbacks(getActivity(), this);
             getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_SQL_LOADER_FEED, args, sql);
             
             // Prepare and init REST loader
@@ -164,8 +169,7 @@ public class FeedActivity extends FragmentActivity {
         	Bundle argsEntries = new Bundle();
         	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
         	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-        	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-    		getLoaderManager().initLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
+        	getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
 
 	        
 	        // Set a listener to be invoked when the list should be refreshed.
@@ -174,7 +178,7 @@ public class FeedActivity extends FragmentActivity {
 	            public void onRefresh(PullToRefreshBase<ListView> refreshView) {
 	            	
 	            	// Call api
-	            	if (!mAdapter.isEmpty()) { // if list not empty
+	            	if (!mEntryAdapter.isEmpty()) { // if list not empty
 	            		Cursor cursor = (Cursor) getListAdapter().getItem(0); // get latest entry
 		    	        String created = cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_CREATED));
 		            	Bundle params = new Bundle();
@@ -185,7 +189,6 @@ public class FeedActivity extends FragmentActivity {
 		            	Bundle argsEntriesNewer = new Bundle();
 		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_NEWER_REST_LOADER, argsEntriesNewer, r);
 	            	} else {
 	            		Bundle params = new Bundle();
@@ -195,7 +198,6 @@ public class FeedActivity extends FragmentActivity {
 		            	Bundle argsEntries = new Bundle();
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
 	            	}
 	            }
@@ -206,7 +208,7 @@ public class FeedActivity extends FragmentActivity {
 				@Override
 				public void onLastItemVisible() {
 					
-					if (!mAdapter.isEmpty()) { // if list not empty
+					if (!mEntryAdapter.isEmpty()) { // if list not empty
 						Cursor cursor = (Cursor) getListAdapter().getItem(getListAdapter().getCount()-1); // get last entry
 		    	        String created = cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_CREATED));
 		            	Bundle params = new Bundle();
@@ -217,7 +219,6 @@ public class FeedActivity extends FragmentActivity {
 		    	        Bundle argsEntriesOlder = new Bundle();
 		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntriesOlder, r);
 	            	}
 					
@@ -246,7 +247,6 @@ public class FeedActivity extends FragmentActivity {
 	            			RESTLoaderCallbacks.ARGS_URI,
 	            			Uri.parse(AppSettings.DOMAIN + c.getString(c.getColumnIndex(Entries.COLUMN_NAME_RESOURCE_URI)))); // resource uri contains 'next' from last api call
 	            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-	            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
 	            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntries, r);
 	            	
 				}
@@ -258,6 +258,50 @@ public class FeedActivity extends FragmentActivity {
 					startActivity(i);
 				}
 			}
+		}
+		
+		
+		public void onLoadFinished(Cursor data) {
+			mEntryAdapter.swapCursor(data);
+        	
+        	if (mEntryAdapter.isEmpty()) {
+        		mPadding.setVisibility(View.INVISIBLE);
+            	mHeader.setVisibility(View.INVISIBLE);
+            	mFooter.setVisibility(View.INVISIBLE);
+        		mEmpty.setText("Pull to refresh");
+        	} else {
+        		mPadding.setVisibility(View.VISIBLE);
+            	mHeader.setVisibility(View.VISIBLE);
+            	mFooter.setVisibility(View.VISIBLE);
+        		mEmpty.setText("");
+        	}
+        	
+            if (isResumed()) {
+            	setListShown(true);
+            } else {
+            	setListShownNoAnimation(true);
+            }
+		}
+		
+		public void onRefreshComplete() {
+			// Reset pull refresh view
+	    	mPullToRefreshView.onRefreshComplete();
+	    	// Set updated text	    	
+	    	mPullToRefreshView.setLastUpdatedLabel("Last updated: " + DateUtils.formatDateTime(getActivity(), System.currentTimeMillis(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_ABBREV_TIME));
+
+	    	if (mEntryAdapter != null) {
+		    	if (mEntryAdapter.isEmpty()) {
+		    		mPadding.setVisibility(View.INVISIBLE);
+		        	mHeader.setVisibility(View.INVISIBLE);
+		        	mFooter.setVisibility(View.INVISIBLE);
+		    		mEmpty.setText("Pull to refresh.");
+		    	} else {
+		    		mPadding.setVisibility(View.VISIBLE);
+		        	mHeader.setVisibility(View.VISIBLE);
+		        	mFooter.setVisibility(View.VISIBLE);
+		    		mEmpty.setText("");
+		    	}
+	    	}
 		}
     	
     	   

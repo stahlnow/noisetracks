@@ -20,6 +20,7 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ListFragment;
 import android.text.Html;
+import android.text.format.DateUtils;
 import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
@@ -54,6 +55,8 @@ public class ProfileActivity extends FragmentActivity {
 
 	public static class ProfileListFragment extends ListFragment {
 		
+		private RESTLoaderCallbacks r;
+		
 		/**
 		 * Header Views
 		 */
@@ -65,7 +68,7 @@ public class ProfileActivity extends FragmentActivity {
 		 * List Views
 		 */
 		private PullToRefreshListView mPullToRefreshView; 	// pull to refresh view
-		private EntryAdapter mAdapter;						// cursor adapter for db
+		private EntryAdapter mEntryAdapter;						// cursor adapter for db
 		private boolean mListShown;		
         private TextView mEmpty;							// shown if list is empty
         private View mProgressContainer; 					// progress wheel container
@@ -97,6 +100,8 @@ public class ProfileActivity extends FragmentActivity {
 		public void onActivityCreated(Bundle savedInstanceState) {
             super.onActivityCreated(savedInstanceState);
             
+            r = new RESTLoaderCallbacks(getActivity(), this);
+            
             // We have a menu item to show in action bar.
 		    //setHasOptionsMenu(true);	
 		    
@@ -126,7 +131,7 @@ public class ProfileActivity extends FragmentActivity {
             setListShown(false);
          
             // Create an empty adapter we will use to display the loaded data.
-            mAdapter = new EntryAdapter(
+            mEntryAdapter = new EntryAdapter(
             		getActivity(), // context
                     R.layout.entry, // layout
                     null, // cursor
@@ -143,13 +148,13 @@ public class ProfileActivity extends FragmentActivity {
                     0, // flags
                     false  // mugshot is not clickable
                     );
-            setListAdapter(mAdapter);
+            setListAdapter(mEntryAdapter);
             
             // Prepare and init the sql loader for user entries
             Bundle argsEntriesSQL = new Bundle();
             argsEntriesSQL.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_ENTRY_PROJECTION);
             argsEntriesSQL.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.selectEntriesFromUser(getArguments().getString("username"), true));
-            SQLLoaderCallbacks sqlentries = new SQLLoaderCallbacks(this.getActivity(), mAdapter, (ListFragment)this, mEmpty, mPadding, mHeader, mFooter);
+            SQLLoaderCallbacks sqlentries = new SQLLoaderCallbacks(getActivity(), this);
             getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_SQL_LOADER_PROFILE, argsEntriesSQL, sqlentries);
             
             
@@ -157,7 +162,7 @@ public class ProfileActivity extends FragmentActivity {
             Bundle argsProfileSQL = new Bundle();
             argsProfileSQL.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_PROFILE_PROJECTION);
             argsProfileSQL.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.selectProfileForUser(getArguments().getString("username")));
-            SQLLoaderCallbacks sqlprofile = new SQLLoaderCallbacks(this.getActivity(), mAdapter, (ListFragment)this, mEmpty, mPadding, mHeader, mFooter);
+            SQLLoaderCallbacks sqlprofile = new SQLLoaderCallbacks(getActivity(), this);
             getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.PROFILE_SQL_LOADER, argsProfileSQL, sqlprofile);	
             
             
@@ -170,8 +175,7 @@ public class ProfileActivity extends FragmentActivity {
         	Bundle argsEntriesREST = new Bundle();
         	argsEntriesREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
         	argsEntriesREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-        	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-    		getLoaderManager().initLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntriesREST, r);
+    		getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntriesREST, r);
     		
             
 	        // Set a listener to be invoked when the list should be refreshed.
@@ -180,7 +184,7 @@ public class ProfileActivity extends FragmentActivity {
 	            public void onRefresh(PullToRefreshBase<ListView> refreshView) {
 	            	AppLog.logString("Profile onRefresh");
 	            	// Call api
-	            	if (!mAdapter.isEmpty()) { // if list not empty
+	            	if (!mEntryAdapter.isEmpty()) { // if list not empty
 	            		Cursor cursor = (Cursor) getListAdapter().getItem(0); // get latest entry
 		    	        String created = cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_CREATED));
 		            	Bundle params = new Bundle();
@@ -193,7 +197,7 @@ public class ProfileActivity extends FragmentActivity {
 		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	// Initialize RESTLoader for refresh view.		    
-		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+		            	//RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), get);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_NEWER_REST_LOADER, argsEntriesNewer, r);
 	            	} else {
 	            		Bundle params = new Bundle();
@@ -204,7 +208,7 @@ public class ProfileActivity extends FragmentActivity {
 		            	Bundle argsEntries = new Bundle();
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+		            	//RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mEntryAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
 	            	}
 	            }
@@ -214,7 +218,7 @@ public class ProfileActivity extends FragmentActivity {
 				@Override
 				public void onLastItemVisible() {
 					
-					if (!mAdapter.isEmpty()) { // if list not empty
+					if (!mEntryAdapter.isEmpty()) { // if list not empty
 						Cursor cursor = (Cursor) getListAdapter().getItem(getListAdapter().getCount()-1); // get last entry
 		    	        String created = cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_CREATED));
 		            	Bundle params = new Bundle();
@@ -226,7 +230,7 @@ public class ProfileActivity extends FragmentActivity {
 		    	        Bundle argsEntriesOlder = new Bundle();
 		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
 		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+		            	//RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mEntryAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntriesOlder, r);
 	            	}
 					
@@ -268,8 +272,8 @@ public class ProfileActivity extends FragmentActivity {
 	        	Bundle argsProfileREST = new Bundle();
 	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_PROFILES);
 	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, paramsProfile);
-	        	RESTLoaderCallbacks rp = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
-	    		getLoaderManager().initLoader(NoisetracksApplication.PROFILE_REST_LOADER, argsProfileREST, rp);
+	        	//RESTLoaderCallbacks rp = new RESTLoaderCallbacks(getActivity(), mEntryAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+	    		getLoaderManager().initLoader(NoisetracksApplication.PROFILE_REST_LOADER, argsProfileREST, r);
 	    		
 			}
 		}
@@ -294,7 +298,7 @@ public class ProfileActivity extends FragmentActivity {
 	            			RESTLoaderCallbacks.ARGS_URI,
 	            			Uri.parse(AppSettings.DOMAIN + c.getString(c.getColumnIndex(Entries.COLUMN_NAME_RESOURCE_URI)))); // resource uri contains 'next' from last api call
 	            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-	            	RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
+	            	//RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), mEntryAdapter, mPullToRefreshView, mEmpty, mPadding, mHeader, mFooter);
 	            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntries, r);
 	            	
 				}
@@ -307,6 +311,49 @@ public class ProfileActivity extends FragmentActivity {
 					startActivity(i);
 				}
 			}
+		}
+		
+		public void onLoadFinished(Cursor data) {
+			mEntryAdapter.swapCursor(data);
+        	
+        	if (mEntryAdapter.isEmpty()) {
+        		mPadding.setVisibility(View.INVISIBLE);
+            	mHeader.setVisibility(View.INVISIBLE);
+            	mFooter.setVisibility(View.INVISIBLE);
+        		mEmpty.setText("Pull to refresh");
+        	} else {
+        		mPadding.setVisibility(View.VISIBLE);
+            	mHeader.setVisibility(View.VISIBLE);
+            	mFooter.setVisibility(View.VISIBLE);
+        		mEmpty.setText("");
+        	}
+        	
+            if (isResumed()) {
+            	setListShown(true);
+            } else {
+            	setListShownNoAnimation(true);
+            }
+		}
+		
+		public void onRefreshComplete() {
+			// Reset pull refresh view
+	    	mPullToRefreshView.onRefreshComplete();
+	    	// Set updated text	    	
+	    	mPullToRefreshView.setLastUpdatedLabel("Last updated: " + DateUtils.formatDateTime(getActivity(), System.currentTimeMillis(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_ABBREV_TIME));
+
+	    	if (mEntryAdapter != null) {
+		    	if (mEntryAdapter.isEmpty()) {
+		    		mPadding.setVisibility(View.INVISIBLE);
+		        	mHeader.setVisibility(View.INVISIBLE);
+		        	mFooter.setVisibility(View.INVISIBLE);
+		    		mEmpty.setText("Pull to refresh.");
+		    	} else {
+		    		mPadding.setVisibility(View.VISIBLE);
+		        	mHeader.setVisibility(View.VISIBLE);
+		        	mFooter.setVisibility(View.VISIBLE);
+		    		mEmpty.setText("");
+		    	}
+	    	}
 		}
 		
 		

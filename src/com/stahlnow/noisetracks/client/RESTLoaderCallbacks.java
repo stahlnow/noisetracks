@@ -7,9 +7,12 @@ import org.json.JSONTokener;
 
 import com.handmark.pulltorefresh.library.PullToRefreshListView;
 import com.stahlnow.noisetracks.NoisetracksApplication;
+import com.stahlnow.noisetracks.authenticator.SignupActivity.SignupFragment;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
 import com.stahlnow.noisetracks.ui.EntryAdapter;
+import com.stahlnow.noisetracks.ui.FeedActivity.FeedListFragment;
+import com.stahlnow.noisetracks.ui.ProfileActivity.ProfileListFragment;
 import com.stahlnow.noisetracks.utility.AppLog;
 import com.stahlnow.noisetracks.utility.AppSettings;
 
@@ -17,6 +20,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.Loader;
 import android.text.format.DateUtils;
@@ -31,49 +35,32 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
     
 	public static final Uri URI_ENTRIES = Uri.parse(AppSettings.DOMAIN + "/api/v1/entry/");
 	public static final Uri URI_PROFILES = Uri.parse(AppSettings.DOMAIN + "/api/v1/profile/");
+	public static final Uri URI_SIGNUP = Uri.parse(AppSettings.DOMAIN + "/api/v1/signup/");
     
     private Context mContext;
-    private EntryAdapter mEntryAdapter = null;
-    private PullToRefreshListView mPullToRefreshView;
-    private TextView mEmpty;
-    private TextView mPadding;
-    private View mHeader;
-    private View mFooter;
+    private Fragment mFragment;
     
-    /**
-     * Constructor with Simple Cursor Adapter
-     * @param c The context
-     * @param adapter The EntryAdapter
-     * @param pullToRefreshView 
-     * @param empty
-     * @param padding
-     * @param header
-     * @param footer
-     */
-	public RESTLoaderCallbacks(Context c, EntryAdapter adapter, PullToRefreshListView pullToRefreshView, TextView empty,
-			TextView padding, View header, View footer) {
+    
+	public RESTLoaderCallbacks(Context c, Fragment f) {
 		super();
-		this.mContext = c;
-		this.mEntryAdapter = adapter;
-		this.mPullToRefreshView = pullToRefreshView;
-		this.mEmpty = empty;
-		this.mPadding = padding;
-		this.mHeader = header;
-		this.mFooter = footer;
+		mContext = c;
+		mFragment = f;
 	}
+			
 
 	@Override
     public Loader<RESTLoader.RESTResponse> onCreateLoader(int id, Bundle args) {
 		
-        if (args != null && args.containsKey(ARGS_URI) && args.containsKey(ARGS_PARAMS)) {
-        	
-            Uri    action = args.getParcelable(ARGS_URI);
-            Bundle params = args.getParcelable(ARGS_PARAMS);
-            
-            return new RESTLoader(mContext, RESTLoader.HTTPVerb.GET, action, params);
-        }
-        
-        return null;
+	    if (args != null && args.containsKey(ARGS_URI) && args.containsKey(ARGS_PARAMS)) {
+	    	Uri    action = args.getParcelable(ARGS_URI);
+	    	Bundle params = args.getParcelable(ARGS_PARAMS);
+	    	
+	    	if (id == NoisetracksApplication.SIGNUP_REST_LOADER)
+	    		return new RESTLoader(mContext, RESTLoader.HTTPVerb.POST, action, params);
+	    	else
+	    		return new RESTLoader(mContext, RESTLoader.HTTPVerb.GET, action, params);
+	    }
+	    return null;
     }
 
     @Override
@@ -89,13 +76,6 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	            
 	            switch (loader.getId()) {
 	            case NoisetracksApplication.ENTRIES_REST_LOADER:
-	            	if (mEntryAdapter != null) {
-	            		if (!mEntryAdapter.isEmpty()) { // if the sql table is not empty, don't insert anything
-	            			break;
-	            		}
-	            	}
-	            	addEntriesFromJSON(json);	// fill list with entries
-	            	break;
 	            case NoisetracksApplication.ENTRIES_OLDER_REST_LOADER:
 	            case NoisetracksApplication.ENTRIES_NEWER_REST_LOADER:
 	            	addEntriesFromJSON(json);	// fill list with entries
@@ -106,7 +86,24 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	            default:
 	            	break;
 	            }
-	            
+	        } else if (code == 201) {
+	        	switch (loader.getId()) {
+	        	case NoisetracksApplication.SIGNUP_REST_LOADER:
+	        		SignupFragment sf = (SignupFragment)mFragment;
+	        		sf.onSignupComplete();
+	        		break;
+	        	default:
+	        		break;
+	        	}
+	        	
+	        } else if (code == 400) {
+	        	switch (loader.getId()) {
+	        	case NoisetracksApplication.SIGNUP_REST_LOADER:
+	        		SignupFragment sf = (SignupFragment)mFragment;
+	        		sf.onErrorSigningUp(json);
+	        	default:
+	        		break;
+	        	}
 	        } else {
 	        	Toast.makeText(mContext, "Failed to load data from Server.", Toast.LENGTH_SHORT).show();
 	        }
@@ -114,31 +111,19 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
     		Toast.makeText(mContext, "Failed to load data from Server.\nCheck your internet settings.", Toast.LENGTH_SHORT).show();        
     	}
     	
-    	// Reset pull refresh view
-    	mPullToRefreshView.onRefreshComplete();
-    	// Set updated text	    	
-    	mPullToRefreshView.setLastUpdatedLabel("Last updated: " + DateUtils.formatDateTime(mContext, System.currentTimeMillis(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_ABBREV_TIME));
-
-    	if (mEntryAdapter != null) {
-	    	if (mEntryAdapter.isEmpty()) {
-	    		mPadding.setVisibility(View.INVISIBLE);
-	        	mHeader.setVisibility(View.INVISIBLE);
-	        	mFooter.setVisibility(View.INVISIBLE);
-	    		mEmpty.setText("Pull to refresh.");
-	    	} else {
-	    		mPadding.setVisibility(View.VISIBLE);
-	        	mHeader.setVisibility(View.VISIBLE);
-	        	mFooter.setVisibility(View.VISIBLE);
-	    		mEmpty.setText("");
-	    	}
+    	if (mFragment.getClass().getSimpleName() == "ProfileListFragment") {
+    		ProfileListFragment plf = (ProfileListFragment)mFragment;
+    		plf.onRefreshComplete();
+    	} else if (mFragment.getClass().getSimpleName() == "FeedListFragment") {
+    		FeedListFragment plf = (FeedListFragment)mFragment;
+    		plf.onRefreshComplete();
     	}
+    	
     }
 
     @Override
     public void onLoaderReset(Loader<RESTLoader.RESTResponse> loader) {
-    	if (mEntryAdapter != null) {
-    		mEntryAdapter.changeCursor(null);
-    	}
+    
     }
     
     private void addEntriesFromJSON(String json) {

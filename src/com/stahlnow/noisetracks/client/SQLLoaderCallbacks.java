@@ -3,6 +3,7 @@ package com.stahlnow.noisetracks.client;
 import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
@@ -14,13 +15,11 @@ import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
 import com.stahlnow.noisetracks.ui.EntryAdapter;
+import com.stahlnow.noisetracks.ui.FeedActivity.FeedListFragment;
 import com.stahlnow.noisetracks.ui.ProfileActivity.ProfileListFragment;
 
 public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
-	
-	//public static final Uri ENTRIES = Entries.CONTENT_URI; // defines content provider uri for entries
-	//public static final Uri PROFILES = Profiles.CONTENT_URI; // defines content provider uri for profiles
-	
+		
 	// selection args
 	public static final String SELECT = "select";
 	public static final String SELECT_ENTRIES = "((" + Entries.COLUMN_NAME_FILENAME + " NOTNULL) AND (" + Entries.COLUMN_NAME_FILENAME + " != '' ))";
@@ -30,23 +29,12 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 	public static final String PROJECTION = "projection";
 	
 	private Context mContext;
-	private EntryAdapter mAdapter;
-	private ListFragment mListFragment;
-	private TextView mEmpty;
-	private TextView mPadding;
-    private View mHeader;
-    private View mFooter;
+	private Fragment mFragment;
 	
-	public SQLLoaderCallbacks(Context c, EntryAdapter adapter, ListFragment fragment, TextView empty,
-			TextView padding, View header, View footer) {
+	public SQLLoaderCallbacks(Context c, Fragment f) {
 		super();
-		this.mContext = c;
-		this.mAdapter = adapter;
-		this.mListFragment = fragment;
-		this.mEmpty = empty;
-		this.mPadding = padding;
-		this.mHeader = header;
-		this.mFooter = footer;
+		mContext = c;
+		mFragment = f;
 	}
 	
 	/**
@@ -103,30 +91,16 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
     	
     	switch(loader.getId()) {
     	case NoisetracksApplication.ENTRIES_SQL_LOADER_FEED: 	// entries for feed
+    		FeedListFragment f = (FeedListFragment)mFragment;
+    		f.onLoadFinished(data);
+    		break;
     	case NoisetracksApplication.ENTRIES_SQL_LOADER_PROFILE: // entries for profile
-    		mAdapter.swapCursor(data);
-        	
-        	if (mAdapter.isEmpty()) {
-        		mPadding.setVisibility(View.INVISIBLE);
-            	mHeader.setVisibility(View.INVISIBLE);
-            	mFooter.setVisibility(View.INVISIBLE);
-        		mEmpty.setText("Pull to refresh");
-        	} else {
-        		mPadding.setVisibility(View.VISIBLE);
-            	mHeader.setVisibility(View.VISIBLE);
-            	mFooter.setVisibility(View.VISIBLE);
-        		mEmpty.setText("");
-        	}
-        	
-            if (mListFragment.isResumed()) {
-            	mListFragment.setListShown(true);
-            } else {
-            	mListFragment.setListShownNoAnimation(true);
-            }
+    		ProfileListFragment p = (ProfileListFragment)mFragment;
+    		p.onLoadFinished(data);
     		break;
     	case NoisetracksApplication.PROFILE_SQL_LOADER: // single profile
-    		ProfileListFragment plf = (ProfileListFragment)mListFragment;
-    		plf.setProfileHeader(data);
+    		ProfileListFragment p2 = (ProfileListFragment)mFragment;
+    		p2.setProfileHeader(data);
     		break;
     	default:
     		break;
@@ -135,13 +109,6 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
     }
 
     public void onLoaderReset(Loader<Cursor> loader) {
-    	switch(loader.getId()) {
-    	case NoisetracksApplication.ENTRIES_SQL_LOADER_FEED: // entries for feed
-    	case NoisetracksApplication.ENTRIES_SQL_LOADER_PROFILE: // entries for profile
-    		mAdapter.swapCursor(null);
-    		break;
-    	default:
-    		break;
-    	}
+    	
     }
 }

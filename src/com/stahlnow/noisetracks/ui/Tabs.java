@@ -2,6 +2,7 @@ package com.stahlnow.noisetracks.ui;
 
 import java.util.ArrayList;
 
+import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -64,14 +65,12 @@ public class Tabs extends FragmentActivity {
 		mViewPager = (ViewPager) findViewById(R.id.pager);
 		mTabsAdapter = new TabsAdapter(this, mTabHost, mViewPager);
 		// add explore tab
-		mTabsAdapter.addTab(
-				mTabHost.newTabSpec("explore").setIndicator("Explore"),
-				FeedActivity.FeedListFragment.class, null);
+		mTabsAdapter.addTab(mTabHost.newTabSpec("explore").setIndicator("Explore"), FeedActivity.FeedListFragment.class, null);
 		// add profile tab (Me)
+		String username = AccountManager.get(this).getAccountsByType(getString(R.string.ACCOUNT_TYPE))[0].name;
 		Bundle profile_args = new Bundle();
-		profile_args.putString("username", "stahl");
-		mTabsAdapter.addTab(mTabHost.newTabSpec("profile").setIndicator("Me"),
-				ProfileActivity.ProfileListFragment.class, profile_args);
+		profile_args.putString("username", username);
+		mTabsAdapter.addTab(mTabHost.newTabSpec("profile").setIndicator("Me"), ProfileActivity.ProfileListFragment.class, profile_args);
 
 		for (int i = 0; i < mTabHost.getTabWidget().getChildCount(); i++) {
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)

@@ -1,4 +1,4 @@
-package com.stahlnow.noisetracks.client;
+package com.stahlnow.noisetracks.authenticator;
 
 import java.io.IOException;
 
@@ -20,14 +20,13 @@ import android.os.Handler;
 import android.widget.LinearLayout.LayoutParams;
 
 import com.stahlnow.noisetracks.R;
-import com.stahlnow.noisetracks.authenticator.AuthenticatorActivity;
 import com.stahlnow.noisetracks.utility.AppLog;
 import com.stahlnow.noisetracks.utility.AppSettings;
 
 /**
  * Provides utility methods for communicating with the server.
  */
-public class Authenticate extends AsyncTask<String, Void, Boolean> {
+public class AuthenticateTask extends AsyncTask<String, Void, Boolean> {
 
 	private final Handler mHandler = new Handler();
 	private Context mContext;
@@ -35,7 +34,7 @@ public class Authenticate extends AsyncTask<String, Void, Boolean> {
 	
 	private static String mKey = "";
 		
-	public Authenticate(Context context) {
+	public AuthenticateTask(Context context) {
         this.mContext = context;
         mProgress = new ProgressDialog(context);
     }
@@ -69,7 +68,7 @@ public class Authenticate extends AsyncTask<String, Void, Boolean> {
 		DefaultHttpClient httpclient = new DefaultHttpClient();
 		
 		try {
-			// Set Basic Auth credentials
+			// Set Basic Auth credentials in header
 			httpclient.getCredentialsProvider().setCredentials(
 					new AuthScope(AppSettings.HOST, AppSettings.HTTP_PORT),	//TODO set to 443 = SSL
 					new UsernamePasswordCredentials(user, password));
@@ -126,7 +125,7 @@ public class Authenticate extends AsyncTask<String, Void, Boolean> {
         }
         mHandler.post(new Runnable() {
             public void run() {
-                ((AuthenticatorActivity) mContext).onAuthenticationResult(result, mKey);
+                ((AuthenticateActivity) mContext).onAuthenticationResult(result, mKey);
             }
         });
     }    

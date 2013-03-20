@@ -30,6 +30,7 @@ public class NoisetracksApplication extends Application {
 	public static final int ENTRIES_OLDER_REST_LOADER = 300;
 	public static final int PROFILE_LIST_REST_LOADER = 400;
 	public static final int PROFILE_REST_LOADER = 500;
+	public static final int SIGNUP_REST_LOADER = 600;
 	
 	// Provide an instance for our static accessors
 	private static NoisetracksApplication instance = null;

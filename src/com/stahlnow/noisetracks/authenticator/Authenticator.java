@@ -11,7 +11,7 @@ import android.os.Handler;
 import android.widget.Toast;
 
 import com.stahlnow.noisetracks.R;
-import com.stahlnow.noisetracks.client.Authenticate;
+import com.stahlnow.noisetracks.authenticator.AuthenticateTask;
 
 /**
  * This class is an implementation of AbstractAccountAuthenticator for
@@ -45,8 +45,8 @@ class Authenticator extends AbstractAccountAuthenticator {
             });
     		return new Bundle(); // return empty bundle, if an account already exists
     	}
-        final Intent intent = new Intent(mContext, AuthenticatorActivity.class);
-        intent.putExtra(AuthenticatorActivity.PARAM_AUTHTOKEN_TYPE, authTokenType);
+        final Intent intent = new Intent(mContext, AuthenticateActivity.class);
+        intent.putExtra(AuthenticateActivity.PARAM_AUTHTOKEN_TYPE, authTokenType);
         intent.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
         final Bundle bundle = new Bundle();
         bundle.putParcelable(AccountManager.KEY_INTENT, intent);
@@ -66,9 +66,9 @@ class Authenticator extends AbstractAccountAuthenticator {
             return result;
         }
         // Launch AuthenticatorActivity to confirm credentials
-        final Intent intent = new Intent(mContext, AuthenticatorActivity.class);
-        intent.putExtra(AuthenticatorActivity.PARAM_USERNAME, account.name);
-        intent.putExtra(AuthenticatorActivity.PARAM_CONFIRMCREDENTIALS, true);
+        final Intent intent = new Intent(mContext, AuthenticateActivity.class);
+        intent.putExtra(AuthenticateActivity.PARAM_USERNAME, account.name);
+        intent.putExtra(AuthenticateActivity.PARAM_CONFIRMCREDENTIALS, true);
         intent.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
         final Bundle bundle = new Bundle();
         bundle.putParcelable(AccountManager.KEY_INTENT, intent);
@@ -107,9 +107,9 @@ class Authenticator extends AbstractAccountAuthenticator {
         }
         // the password was missing or incorrect, return an Intent to an
         // Activity that will prompt the user for the password.
-        final Intent intent = new Intent(mContext, AuthenticatorActivity.class);
-        intent.putExtra(AuthenticatorActivity.PARAM_USERNAME, account.name);
-        intent.putExtra(AuthenticatorActivity.PARAM_AUTHTOKEN_TYPE, authTokenType);
+        final Intent intent = new Intent(mContext, AuthenticateActivity.class);
+        intent.putExtra(AuthenticateActivity.PARAM_USERNAME, account.name);
+        intent.putExtra(AuthenticateActivity.PARAM_AUTHTOKEN_TYPE, authTokenType);
         intent.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
         final Bundle bundle = new Bundle();
         bundle.putParcelable(AccountManager.KEY_INTENT, intent);
@@ -143,7 +143,7 @@ class Authenticator extends AbstractAccountAuthenticator {
      * Validates user's password on the server
      */
     private boolean onlineConfirmPassword(String username, String password) {
-    	return Authenticate.authenticate(username, password);    
+    	return AuthenticateTask.authenticate(username, password);    
     }
     
     /**
@@ -172,10 +172,10 @@ class Authenticator extends AbstractAccountAuthenticator {
     @Override
     public Bundle updateCredentials(AccountAuthenticatorResponse response,
         Account account, String authTokenType, Bundle loginOptions) {
-        final Intent intent = new Intent(mContext, AuthenticatorActivity.class);
-        intent.putExtra(AuthenticatorActivity.PARAM_USERNAME, account.name);
-        intent.putExtra(AuthenticatorActivity.PARAM_AUTHTOKEN_TYPE, authTokenType);
-        intent.putExtra(AuthenticatorActivity.PARAM_CONFIRMCREDENTIALS, false);
+        final Intent intent = new Intent(mContext, AuthenticateActivity.class);
+        intent.putExtra(AuthenticateActivity.PARAM_USERNAME, account.name);
+        intent.putExtra(AuthenticateActivity.PARAM_AUTHTOKEN_TYPE, authTokenType);
+        intent.putExtra(AuthenticateActivity.PARAM_CONFIRMCREDENTIALS, false);
         final Bundle bundle = new Bundle();
         bundle.putParcelable(AccountManager.KEY_INTENT, intent);
         return bundle;

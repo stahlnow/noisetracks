@@ -23,9 +23,11 @@
 
     <!-- AuthenticatorActivity -->    
     <string name="username_hint">Username</string>
+    <string name="email_hint">Email</string>
     <string name="password_hint">Password</string>
+    <string name="password2_hint">Repeat Password</string>
     <string name="signin_button">SIGN IN</string>
-    <string name="signup_button">SIGN UP WITH EMAIL</string>
+    <string name="signup_button">SIGN UP</string>
     <!-- Message shown in progress dialog while app connects to the server -->
     <string name="ui_activity_authenticating">Authenticating\u2026</string>
     <!-- Message shown in dialog if the username or password is invalid. -->

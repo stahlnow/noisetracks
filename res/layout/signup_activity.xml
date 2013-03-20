@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- android:background="@color/background_dark" -->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+   
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="25dip"  
+        android:layout_marginBottom="5dip"
+        android:layout_marginLeft="@dimen/input_margin_left_right"
+        android:layout_marginRight="@dimen/input_margin_left_right"
+        android:textColor="#777"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+    <EditText
+        android:id="@+id/username_edit"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/input_margin_left_right"
+        android:layout_marginRight="@dimen/input_margin_left_right"
+        android:hint="@string/username_hint"
+        android:inputType="textEmailAddress"
+        android:scrollHorizontally="true"
+        android:singleLine="false"
+        android:text="hans"
+        android:textColor="#777"
+        android:textColorHint="#aaa"
+        android:typeface="sans" />
+    
+     <EditText
+        android:id="@+id/email_edit"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/input_margin_left_right"
+        android:layout_marginRight="@dimen/input_margin_left_right"
+        android:hint="@string/email_hint"
+        android:inputType="textEmailAddress"
+        android:scrollHorizontally="true"
+        android:singleLine="false"
+        android:text="hans@hans.com"
+        android:textColor="#777"
+        android:textColorHint="#aaa"
+        android:typeface="sans" />
+
+    <EditText
+        android:id="@+id/password_edit"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/input_margin_left_right"
+        android:layout_marginRight="@dimen/input_margin_left_right"
+        android:layout_marginTop="5dp"
+        android:hint="@string/password_hint"
+        android:imeOptions="actionDone"
+        android:inputType="textPassword"
+        android:scrollHorizontally="true"
+        android:singleLine="true"
+        android:text="123"
+        android:textColor="#777"
+        android:textColorHint="#aaa"
+        android:typeface="sans" />
+
+    <EditText
+        android:id="@+id/password2_edit"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/input_margin_left_right"
+        android:layout_marginRight="@dimen/input_margin_left_right"
+        android:layout_marginTop="5dp"
+        android:hint="@string/password2_hint"
+        android:imeOptions="actionDone"
+        android:inputType="textPassword"
+        android:scrollHorizontally="true"
+        android:singleLine="true"
+        android:text="123"
+        android:textColor="#777"
+        android:textColorHint="#aaa"
+        android:typeface="sans" />
+    
+    <Button
+        android:id="@+id/handle_sign_up_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/input_margin_left_right"
+        android:layout_marginRight="@dimen/input_margin_left_right"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        android:height="60dip"
+        android:minWidth="100dip"
+        android:text="@string/signup_button"
+        android:textColor="#777"
+        android:textSize="6pt" />
+
+</LinearLayout>

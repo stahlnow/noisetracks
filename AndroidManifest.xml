@@ -106,8 +106,18 @@
         </activity>
         <!-- The Authentication/Account Activity -->
         <activity
-            android:name=".authenticator.AuthenticatorActivity"
-            
+            android:name=".authenticator.AuthenticateActivity"
+            android:configChanges="keyboardHidden"
+            android:windowSoftInputMode="adjustPan|stateAlwaysHidden"
+            android:excludeFromRecents="true">
+            <!--
+                No intent-filter here! This activity is only ever launched by
+                someone who explicitly knows the class name
+            -->
+        </activity>
+        <!-- The Signup Activity -->
+        <activity
+            android:name=".authenticator.SignupActivity"
             android:configChanges="keyboardHidden"
             android:windowSoftInputMode="adjustPan|stateAlwaysHidden"
             android:excludeFromRecents="true">

@@ -18,11 +18,14 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
 import com.stahlnow.noisetracks.R;
+import com.stahlnow.noisetracks.utility.AppLog;
+
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AuthenticatorException;
@@ -132,16 +135,19 @@ public class RESTLoader extends AsyncTaskLoader<RESTLoader.RESTResponse> {
                     request = new HttpPost();
                     request.setURI(new URI(mAction.toString()));
                     
-                    // Attach form entity if necessary. Note: some REST APIs
-                    // require you to POST JSON. This is easy to do, simply use
-                    // postRequest.setHeader('Content-Type', 'application/json')
-                    // and StringEntity instead. Same thing for the PUT case 
-                    // below.
                     HttpPost postRequest = (HttpPost) request;
                     
                     if (mParams != null) {
-                        UrlEncodedFormEntity formEntity = new UrlEncodedFormEntity(paramsToList(mParams));
-                        postRequest.setEntity(formEntity);
+                        // POST form data
+                    	//UrlEncodedFormEntity formEntity = new UrlEncodedFormEntity(paramsToList(mParams));
+                        //postRequest.setEntity(formEntity);
+                    	
+                    	// POST json
+                    	postRequest.setHeader("Content-Type", "application/json");
+                    	StringEntity stringEntity = new StringEntity(mParams.getString("json"));
+                    	stringEntity.setContentEncoding("UTF-8");
+                    	stringEntity.setContentType("application/json");
+                    	postRequest.setEntity(stringEntity);
                     }
                 }
                 break;
@@ -164,22 +170,25 @@ public class RESTLoader extends AsyncTaskLoader<RESTLoader.RESTResponse> {
             if (request != null) {
                 HttpClient client = new DefaultHttpClient();
                 
-                // Set ApiKey request header
-                AccountManager am = AccountManager.get(mContext);
-                Account a[] = am.getAccountsByType(mContext.getString(R.string.ACCOUNT_TYPE));
-                if (a[0] != null) {
-                	try {
-						String apikey = am.blockingGetAuthToken(a[0], mContext.getString(R.string.AUTHTOKEN_TYPE), true);
-						// set header: http://django-tastypie.readthedocs.org/en/latest/authentication_authorization.html#apikeyauthentication
-						request.setHeader("Authorization", "ApiKey " + a[0].name + ":" + apikey);
-					} catch (OperationCanceledException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (AuthenticatorException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+                // Set ApiKey request header (not set for signup action)
+                if (mAction != RESTLoaderCallbacks.URI_SIGNUP) {
+	                AccountManager am = AccountManager.get(mContext);
+	                Account a[] = am.getAccountsByType(mContext.getString(R.string.ACCOUNT_TYPE));
+	                if (a[0] != null) {
+	                	try {
+							String apikey = am.blockingGetAuthToken(a[0], mContext.getString(R.string.AUTHTOKEN_TYPE), true);
+							// set header: http://django-tastypie.readthedocs.org/en/latest/authentication_authorization.html#apikeyauthentication
+							request.setHeader("Authorization", "ApiKey " + a[0].name + ":" + apikey);
+						} catch (OperationCanceledException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						} catch (AuthenticatorException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+	                }
                 }
+                
                 
                 // Let's send some useful debug information so we can monitor things
                 // in LogCat.

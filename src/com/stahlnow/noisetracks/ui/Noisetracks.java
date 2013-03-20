@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import com.stahlnow.noisetracks.authenticator.AuthenticationService;
-import com.stahlnow.noisetracks.authenticator.AuthenticatorActivity;
+import com.stahlnow.noisetracks.authenticator.AuthenticateActivity;
 
 
 public class Noisetracks extends Activity {
@@ -26,7 +26,7 @@ public class Noisetracks extends Activity {
 			return;
 		}
 		
-		intent = new Intent(Noisetracks.this, AuthenticatorActivity.class);
+		intent = new Intent(Noisetracks.this, AuthenticateActivity.class);
 		startActivityForResult(intent, LOGIN_REQUEST);	
 		
 		

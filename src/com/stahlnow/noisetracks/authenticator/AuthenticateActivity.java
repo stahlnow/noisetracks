@@ -19,6 +19,7 @@ package com.stahlnow.noisetracks.authenticator;
 import android.accounts.Account;
 import android.accounts.AccountAuthenticatorResponse;
 import android.accounts.AccountManager;
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.DialogInterface;
@@ -35,14 +36,15 @@ import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView;
 
 import com.stahlnow.noisetracks.R;
-import com.stahlnow.noisetracks.client.Authenticate;
 import com.stahlnow.noisetracks.provider.NoisetracksContract;
+import com.stahlnow.noisetracks.ui.Noisetracks;
+import com.stahlnow.noisetracks.ui.Tabs;
 import com.stahlnow.noisetracks.utility.AppLog;
 
 /**
  * Activity which displays login screen to the user.
  */
-public class AuthenticatorActivity extends FragmentActivity {
+public class AuthenticateActivity extends FragmentActivity {
     public static final String PARAM_CONFIRMCREDENTIALS = "confirmCredentials";
     public static final String PARAM_PASSWORD = "password";
     public static final String PARAM_USERNAME = "identification";
@@ -59,6 +61,8 @@ public class AuthenticatorActivity extends FragmentActivity {
     private Thread mAuthThread;
     private String mAuthtoken;
     private String mAuthtokenType;
+    
+    private static final int SIGNUP_REQUEST = 0;
 
     /**
      * If set we are just checking that the user knows their credentials; this
@@ -129,10 +133,10 @@ public class AuthenticatorActivity extends FragmentActivity {
    
     
     /**
-     * Handles onClick event on the Submit button. Sends username/password to
+     * Handles onClick event on the sign in button. Sends username/password to
      * the server for authentication.
      * 
-     * @param view The Submit button for which this method is invoked
+     * @param view The sign in button for which this method is invoked
      */
     public void handleLogin(View view) {
         if (mRequestNewAccount) {
@@ -143,9 +147,38 @@ public class AuthenticatorActivity extends FragmentActivity {
             mMessage.setText(getMessage());
         } else {
             // Start authenticating...
-        	new Authenticate(this).execute(mUsername, mPassword);
+        	new AuthenticateTask(this).execute(mUsername, mPassword);
         }
     }
+    
+    /**
+     * Handles onClick event on the sign up button. Starts Sign up activity. 
+     * 
+     * @param view The sign up button for which this method is invoked
+     */
+    public void handleSignup(View view) {
+    	Intent intent = this.getIntent();
+    	intent = new Intent(AuthenticateActivity.this, SignupActivity.class);
+		startActivityForResult(intent, SIGNUP_REQUEST);
+    }
+    
+    @Override
+   	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+   		if (resultCode == Activity.RESULT_CANCELED) {
+   			finish();
+   			return;
+   		} else if (requestCode == SIGNUP_REQUEST) { // try sign in user
+   			if (resultCode == RESULT_OK) {
+   				mUsername = data.getExtras().getString("username");
+   				mPassword = data.getExtras().getString("password");
+   				mUsernameEdit.setText(mUsername);
+   				mPasswordEdit.setText(mPassword);
+   				new AuthenticateTask(this).execute(mUsername, mPassword);   				
+   				return;
+   			}
+   		}		
+   	}
+
 
     /**
      * Called when response is received from the server for confirm credentials

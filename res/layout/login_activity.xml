@@ -63,5 +63,21 @@
         android:text="@string/signin_button"
         android:textColor="#777"
         android:textSize="6pt" />
+    
+    <Button
+        android:id="@+id/sign_up_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/input_margin_left_right"
+        android:layout_marginRight="@dimen/input_margin_left_right"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        android:height="60dip"
+        android:minWidth="100dip"
+        android:onClick="handleSignup"
+        android:text="@string/signup_button"
+        android:textColor="#777"
+        android:background="@drawable/btn_default_focused_holo_light"
+        android:textSize="6pt" />
 
 </LinearLayout>
