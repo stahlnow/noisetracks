@@ -4,11 +4,12 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 
+import com.actionbarsherlock.app.SherlockActivity;
 import com.stahlnow.noisetracks.authenticator.AuthenticationService;
 import com.stahlnow.noisetracks.authenticator.AuthenticateActivity;
 
 
-public class Noisetracks extends Activity {
+public class Noisetracks extends SherlockActivity {
 
 	static final int LOGIN_REQUEST = 0;
 	

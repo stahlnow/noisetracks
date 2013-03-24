@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+ <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <clip>
+            <shape
+                xmlns:android="http://schemas.android.com/apk/res/android"
+    			android:shape="rectangle">
+    			
+                <gradient
+                    android:startColor="#0FCCCCCC"
+                    android:centerColor="#3FCCCCCC"
+                    android:centerY="0.5"
+                    android:endColor="#0FCCCCCC"
+                    android:angle="270"
+                />
+            </shape>
+        </clip>
+    </item>
+    <!-- 
+    <item>
+        <clip>
+        <bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+            android:src="@drawable/list_selector_disabled_holo_light"
+            android:tileMode="repeat"
+            android:antialias="true"
+            android:dither="false"
+            android:filter="false"
+            android:gravity="left"
+        />
+        </clip>
+    </item>
+     -->
+
+</layer-list>

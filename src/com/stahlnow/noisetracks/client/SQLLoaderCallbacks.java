@@ -4,17 +4,12 @@ import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.view.View;
-import android.widget.TextView;
-
 import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
-import com.stahlnow.noisetracks.ui.EntryAdapter;
 import com.stahlnow.noisetracks.ui.FeedActivity.FeedListFragment;
 import com.stahlnow.noisetracks.ui.ProfileActivity.ProfileListFragment;
 

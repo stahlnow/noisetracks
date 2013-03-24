@@ -24,7 +24,6 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
 import com.stahlnow.noisetracks.R;
-import com.stahlnow.noisetracks.utility.AppLog;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;

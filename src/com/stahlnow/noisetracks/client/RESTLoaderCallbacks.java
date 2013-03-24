@@ -5,12 +5,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-import com.handmark.pulltorefresh.library.PullToRefreshListView;
 import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.authenticator.SignupActivity.SignupFragment;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
-import com.stahlnow.noisetracks.ui.EntryAdapter;
 import com.stahlnow.noisetracks.ui.FeedActivity.FeedListFragment;
 import com.stahlnow.noisetracks.ui.ProfileActivity.ProfileListFragment;
 import com.stahlnow.noisetracks.utility.AppLog;
@@ -23,9 +21,6 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.Loader;
-import android.text.format.DateUtils;
-import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 
 public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RESTResponse> {

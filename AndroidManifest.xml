@@ -23,7 +23,7 @@
         android:name="NoisetracksApplication"
         android:label="@string/app_name"
         android:icon="@drawable/logo"
-        android:theme="@style/Theme.noisetracks">
+        android:theme="@style/Theme.Noise">
         <uses-library android:name="com.google.android.maps" />
         <!-- The Noisetracks content provider represents a database for tracking data which is synced to the noisetracks cloud -->
         <provider android:name=".provider.NoisetracksProvider"
@@ -104,12 +104,13 @@
         <activity
             android:name=".utility.SettingsActivity">
         </activity>
-        <!-- The Authentication/Account Activity -->
+        <!-- The Authentication/Signin Activity -->
         <activity
             android:name=".authenticator.AuthenticateActivity"
             android:configChanges="keyboardHidden"
             android:windowSoftInputMode="adjustPan|stateAlwaysHidden"
-            android:excludeFromRecents="true">
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Noise.Fullscreen">
             <!--
                 No intent-filter here! This activity is only ever launched by
                 someone who explicitly knows the class name
@@ -120,7 +121,8 @@
             android:name=".authenticator.SignupActivity"
             android:configChanges="keyboardHidden"
             android:windowSoftInputMode="adjustPan|stateAlwaysHidden"
-            android:excludeFromRecents="true">
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Noise.Fullscreen">
             <!--
                 No intent-filter here! This activity is only ever launched by
                 someone who explicitly knows the class name

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="input_margin_left_right">20dp</dimen>
+    <dimen name="entry_margin_left_right">10dp</dimen>
+    <dimen name="entry_margin_top_bottom">5dp</dimen>
 </resources>

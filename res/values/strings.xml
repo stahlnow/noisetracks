@@ -6,6 +6,8 @@
     
     <!-- menu -->
 	<string name="hello_world">Hello, Noise.</string>
+	<string name="menu_record">RECORD</string>
+	<string name="menu_tracking">TRACKING</string>
 	<string name="menu_start_tracking">START TRACKING</string>
 	<string name="menu_stop_tracking">STOP TRACKING</string>
 	<string name="menu_settings">SETTINGS</string>

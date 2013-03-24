@@ -1,39 +1,47 @@
 package com.stahlnow.noisetracks.ui;
 
+import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.util.Date;
 
 import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.client.SQLLoaderCallbacks;
+import com.stahlnow.noisetracks.helper.FixedSpeedScroller;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.utility.AppLog;
 
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.text.Html;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.view.MenuItem;
 import com.handmark.pulltorefresh.extras.viewpager.PullToRefreshViewPager;
 import com.handmark.pulltorefresh.library.PullToRefreshBase;
 import com.handmark.pulltorefresh.library.PullToRefreshBase.OnRefreshListener;
 
-public class EntryActivity extends FragmentActivity implements OnRefreshListener<ViewPager> { 
+public class EntryActivity extends SherlockFragmentActivity implements OnRefreshListener<ViewPager> { 
 
 	private PullToRefreshViewPager mPullToRefreshViewPager;
 	private ViewPager mPager;
@@ -42,6 +50,10 @@ public class EntryActivity extends FragmentActivity implements OnRefreshListener
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		// enable 'up' navigation in action bar
+		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+		
 		setContentView(R.layout.entry_activity);
 
 		mPullToRefreshViewPager = (PullToRefreshViewPager) findViewById(R.id.entry_activity_pull_refresh_view_pager);
@@ -63,12 +75,57 @@ public class EntryActivity extends FragmentActivity implements OnRefreshListener
 		mPager.setAdapter(mAdapter);
 		mPager.setCurrentItem(getIntent().getExtras().getInt("item"), false); // select item	
 	
+		try {
+            Field mScroller;
+            mScroller = ViewPager.class.getDeclaredField("mScroller");
+            mScroller.setAccessible(true); 
+            DecelerateInterpolator sInterpolator = new DecelerateInterpolator();
+            FixedSpeedScroller scroller = new FixedSpeedScroller(mPager.getContext(), sInterpolator);
+            mScroller.set(mPager, scroller);
+        } catch (NoSuchFieldException e) {
+        } catch (IllegalArgumentException e) {
+        } catch (IllegalAccessException e) {
+        }
 	}
 	
 	@Override
 	public void onRefresh(PullToRefreshBase<ViewPager> refreshView) {
 		new GetDataTask().execute();
 	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+	    switch (item.getItemId()) {
+	        case android.R.id.home:
+	            // This is called when the Home (Up) button is pressed
+	            // in the Action Bar.
+	            Intent parentActivityIntent = new Intent(this, Tabs.class);
+	            parentActivityIntent.addFlags(
+	                    Intent.FLAG_ACTIVITY_CLEAR_TOP |
+	                    Intent.FLAG_ACTIVITY_NEW_TASK);
+	            startActivity(parentActivityIntent);
+	            finish();
+	            return true;
+	    }
+	    return super.onOptionsItemSelected(item);
+	}
+	
+	
+	// player control click handlers
+	public void play(View view) {
+	    AppLog.logString("play");
+	}
+	
+	public void previous(View view) {
+	    AppLog.logString("previous");
+	    mPager.setCurrentItem(mPager.getCurrentItem()-1, true);
+	}
+	
+	public void next(View view) {
+	    AppLog.logString("next");
+	    mPager.setCurrentItem(mPager.getCurrentItem()+1, true);
+	}
+	
 	
 
 	private static class EntryPagerAdapter<F extends Fragment> extends FragmentStatePagerAdapter {
@@ -153,8 +210,9 @@ public class EntryActivity extends FragmentActivity implements OnRefreshListener
 			TextView username = (TextView) v.findViewById(R.id.entry_username);
 			TextView recorded_ago = (TextView) v.findViewById(R.id.entry_recorded_ago);
 			ImageView spectrogram = (ImageView) v.findViewById(R.id.entry_spectrogram);
+			SeekBar seekbar = (SeekBar) v.findViewById(R.id.entry_seekbar);
 
-			//holder.mugshot.setImageResource(R.drawable.default_image);
+			//mugshot.setImageResource(R.drawable.default_image);
 			String mug = getArguments().getString("mugshot");
 			if (mug != null) {
 				Uri mugshotUri = Uri.parse(mug);
@@ -166,7 +224,7 @@ public class EntryActivity extends FragmentActivity implements OnRefreshListener
 				}
 			}
 			
-			//holder.spectrogram.setImageResource(R.drawable.default_image);
+			//spectrogram.setImageResource(R.drawable.default_image);
 			String spect = getArguments().getString("spectrogram");
 			if (spect != null) {
 				Uri specUri = Uri.parse(spect);
@@ -174,7 +232,8 @@ public class EntryActivity extends FragmentActivity implements OnRefreshListener
 					Bitmap bitmap = mHttpImageManager.loadImage(new HttpImageManager.LoadRequest(specUri, spectrogram));
 					if (bitmap != null) {
 						spectrogram.setImageBitmap(bitmap);
-				    }
+					}
+					
 				}
 			}
 			
@@ -184,8 +243,9 @@ public class EntryActivity extends FragmentActivity implements OnRefreshListener
 			if (recorded != null) {
 				try {
 					Date d = NoisetracksApplication.SDF.parse(recorded);
-					String rec_ago = DateUtils.getRelativeTimeSpanString(d.getTime(), System.currentTimeMillis(), 0L, DateUtils.FORMAT_ABBREV_ALL).toString();
-					recorded_ago.setText(rec_ago);
+					String time = DateUtils.formatDateTime(getActivity(), d.getTime(), DateUtils.FORMAT_SHOW_TIME|DateUtils.FORMAT_12HOUR|DateUtils.FORMAT_CAP_AMPM);
+					String date = DateUtils.formatDateTime(getActivity(), d.getTime(), DateUtils.FORMAT_SHOW_DATE|DateUtils.FORMAT_ABBREV_ALL);
+					recorded_ago.setText(time + Html.fromHtml("&nbsp;\u00B7&nbsp;") + date);
 				} catch (ParseException e) {			
 					AppLog.logString("Failed to parse recorded date: " + e.toString());
 				}

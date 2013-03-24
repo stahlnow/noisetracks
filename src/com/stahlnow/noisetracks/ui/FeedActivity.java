@@ -9,7 +9,7 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
+
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ListFragment;
 import android.text.format.DateUtils;
@@ -29,13 +29,14 @@ import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
 import com.stahlnow.noisetracks.utility.AppLog;
 import com.stahlnow.noisetracks.utility.AppSettings;
+import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.handmark.pulltorefresh.library.PullToRefreshBase;
 import com.handmark.pulltorefresh.library.PullToRefreshBase.OnLastItemVisibleListener;
 import com.handmark.pulltorefresh.library.PullToRefreshBase.OnRefreshListener;
 import com.handmark.pulltorefresh.library.PullToRefreshListView;
 
 
-public class FeedActivity extends FragmentActivity {
+public class FeedActivity extends SherlockFragmentActivity {
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -26,7 +26,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
 import android.text.TextUtils;
 import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
@@ -35,16 +34,17 @@ import android.widget.EditText;
 import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView;
 
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.view.Window;
+
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.provider.NoisetracksContract;
-import com.stahlnow.noisetracks.ui.Noisetracks;
-import com.stahlnow.noisetracks.ui.Tabs;
 import com.stahlnow.noisetracks.utility.AppLog;
 
 /**
  * Activity which displays login screen to the user.
  */
-public class AuthenticateActivity extends FragmentActivity {
+public class AuthenticateActivity extends SherlockFragmentActivity {
     public static final String PARAM_CONFIRMCREDENTIALS = "confirmCredentials";
     public static final String PARAM_PASSWORD = "password";
     public static final String PARAM_USERNAME = "identification";
@@ -101,6 +101,10 @@ public class AuthenticateActivity extends FragmentActivity {
     public void onCreate(Bundle savedInstanceState) {
     	
         super.onCreate(savedInstanceState);
+        
+        // hide action bar
+        getWindow().requestFeature((int) Window.FEATURE_ACTION_BAR);
+        getActionBar().hide();
 
         mAccountAuthenticatorResponse = getIntent().getParcelableExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE);
 

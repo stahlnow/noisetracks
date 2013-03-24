@@ -1,16 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent" >
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
 
     <com.handmark.pulltorefresh.extras.viewpager.PullToRefreshViewPager
         xmlns:ptr="http://schemas.android.com/apk/res-auto"
         android:id="@+id/entry_activity_pull_refresh_view_pager"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_height="0dip"
+        android:layout_weight="0.17"
+        android:animateLayoutChanges="true"
         ptr:ptrAnimationStyle="flip"
         ptr:ptrHeaderBackground="@android:color/darker_gray"
         ptr:ptrMode="pullFromEnd"
         ptr:ptrRefreshableViewBackground="?android:attr/windowBackground" />
 
-</FrameLayout>
+    <RelativeLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="84dp"
+        android:layout_gravity="bottom"
+        android:background="@color/lightest_grey"
+        android:orientation="horizontal"
+        android:paddingBottom="5dp" >
+
+        <ImageButton
+            android:id="@+id/entry_previous"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="3dp"
+            android:background="@color/transparent"
+            android:contentDescription="play previous"
+            android:onClick="previous"
+            android:src="@drawable/av_previous"
+            tools:ignore="HardcodedText" />
+
+        <ImageButton
+            android:id="@+id/entry_play_pause"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:background="@color/transparent"
+            android:contentDescription="play/pause"
+            android:onClick="play"
+            android:src="@drawable/av_play"
+            tools:ignore="HardcodedText" />
+
+        <ImageButton
+            android:id="@+id/entry_next"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="3dp"
+            android:background="@color/transparent"
+            android:contentDescription="play next"
+            android:onClick="next"
+            android:src="@drawable/av_next"
+            tools:ignore="HardcodedText" />
+
+    </RelativeLayout>
+
+</LinearLayout>

@@ -11,27 +11,22 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.SystemClock;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.view.InflateException;
-import android.view.LayoutInflater;
-import android.view.LayoutInflater.Factory;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TabHost;
 import android.widget.TabWidget;
 import android.widget.TextView;
-import android.util.AttributeSet;
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuItem;
+import com.actionbarsherlock.view.MenuInflater;
 
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.authenticator.AuthenticationService;
@@ -40,7 +35,7 @@ import com.stahlnow.noisetracks.utility.AppLog;
 import com.stahlnow.noisetracks.utility.AppSettings;
 import com.stahlnow.noisetracks.utility.SettingsActivity;
 
-public class Tabs extends FragmentActivity {
+public class Tabs extends SherlockFragmentActivity {
 
 	TabHost mTabHost;
 	ViewPager mViewPager;
@@ -57,6 +52,10 @@ public class Tabs extends FragmentActivity {
 
 		// set default settings
 		AppSettings.setLoggingInterval(this, 1); // each minute
+		
+		// disable 'up' navigation in action bar for home screen
+		getSupportActionBar().setHomeButtonEnabled(false);
+		getSupportActionBar().setDisplayHomeAsUpEnabled(false);
 
 		// setup view
 		setContentView(R.layout.tabs);
@@ -72,19 +71,23 @@ public class Tabs extends FragmentActivity {
 		profile_args.putString("username", username);
 		mTabsAdapter.addTab(mTabHost.newTabSpec("profile").setIndicator("Me"), ProfileActivity.ProfileListFragment.class, profile_args);
 
+		// ridiculously complicated method to set tab indicator and tab text colors.
 		for (int i = 0; i < mTabHost.getTabWidget().getChildCount(); i++) {
+			
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
 				mTabHost.getTabWidget()
 						.getChildAt(i)
 						.setBackground(
 								getResources()
 										.getDrawable(
-												R.drawable.tab_indicator_ab_noisetracks));
+												R.drawable.tab_indicator_ab_noise));
+			
 			TextView tv = (TextView) mTabHost.getTabWidget().getChildAt(i)
 					.findViewById(android.R.id.title);
 			tv.setTextColor(getResources().getColor(R.color.light_grey));
 		}
 
+		// try to restore tab
 		if (savedInstanceState != null) {
 			mTabHost.setCurrentTabByTag(savedInstanceState.getString("tab"));
 		}
@@ -116,23 +119,31 @@ public class Tabs extends FragmentActivity {
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		MenuInflater inflater = getMenuInflater();
+		MenuInflater inflater = getSupportMenuInflater();
 		inflater.inflate(R.menu.main_menu, menu);
 		return super.onCreateOptionsMenu(menu);
 	}
 
 	@Override
 	public boolean onPrepareOptionsMenu(Menu menu) {		
-		menu.findItem(R.id.menu_toggle_tracking).setIcon(AppSettings.getServiceRunning(this)? R.drawable.ic_action_microphone : R.drawable.ic_action_done);
+		//menu.findItem(R.id.menu_toggle_tracking).setIcon(AppSettings.getServiceRunning(this)? R.drawable._record : R.drawable.av_stop);
+		menu.findItem(R.id.menu_toggle_tracking).setTitle(AppSettings.getServiceRunning(this)? R.string.menu_stop_tracking : R.string.menu_start_tracking);
 		return super.onPrepareOptionsMenu(menu);
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
+		case R.id.menu_record:
+			// TODO start recording activity
+			return true;
 		case R.id.menu_toggle_tracking:
 			toggleTracking(AppSettings.getServiceRunning(this), AppSettings.getLoggingInterval(this));
 			
+			// check/uncheck menu item
+			//item.setCheckable(true); // this is already set in main_menu.xml but not working somehow.
+			//item.setChecked(AppSettings.getServiceRunning(this));
+						
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
 				invalidateOptionsMenu();
 			return true;
@@ -164,8 +175,7 @@ public class Tabs extends FragmentActivity {
 
 			AppSettings.setServiceRunning(this, true);
 
-			AppLog.logString("Service Started with interval " + interval * 60
-					+ " seconds.");
+			AppLog.logString("Service Started with interval " + interval * 60 + " seconds.");
 		}
 	}
 

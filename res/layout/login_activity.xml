@@ -77,7 +77,6 @@
         android:onClick="handleSignup"
         android:text="@string/signup_button"
         android:textColor="#777"
-        android:background="@drawable/btn_default_focused_holo_light"
         android:textSize="6pt" />
 
 </LinearLayout>

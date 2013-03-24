@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <style name="Theme.Noise" parent="@style/Theme.Sherlock.Light">
+        
+        <!-- action bar -->
+        
+        <item name="actionBarItemBackground">@drawable/selectable_background_noise</item>
+        <item name="popupMenuStyle">@style/PopupMenu.Noise</item>
+        <item name="dropDownListViewStyle">@style/DropDownListView.Noise</item>
+        <item name="actionBarTabStyle">@style/ActionBarTabStyle.Noise</item>
+        <item name="actionDropDownStyle">@style/DropDownNav.Noise</item>
+        <item name="actionBarStyle">@style/ActionBar.Solid.Noise</item>
+        <item name="actionModeBackground">@drawable/cab_background_top_noise</item>
+        <item name="actionModeSplitBackground">@drawable/cab_background_bottom_noise</item>
+        <item name="actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Noise</item>
+   
+        <item name="android:actionBarItemBackground">@drawable/selectable_background_noise</item>
+        <item name="android:popupMenuStyle">@style/PopupMenu.Noise</item>
+        <item name="android:dropDownListViewStyle">@style/DropDownListView.Noise</item>
+        <item name="android:actionBarTabStyle">@style/ActionBarTabStyle.Noise</item>
+        <item name="android:actionDropDownStyle">@style/DropDownNav.Noise</item>
+        <item name="android:actionBarStyle">@style/ActionBar.Solid.Noise</item>
+        <item name="android:actionModeBackground">@drawable/cab_background_top_noise</item>
+        <item name="android:actionModeSplitBackground">@drawable/cab_background_bottom_noise</item>
+        <item name="android:actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Noise</item>
+        
+        <!-- general styles -->
+        <item name="android:textCursorDrawable">@null</item> <!-- added -->
+        <item name="android:editTextStyle">@style/EditTextmain</item>
+	    <item name="android:autoCompleteTextViewStyle">@style/AutoCompleteTextViewmain</item>
+	    <item name="android:checkboxStyle">@style/CheckBoxmain</item>
+	    <item name="android:radioButtonStyle">@style/RadioButtonmain</item>
+	    <item name="android:buttonStyle">@style/Buttonmain</item>
+	    <item name="android:imageButtonStyle">@style/ImageButtonmain</item>
+	    <item name="android:spinnerStyle">@style/Spinnermain</item>
+	    <item name="android:dropDownSpinnerStyle">@style/Spinnermain.DropDown</item>
+	    <item name="android:spinnerDropDownItemStyle">@style/SpinnerDropDownItemmain</item>
+	    <item name="android:progressBarStyleHorizontal">@style/ProgressBarmain</item>
+	    <item name="android:seekBarStyle">@style/SeekBarmain</item>
+	    <item name="android:ratingBarStyle">@style/RatingBarmain</item>
+	    <item name="android:ratingBarStyleIndicator">@style/RatingBarBigmain</item>
+	    <item name="android:ratingBarStyleSmall">@style/RatingBarSmallmain</item>
+	    <item name="android:buttonStyleToggle">@style/Togglemain</item>
+	    <item name="android:listViewStyle">@style/ListViewmain</item>
+	    <item name="android:listViewWhiteStyle">@style/ListViewmain.White</item>
+	    <item name="android:spinnerItemStyle">@style/SpinnerItemmain</item>
+
+    </style>
+    
+    <!-- Fullscreen Theme -->
+    <style name="Theme.Noise.Fullscreen" parent="@style/Theme.Noise">
+        <item name="android:windowActionBarOverlay">true</item>
+    	<item name="android:windowFullscreen">true</item>
+    	<item name="android:windowActionBar">false</item>
+    	<item name="android:windowTitleSize">0dp</item>
+	</style>
+
+    <style name="ActionBar.Solid.Noise" parent="@style/Widget.Sherlock.Light.ActionBar.Solid">
+        <item name="displayOptions">showHome|homeAsUp|useLogo</item> <!-- added -->
+        <item name="background">@drawable/ab_solid_noise</item>
+        <item name="backgroundStacked">@drawable/ab_stacked_solid_noise</item>
+        <item name="backgroundSplit">@drawable/ab_bottom_solid_noise</item>
+        <item name="progressBarStyle">@style/ProgressBar.Noise</item>
+        
+        <item name="android:displayOptions">showHome|homeAsUp|useLogo</item> <!-- added -->
+        <item name="android:background">@drawable/ab_solid_noise</item>
+        <item name="android:backgroundStacked">@drawable/ab_stacked_solid_noise</item>
+        <item name="android:backgroundSplit">@drawable/ab_bottom_solid_noise</item>
+        <item name="android:progressBarStyle">@style/ProgressBar.Noise</item>
+    </style>
+
+    <style name="ActionBar.Transparent.Noise" parent="@style/Widget.Sherlock.Light.ActionBar">
+        <item name="background">@drawable/ab_transparent_noise</item>
+        <item name="progressBarStyle">@style/ProgressBar.Noise</item>
+        
+        <item name="android:displayOptions">useLogo|showHome</item>
+        <item name="android:background">@drawable/ab_transparent_noise</item>
+        <item name="android:progressBarStyle">@style/ProgressBar.Noise</item>
+    </style>
+	
+    <style name="PopupMenu.Noise" parent="@style/Widget.Sherlock.Light.ListPopupWindow">	
+        <item name="android:popupBackground">@drawable/menu_dropdown_panel_noise</item>	
+        <item name="android:popupBackground">@drawable/menu_dropdown_panel_noise</item>	
+    </style>
+	
+    <style name="DropDownListView.Noise" parent="@style/Widget.Sherlock.Light.ListView.DropDown">
+        <item name="android:listSelector">@drawable/selectable_background_noise</item>
+        <item name="android:listSelector">@drawable/selectable_background_noise</item>
+    </style>
+
+    <style name="ActionBarTabStyle.Noise" parent="@style/Widget.Sherlock.Light.ActionBar.TabView">
+        <item name="android:background">@drawable/tab_indicator_ab_noise</item>
+        <item name="android:background">@drawable/tab_indicator_ab_noise</item>
+    </style>
+	
+    <style name="DropDownNav.Noise" parent="@style/Widget.Sherlock.Light.Spinner.DropDown.ActionBar">
+        <item name="android:background">@drawable/spinner_background_ab_noise</item>
+        <item name="android:popupBackground">@drawable/menu_dropdown_panel_noise</item>
+        <item name="android:dropDownSelector">@drawable/selectable_background_noise</item>
+        
+        <item name="android:background">@drawable/spinner_background_ab_noise</item>
+        <item name="android:popupBackground">@drawable/menu_dropdown_panel_noise</item>
+        <item name="android:dropDownSelector">@drawable/selectable_background_noise</item>
+    </style>
+    
+    <style name="ProgressBar.Noise" parent="@style/Widget.Sherlock.Light.ProgressBar.Horizontal">
+        <item name="android:progressDrawable">@drawable/progress_horizontal_noise</item>
+        <item name="android:progressDrawable">@drawable/progress_horizontal_noise</item>
+    </style>
+    
+    <style name="ActionButton.CloseMode.Noise" parent="@style/Widget.Sherlock.Light.ActionButton.CloseMode">
+        <item name="android:background">@drawable/btn_cab_done_noise</item>
+        <item name="android:background">@drawable/btn_cab_done_noise</item>
+    </style>
+    
+    <!-- this style is only referenced in a Light.DarkActionBar based theme -->
+    <style name="Theme.Noise.Widget" parent="@style/Theme.Sherlock">
+        <item name="popupMenuStyle">@style/PopupMenu.Noise</item>
+        <item name="dropDownListViewStyle">@style/DropDownListView.Noise</item>
+        
+        <item name="android:popupMenuStyle">@style/PopupMenu.Noise</item>
+        <item name="android:dropDownListViewStyle">@style/DropDownListView.Noise</item>
+    </style>
+
+</resources>
