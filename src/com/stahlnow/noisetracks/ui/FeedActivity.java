@@ -1,12 +1,8 @@
 package com.stahlnow.noisetracks.ui;
 
-import java.io.IOException;
-
 import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -27,7 +23,6 @@ import com.stahlnow.noisetracks.client.SQLLoaderCallbacks;
 import com.stahlnow.noisetracks.helper.ProgressWheel;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
-import com.stahlnow.noisetracks.utility.AppLog;
 import com.stahlnow.noisetracks.utility.AppSettings;
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.handmark.pulltorefresh.library.PullToRefreshBase;
@@ -67,20 +62,9 @@ public class FeedActivity extends SherlockFragmentActivity {
         private View mFooter;
         private TextView mPadding;
         
-        private MediaPlayer player = null;      
-        
 		@Override
 		public void onDestroy() {
 			super.onDestroy();
-			
-			//handler.removeCallbacks(updatePositionRunnable);
-			if (player.isPlaying()) {
-				player.stop();
-			}
-			player.reset();
-			player.release();
-
-			player = null;
 		}
 		
 		@Override
@@ -101,19 +85,11 @@ public class FeedActivity extends SherlockFragmentActivity {
 		    return root;
 		}
 		
-		
 		@Override
 		public void onActivityCreated(Bundle savedInstanceState) {
 		    super.onActivityCreated(savedInstanceState);
 		    
 		    r = new RESTLoaderCallbacks(getActivity(), this);
-		    
-		    // We have a menu item to show in action bar.
-		    //setHasOptionsMenu(true);	
-		    
-		    player = new MediaPlayer();
-		    player.setOnCompletionListener(onCompletion);
-	        player.setOnErrorListener(onError);
 		    
 		    // add header padding
 		    mPadding = new TextView(this.getActivity());
@@ -353,63 +329,5 @@ public class FeedActivity extends SherlockFragmentActivity {
 	    public void setListShownNoAnimation(boolean shown) {
 	        setListShown(shown, false);
 	    }
-	    
-	    
-	    private MediaPlayer.OnCompletionListener onCompletion = new MediaPlayer.OnCompletionListener() {
-    		
-    		@Override
-    		public void onCompletion(MediaPlayer mp) {
-    			stopPlay();
-    		}
-    	};
-    	
-    	private MediaPlayer.OnErrorListener onError = new MediaPlayer.OnErrorListener() {
-    		
-    		@Override
-    		public boolean onError(MediaPlayer mp, int what, int extra) {
-    			AppLog.logString(what + " " + extra);
-    			// returning false will call the OnCompletionListener
-    			return false;
-    		}
-    	};
-	    
-	    private void startPlay(String file) {
-			
-			if (player.isPlaying()) {
-				player.stop();
-				player.reset();
-			}
-			
-			try {
-				player.setAudioStreamType(AudioManager.STREAM_MUSIC);
-				player.setDataSource(file);
-				player.prepare();
-				player.start();
-			} catch (IllegalArgumentException e) {
-				e.printStackTrace();
-			} catch (IllegalStateException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			
-			//seekbar.setMax(player.getDuration());
-			//playButton.setImageResource(android.R.drawable.ic_media_pause);
-			
-			//updatePosition();
-			
-			//isStarted = true;
-		}
-		
-		private void stopPlay() {
-			player.stop();
-			player.reset();
-			
-			//playButton.setImageResource(android.R.drawable.ic_media_play);
-			//handler.removeCallbacks(updatePositionRunnable);
-			//seekbar.setProgress(0);
-			
-			//isStarted = false;
-		}
 	}
 }

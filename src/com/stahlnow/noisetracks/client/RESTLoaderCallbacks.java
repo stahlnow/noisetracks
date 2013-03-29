@@ -139,8 +139,8 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 				values.put(Entries.COLUMN_NAME_SPECTROGRAM, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("spectrogram"));
 				values.put(Entries.COLUMN_NAME_LATITUDE, location.getDouble(1));
 				values.put(Entries.COLUMN_NAME_LONGITUDE, location.getDouble(0));
-				values.put(Entries.COLUMN_NAME_CREATED, entry.getString("created").substring(0,23));					
-				values.put(Entries.COLUMN_NAME_RECORDED, entry.getString("recorded").substring(0,23));
+				values.put(Entries.COLUMN_NAME_CREATED, entry.getString("created").substring(0,19));					
+				values.put(Entries.COLUMN_NAME_RECORDED, entry.getString("recorded").substring(0,19));
 				values.put(Entries.COLUMN_NAME_RESOURCE_URI, entry.getString("resource_uri"));
 				values.put(Entries.COLUMN_NAME_MUGSHOT, user.getString("mugshot"));
 				values.put(Entries.COLUMN_NAME_USERNAME, user.getString("username"));

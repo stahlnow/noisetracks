@@ -22,7 +22,7 @@
     <application
         android:name="NoisetracksApplication"
         android:label="@string/app_name"
-        android:icon="@drawable/logo"
+        android:icon="@drawable/_launcher"
         android:theme="@style/Theme.Noise">
         <uses-library android:name="com.google.android.maps" />
         <!-- The Noisetracks content provider represents a database for tracking data which is synced to the noisetracks cloud -->
@@ -61,7 +61,8 @@
         <receiver android:name=".receivers.RecordingReceiver" />
         
         <!-- Launcher Activity -->
-        <activity android:name=".ui.Noisetracks">
+        <activity android:name=".ui.Noisetracks"
+            android:theme="@style/Theme.Noise.Fullscreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -70,7 +71,7 @@
         <!-- User Activity -->
         <activity
             android:name=".ui.Tabs"
-            android:configChanges="orientation|keyboardHidden"
+            android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="false">
             <intent-filter>
                 <action android:name="noisetracks.intent.view" />
@@ -98,7 +99,8 @@
         </activity>
         <!-- Single Entry View -->
         <activity
-            android:name=".ui.EntryActivity">
+            android:name=".ui.EntryActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize">
         </activity>
         <!-- Settings activity -->
         <activity
@@ -107,7 +109,7 @@
         <!-- The Authentication/Signin Activity -->
         <activity
             android:name=".authenticator.AuthenticateActivity"
-            android:configChanges="keyboardHidden"
+            android:configChanges="keyboardHidden|orientation|screenSize"
             android:windowSoftInputMode="adjustPan|stateAlwaysHidden"
             android:excludeFromRecents="true"
             android:theme="@style/Theme.Noise.Fullscreen">
@@ -119,7 +121,7 @@
         <!-- The Signup Activity -->
         <activity
             android:name=".authenticator.SignupActivity"
-            android:configChanges="keyboardHidden"
+            android:configChanges="keyboardHidden|orientation|screenSize"
             android:windowSoftInputMode="adjustPan|stateAlwaysHidden"
             android:excludeFromRecents="true"
             android:theme="@style/Theme.Noise.Fullscreen">

@@ -2,7 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical" xmlns:app="http://schemas.android.com/apk/res/com.stahlnow.noisetracks">
+    android:orientation="vertical">
 
     <LinearLayout
         android:id="@+id/entries_progressContainer"
@@ -24,7 +24,8 @@
             ProgressWheel:rimWidth="2dp"
             ProgressWheel:radius="2dp"
             ProgressWheel:text="Loading\u2026"
-            ProgressWheel:textSize="14sp" />
+            ProgressWheel:textSize="14sp"
+            ProgressWheel:textColor="#ffcccccc" />
         
     </LinearLayout>
 

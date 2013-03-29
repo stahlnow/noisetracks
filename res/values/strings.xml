@@ -23,6 +23,9 @@
     <!-- Permission description -->
     <string name="permdesc_ntAuth">Allows applications to see the username of the configured Noisetracks account.</string>
 
+    <!-- Errors -->
+    <string name="player_error">Player says: </string>
+    
     <!-- AuthenticatorActivity -->    
     <string name="username_hint">Username</string>
     <string name="email_hint">Email</string>

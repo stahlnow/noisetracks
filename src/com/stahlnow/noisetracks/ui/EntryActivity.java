@@ -1,8 +1,11 @@
 package com.stahlnow.noisetracks.ui;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
@@ -11,29 +14,44 @@ import com.stahlnow.noisetracks.helper.FixedSpeedScroller;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
+import com.stahlnow.noisetracks.ui.EntryActivity.EntryDetailFragment;
 import com.stahlnow.noisetracks.utility.AppLog;
 
+import android.support.v4.content.LocalBroadcastManager;
+import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
+import android.media.MediaPlayer.OnErrorListener;
+import android.media.MediaPlayer.OnPreparedListener;
+import android.media.MediaPlayer.OnSeekCompleteListener;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.text.Html;
 import android.text.format.DateUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.view.MenuItem;
@@ -41,29 +59,38 @@ import com.handmark.pulltorefresh.extras.viewpager.PullToRefreshViewPager;
 import com.handmark.pulltorefresh.library.PullToRefreshBase;
 import com.handmark.pulltorefresh.library.PullToRefreshBase.OnRefreshListener;
 
-public class EntryActivity extends SherlockFragmentActivity implements OnRefreshListener<ViewPager> { 
+public class EntryActivity extends SherlockFragmentActivity implements
+	OnRefreshListener<ViewPager>, OnPageChangeListener,
+	OnPreparedListener, OnErrorListener, OnCompletionListener, OnSeekCompleteListener { 
 
+	private static final int UPDATE_FREQUENCY = 1;
+	private final Handler handler = new Handler();
+	
+	private static MediaPlayer player;
+	
+	private Cursor mCursor = null;
 	private PullToRefreshViewPager mPullToRefreshViewPager;
 	private ViewPager mPager;
-	private PagerAdapter mAdapter;
-
+	private EntryPagerAdapter mAdapter;
+	private ImageButton playButton = null;
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		// enable 'up' navigation in action bar
-		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+		getSupportActionBar().setDisplayHomeAsUpEnabled(true); // enable 'up' navigation in action bar
 		
 		setContentView(R.layout.entry_activity);
+		
+		playButton = (ImageButton)findViewById(R.id.entry_play_pause);
 
 		mPullToRefreshViewPager = (PullToRefreshViewPager) findViewById(R.id.entry_activity_pull_refresh_view_pager);
 		mPullToRefreshViewPager.setOnRefreshListener(this);
-
 		mPager = mPullToRefreshViewPager.getRefreshableView();
-
+		
 		String select = getIntent().getExtras().getString(SQLLoaderCallbacks.SELECT);
 		
-		Cursor cursor = getContentResolver().query(
+		mCursor = getContentResolver().query(
 				Entries.CONTENT_URI,
 				NoisetracksProvider.READ_ENTRY_PROJECTION,
 				select,
@@ -71,22 +98,171 @@ public class EntryActivity extends SherlockFragmentActivity implements OnRefresh
 				Entries.DEFAULT_SORT_ORDER
 		);
 		
-		mAdapter = new EntryPagerAdapter<EntryDetailFragment>(getSupportFragmentManager(), EntryDetailFragment.class, NoisetracksProvider.READ_ENTRY_PROJECTION, cursor);
+		mAdapter = new EntryPagerAdapter(getSupportFragmentManager(), NoisetracksProvider.READ_ENTRY_PROJECTION, mCursor);
 		mPager.setAdapter(mAdapter);
-		mPager.setCurrentItem(getIntent().getExtras().getInt("item"), false); // select item	
-	
+		mPager.setCurrentItem(getIntent().getExtras().getInt("item"), false); 	// select item
+		mCursor.moveToPosition(getIntent().getExtras().getInt("item"));			// move cursor in position
+		
+		// Set custom scroller for slow item scroll animation
 		try {
-            Field mScroller;
-            mScroller = ViewPager.class.getDeclaredField("mScroller");
-            mScroller.setAccessible(true); 
-            DecelerateInterpolator sInterpolator = new DecelerateInterpolator();
-            FixedSpeedScroller scroller = new FixedSpeedScroller(mPager.getContext(), sInterpolator);
-            mScroller.set(mPager, scroller);
-        } catch (NoSuchFieldException e) {
-        } catch (IllegalArgumentException e) {
-        } catch (IllegalAccessException e) {
-        }
+			Field mScroller;
+			mScroller = ViewPager.class.getDeclaredField("mScroller");
+			mScroller.setAccessible(true);
+			DecelerateInterpolator sInterpolator = new DecelerateInterpolator();
+			FixedSpeedScroller scroller = new FixedSpeedScroller(mPager.getContext(), sInterpolator);
+			mScroller.set(mPager, scroller);
+		} catch (NoSuchFieldException e) {
+		} catch (IllegalArgumentException e) {
+		} catch (IllegalAccessException e) {
+		}	
+		
+		// create media player
+		player = new MediaPlayer();
+		player.setOnPreparedListener(this);
+        player.setOnCompletionListener(this);
+        player.setOnErrorListener(this);       
+		
+        player.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        
+        
+        // set media url
+		try {
+			player.setDataSource(mCursor.getString(mCursor.getColumnIndex(Entries.COLUMN_NAME_FILENAME)));
+		} catch (IllegalArgumentException e) {
+			Toast.makeText(this, R.string.player_error + "Stream not found.", Toast.LENGTH_SHORT).show();
+		} catch (SecurityException e) {
+			Toast.makeText(this, R.string.player_error + "Stream not found.", Toast.LENGTH_SHORT).show();
+		} catch (IllegalStateException e) {
+			Toast.makeText(this, R.string.player_error + "Stream not found.", Toast.LENGTH_SHORT).show();
+		} catch (IOException e) {
+			Toast.makeText(this, R.string.player_error + "Stream not found.", Toast.LENGTH_SHORT).show();
+		}
+		
+		// prepare buffer and start playback
+		player.prepareAsync();
+		
+		mPager.setOnPageChangeListener(this);
+        
 	}
+	
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+
+		// Stop the seekbar handler from sending updates to UI
+		handler.removeCallbacks(updatePositionRunnable);
+				
+		if (player.isPlaying()) {
+			player.stop();
+		}
+		player.reset();
+		player.release();
+		
+
+		player = null;
+	}
+	
+	/*
+	 * Button click handler for 'play'
+	 */
+	public void play(View view) {
+	    if (player.isPlaying()) {
+	    	handler.removeCallbacks(updatePositionRunnable);
+			player.pause();
+			playButton.setImageResource(R.drawable.av_play);
+		} else {
+			player.start();
+			playButton.setImageResource(R.drawable.av_pause);
+			updatePosition();
+		}
+	}
+	
+	/*
+	 * Button click handler for 'previous'
+	 */
+	public void previous(View view) {
+	    mPager.setCurrentItem(mPager.getCurrentItem()-1, true);
+	}
+	
+	/*
+	 * Button click handler for 'next'
+	 */
+	public void next(View view) {
+	    mPager.setCurrentItem(mPager.getCurrentItem()+1, true);
+	}	
+		
+	@Override
+	public void onPageScrollStateChanged(int arg0) {	
+	}
+
+	@Override
+	public void onPageScrolled(int arg0, float arg1, int arg2) {
+	}
+
+	@Override
+	public void onPageSelected(int page) {
+		
+		mCursor.moveToPosition(page);
+		
+		if (player.isPlaying()) {
+			player.stop();
+		}
+		player.reset();
+		
+		try {
+			player.setDataSource(mCursor.getString(mCursor.getColumnIndex(Entries.COLUMN_NAME_FILENAME)));
+		} catch (IllegalArgumentException e) {
+			Toast.makeText(this, R.string.player_error + "Stream not found.", Toast.LENGTH_SHORT).show();
+		} catch (SecurityException e) {
+			Toast.makeText(this, R.string.player_error + "Stream not found.", Toast.LENGTH_SHORT).show();
+		} catch (IllegalStateException e) {
+			Toast.makeText(this, R.string.player_error + "Stream not found.", Toast.LENGTH_SHORT).show();
+		} catch (IOException e) {
+			Toast.makeText(this, R.string.player_error + "Stream not found.", Toast.LENGTH_SHORT).show();		}
+		
+		
+		try {
+			EntryDetailFragment f = mAdapter.getFragment(mPager.getCurrentItem());
+			f.seekBar.setProgress(0);
+		} catch (NullPointerException e) {}
+		
+		// buffer and start media playback
+		player.prepareAsync();
+		
+	}
+	
+	@Override
+	public void onPrepared(MediaPlayer player) {
+		if (!player.isPlaying()) {
+			player.start();
+			playButton.setImageResource(R.drawable.av_pause);
+			
+			try {
+				EntryDetailFragment f = mAdapter.getFragment(mPager.getCurrentItem());
+				f.seekBar.setMax(player.getDuration());
+				updatePosition();
+			} catch (NullPointerException e) {
+				
+			}
+		}
+	}
+	
+	private void updatePosition(){
+		handler.removeCallbacks(updatePositionRunnable);
+		try {
+			EntryDetailFragment f = mAdapter.getFragment(mPager.getCurrentItem());
+			f.seekBar.setProgress(player.getCurrentPosition());
+		} catch (NullPointerException e) {}
+		AppLog.logString("pos: " + player.getCurrentPosition());
+		
+		handler.postDelayed(updatePositionRunnable, UPDATE_FREQUENCY);
+	}
+	
+	private final Runnable updatePositionRunnable = new Runnable() {
+		public void run() {
+			updatePosition();
+		}
+	};
 	
 	@Override
 	public void onRefresh(PullToRefreshBase<ViewPager> refreshView) {
@@ -110,56 +286,61 @@ public class EntryActivity extends SherlockFragmentActivity implements OnRefresh
 	    return super.onOptionsItemSelected(item);
 	}
 	
-	
-	// player control click handlers
-	public void play(View view) {
-	    AppLog.logString("play");
-	}
-	
-	public void previous(View view) {
-	    AppLog.logString("previous");
-	    mPager.setCurrentItem(mPager.getCurrentItem()-1, true);
-	}
-	
-	public void next(View view) {
-	    AppLog.logString("next");
-	    mPager.setCurrentItem(mPager.getCurrentItem()+1, true);
-	}
-	
-	
 
-	private static class EntryPagerAdapter<F extends Fragment> extends FragmentStatePagerAdapter {
-		
-		private final Class<F> mFragmentClass;
+	@Override
+	public void onCompletion(MediaPlayer mp) {
+		playButton.setImageResource(R.drawable.av_play);
+		handler.removeCallbacks(updatePositionRunnable);
+		// select next item
+		mPager.setCurrentItem(mPager.getCurrentItem()+1, true);
+	}
+
+	@Override
+	public boolean onError(MediaPlayer mp, int what, int extra) {
+		return false;
+	}
+	
+	@Override
+	public void onSeekComplete(MediaPlayer mp) {
+		if (!player.isPlaying()) {
+			player.start();
+		}
+	}
+	
+	private static class EntryPagerAdapter extends FragmentStatePagerAdapter {
+		@SuppressLint("UseSparseArrays")
+		private Map<Integer, EntryDetailFragment> mPageReferenceMap = new HashMap<Integer, EntryDetailFragment>();
 		private final String[] mProjection;
 		private Cursor mCursor;
 		
-		public EntryPagerAdapter(FragmentManager fm, Class<F> fragmentClass, String[] projection, Cursor cursor) {
+		public EntryPagerAdapter(FragmentManager fm, String[] projection, Cursor cursor) {
 			super(fm);
-			this.mFragmentClass = fragmentClass;
 			this.mProjection = projection;
 			this.mCursor = cursor;			
 		}
 		
 		@Override
-	    public F getItem(int position) {
+	    public Fragment getItem(int position) {
 	        if (mCursor == null) // shouldn't happen
 	            return null;
 	 
 	        mCursor.moveToPosition(position);
-
-	        F frag;
+	        
+	        EntryDetailFragment f;
+	        
 	        try {
-	            frag = mFragmentClass.newInstance();
+	        	f = EntryDetailFragment.newInstance();
+	        	mPageReferenceMap.put(position, f);			// put it in a map, so we have a reference!
 	        } catch (Exception ex) {
 	            throw new RuntimeException(ex);
 	        }
 	        Bundle args = new Bundle();
 	        for (int i = 0; i < mProjection.length; ++i) {
-	            args.putString(mProjection[i], mCursor.getString(i)); // TODO this gets everything as Strings (even latitude/longitude)
+	            args.putString(mProjection[i], mCursor.getString(i)); // TODO: this gets everything as Strings (even latitude/longitude)
 	        }
-	        frag.setArguments(args);
-	        return frag;
+	        f.setArguments(args);
+	        
+	        return f;
 	    }
 		
 		@Override
@@ -168,6 +349,16 @@ public class EntryActivity extends SherlockFragmentActivity implements OnRefresh
 				return 0;
 			else
 				return mCursor.getCount();
+		}
+		
+		@Override
+		public void destroyItem(ViewGroup container, int position, Object object) {
+			super.destroyItem(container, position, object);
+			mPageReferenceMap.remove(Integer.valueOf(position));
+		}
+		
+		public EntryDetailFragment getFragment(int key) {
+			return mPageReferenceMap.get(key);
 		}
 
 		public void swapCursor(Cursor c) {
@@ -184,9 +375,11 @@ public class EntryActivity extends SherlockFragmentActivity implements OnRefresh
 
 	}
 
-	public static class EntryDetailFragment extends Fragment {
-		
+	public static class EntryDetailFragment extends Fragment  {
+		private SeekBar seekBar;
 		private HttpImageManager mHttpImageManager;
+		
+		Intent intent;
 		
 		public static EntryDetailFragment newInstance() {
 			EntryDetailFragment f = new EntryDetailFragment();
@@ -210,7 +403,24 @@ public class EntryActivity extends SherlockFragmentActivity implements OnRefresh
 			TextView username = (TextView) v.findViewById(R.id.entry_username);
 			TextView recorded_ago = (TextView) v.findViewById(R.id.entry_recorded_ago);
 			ImageView spectrogram = (ImageView) v.findViewById(R.id.entry_spectrogram);
-			SeekBar seekbar = (SeekBar) v.findViewById(R.id.entry_seekbar);
+			
+			seekBar = (SeekBar)v.findViewById(R.id.seekbar);
+			
+			
+			seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {}
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {}
+
+                @Override
+                public void onProgressChanged(SeekBar sb, int progress, boolean fromUser) {
+                	if (fromUser) {
+                		player.seekTo(sb.getProgress()); // update player position
+           		 	}
+                }
+            });
 
 			//mugshot.setImageResource(R.drawable.default_image);
 			String mug = getArguments().getString("mugshot");
@@ -258,7 +468,12 @@ public class EntryActivity extends SherlockFragmentActivity implements OnRefresh
 		public void onActivityCreated(Bundle savedInstanceState) {
 			super.onActivityCreated(savedInstanceState);
 		}
-
+		
+		@Override
+		public void onDestroy() {
+			super.onDestroy();
+			
+		}
 	}
 
 	
@@ -280,5 +495,9 @@ public class EntryActivity extends SherlockFragmentActivity implements OnRefresh
 			super.onPostExecute(result);
 		}
 	}
+
+
+	
+	
 	
 }

@@ -16,7 +16,7 @@ public class NoisetracksApplication extends Application {
 	public static final String LOG_TAG = "Noisetracks";
 	
 	// The global date format used everywhere.
-	public static SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+	public static SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 	
 	// The global SQL loader ids.
 	public static final int ENTRIES_SQL_LOADER_FEED = 0;
