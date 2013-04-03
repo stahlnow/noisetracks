@@ -32,7 +32,7 @@ public class SignupActivity extends SherlockFragmentActivity {
 		
 		// hide action bar
         getWindow().requestFeature((int) Window.FEATURE_ACTION_BAR);
-        getActionBar().hide();
+        getSupportActionBar().hide();
 
 		FragmentManager fm = getSupportFragmentManager();
 

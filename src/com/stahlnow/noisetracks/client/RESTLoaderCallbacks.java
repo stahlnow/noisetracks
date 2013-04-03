@@ -9,6 +9,7 @@ import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.authenticator.SignupActivity.SignupFragment;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
+import com.stahlnow.noisetracks.ui.EntryActivity.EntryDetailFragment;
 import com.stahlnow.noisetracks.ui.FeedActivity.FeedListFragment;
 import com.stahlnow.noisetracks.ui.ProfileActivity.ProfileListFragment;
 import com.stahlnow.noisetracks.utility.AppLog;
@@ -31,6 +32,7 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	public static final Uri URI_ENTRIES = Uri.parse(AppSettings.DOMAIN + "/api/v1/entry/");
 	public static final Uri URI_PROFILES = Uri.parse(AppSettings.DOMAIN + "/api/v1/profile/");
 	public static final Uri URI_SIGNUP = Uri.parse(AppSettings.DOMAIN + "/api/v1/signup/");
+	public static final Uri URI_VOTE = Uri.parse(AppSettings.DOMAIN + "/api/v1/vote/");
     
     private Context mContext;
     private Fragment mFragment;
@@ -50,10 +52,13 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	    	Uri    action = args.getParcelable(ARGS_URI);
 	    	Bundle params = args.getParcelable(ARGS_PARAMS);
 	    	
-	    	if (id == NoisetracksApplication.SIGNUP_REST_LOADER)
+	    	switch(id) {
+	    	case NoisetracksApplication.SIGNUP_REST_LOADER:
+	    	case NoisetracksApplication.VOTE_LOADER:
 	    		return new RESTLoader(mContext, RESTLoader.HTTPVerb.POST, action, params);
-	    	else
+			default:
 	    		return new RESTLoader(mContext, RESTLoader.HTTPVerb.GET, action, params);
+	    	}	
 	    }
 	    return null;
     }
@@ -83,6 +88,10 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	            }
 	        } else if (code == 201) {
 	        	switch (loader.getId()) {
+	        	case NoisetracksApplication.VOTE_LOADER:
+	        		EntryDetailFragment df = (EntryDetailFragment)mFragment;
+	        		df.onVoteComplete(json);
+	        		break;
 	        	case NoisetracksApplication.SIGNUP_REST_LOADER:
 	        		SignupFragment sf = (SignupFragment)mFragment;
 	        		sf.onSignupComplete();
@@ -136,15 +145,18 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 				             
 				ContentValues values = new ContentValues();
 				values.put(Entries.COLUMN_NAME_FILENAME, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("file"));
-				values.put(Entries.COLUMN_NAME_SPECTROGRAM, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("spectrogram"));
+				values.put(Entries.COLUMN_NAME_SPECTROGRAM, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString(Entries.COLUMN_NAME_SPECTROGRAM));
 				values.put(Entries.COLUMN_NAME_LATITUDE, location.getDouble(1));
 				values.put(Entries.COLUMN_NAME_LONGITUDE, location.getDouble(0));
-				values.put(Entries.COLUMN_NAME_CREATED, entry.getString("created").substring(0,19));					
-				values.put(Entries.COLUMN_NAME_RECORDED, entry.getString("recorded").substring(0,19));
-				values.put(Entries.COLUMN_NAME_RESOURCE_URI, entry.getString("resource_uri"));
-				values.put(Entries.COLUMN_NAME_MUGSHOT, user.getString("mugshot"));
-				values.put(Entries.COLUMN_NAME_USERNAME, user.getString("username"));
-				values.put(Entries.COLUMN_NAME_UUID, entry.getString("uuid"));
+				values.put(Entries.COLUMN_NAME_CREATED, entry.getString(Entries.COLUMN_NAME_CREATED).substring(0,19));					
+				values.put(Entries.COLUMN_NAME_RECORDED, entry.getString(Entries.COLUMN_NAME_RECORDED).substring(0,19));
+				values.put(Entries.COLUMN_NAME_RESOURCE_URI, entry.getString(Entries.COLUMN_NAME_RESOURCE_URI));
+				values.put(Entries.COLUMN_NAME_MUGSHOT, user.getString(Entries.COLUMN_NAME_MUGSHOT));
+				values.put(Entries.COLUMN_NAME_USERNAME, user.getString(Entries.COLUMN_NAME_USERNAME));
+				values.put(Entries.COLUMN_NAME_UUID, entry.getString(Entries.COLUMN_NAME_UUID));
+				values.put(Entries.COLUMN_NAME_SCORE, entry.getInt(Entries.COLUMN_NAME_SCORE));
+				values.put(Entries.COLUMN_NAME_VOTE, entry.getInt(Entries.COLUMN_NAME_VOTE));
+				
 				// add entry to database
 				mContext.getContentResolver().insert(Entries.CONTENT_URI, values);
 				
@@ -183,10 +195,10 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 				              
 				ContentValues values = new ContentValues();
 					
-				values.put(Profiles.COLUMN_NAME_USERNAME, user.getString("username"));
+				values.put(Profiles.COLUMN_NAME_USERNAME, user.getString(Profiles.COLUMN_NAME_USERNAME));
 					
 				try {
-					values.put(Profiles.COLUMN_NAME_EMAIL, user.getString("email"));
+					values.put(Profiles.COLUMN_NAME_EMAIL, user.getString(Profiles.COLUMN_NAME_EMAIL));
 				}
 				catch (JSONException e) {
 			         // email is only visible to logged in user
@@ -194,10 +206,10 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 					
 				values.put(Profiles.COLUMN_NAME_MUGSHOT, user.getString("mugshot"));
 					
-				values.put(Profiles.COLUMN_NAME_BIO, profile.getString("bio"));
-				values.put(Profiles.COLUMN_NAME_NAME, profile.getString("name"));
-				values.put(Profiles.COLUMN_NAME_TRACKS, profile.getInt("tracks"));
-				values.put(Profiles.COLUMN_NAME_WEBSITE, profile.getString("website"));
+				values.put(Profiles.COLUMN_NAME_BIO, profile.getString(Profiles.COLUMN_NAME_BIO));
+				values.put(Profiles.COLUMN_NAME_NAME, profile.getString(Profiles.COLUMN_NAME_NAME));
+				values.put(Profiles.COLUMN_NAME_TRACKS, profile.getInt(Profiles.COLUMN_NAME_TRACKS));
+				values.put(Profiles.COLUMN_NAME_WEBSITE, profile.getString(Profiles.COLUMN_NAME_WEBSITE));
 					
 				// add entry to database
 				mContext.getContentResolver().insert(Profiles.CONTENT_URI, values);

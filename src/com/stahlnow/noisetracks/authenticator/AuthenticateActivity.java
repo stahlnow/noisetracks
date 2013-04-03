@@ -104,7 +104,7 @@ public class AuthenticateActivity extends SherlockFragmentActivity {
         
         // hide action bar
         getWindow().requestFeature((int) Window.FEATURE_ACTION_BAR);
-        getActionBar().hide();
+        getSupportActionBar().hide();
 
         mAccountAuthenticatorResponse = getIntent().getParcelableExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE);
 

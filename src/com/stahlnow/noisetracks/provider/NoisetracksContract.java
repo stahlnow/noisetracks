@@ -159,6 +159,18 @@ public final class NoisetracksContract {
          */
         public static final String COLUMN_NAME_UUID = "uuid";
         
+        /**
+         * Column name for the score
+         * <P>Type: INTEGER</P>
+         */
+        public static final String COLUMN_NAME_SCORE = "score";
+        
+        /**
+         * Column name for the vote: 0 = neutral, -1 = dislike, +1 = like
+         * <P>Type: INTEGER</P>
+         */
+        public static final String COLUMN_NAME_VOTE = "vote";
+        
         
     }
 

@@ -39,7 +39,7 @@ public class NoisetracksProvider extends ContentProvider {
     /**
      * The database version
      */
-    private static final int DATABASE_VERSION = 6;
+    private static final int DATABASE_VERSION = 1;
 
     /**
      * Projection maps used to select columns from the database
@@ -63,7 +63,9 @@ public class NoisetracksProvider extends ContentProvider {
         Entries.COLUMN_NAME_MUGSHOT,
         Entries.COLUMN_NAME_USERNAME,
         Entries.COLUMN_NAME_UUID,
-        Entries.COLUMN_NAME_UPLOADED
+        Entries.COLUMN_NAME_UPLOADED,
+        Entries.COLUMN_NAME_SCORE,
+        Entries.COLUMN_NAME_VOTE
     };
     
     /*
@@ -152,6 +154,8 @@ public class NoisetracksProvider extends ContentProvider {
         sEntriesProjectionMap.put(Entries.COLUMN_NAME_USERNAME, Entries.COLUMN_NAME_USERNAME);
         sEntriesProjectionMap.put(Entries.COLUMN_NAME_UUID, Entries.COLUMN_NAME_UUID);
         sEntriesProjectionMap.put(Entries.COLUMN_NAME_UPLOADED, Entries.COLUMN_NAME_UPLOADED);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_SCORE, Entries.COLUMN_NAME_SCORE);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_VOTE, Entries.COLUMN_NAME_VOTE);
 
         // Same for profiles table.
         sProfilesProjectionMap = new HashMap<String, String>();
@@ -197,6 +201,8 @@ public class NoisetracksProvider extends ContentProvider {
                    + Entries.COLUMN_NAME_USERNAME + " TEXT,"
                    + Entries.COLUMN_NAME_UUID + " TEXT,"
                    + Entries.COLUMN_NAME_UPLOADED + " INTEGER,"
+                   + Entries.COLUMN_NAME_SCORE + " INTEGER,"
+                   + Entries.COLUMN_NAME_VOTE + " INTEGER,"
                    + "UNIQUE(" + Entries.COLUMN_NAME_UUID + ")" //  ON CONFLICT REPLACE see insert(...)
                    + ");");
            
