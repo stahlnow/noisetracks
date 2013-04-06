@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 public class AppSettings {
-	public static final String HOST = "STAHLNOW";
+	public static final String HOST = "stahlnow";
 	public static final int HTTP_PORT = 8000;
 	public static final int HTTPS_PORT = 443;
 	public static final String DOMAIN = "http://" + HOST + ":" + HTTP_PORT;
