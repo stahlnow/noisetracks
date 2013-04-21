@@ -34,23 +34,23 @@ public class AuthenticationService extends Service {
 
     @Override
     public void onCreate() {
-        if (Log.isLoggable(NoisetracksApplication.LOG_TAG, Log.VERBOSE)) {
-            Log.v(NoisetracksApplication.LOG_TAG, "Noisetracks Authentication Service started.");
+        if (Log.isLoggable(NoisetracksApplication.TAG, Log.VERBOSE)) {
+            Log.v(NoisetracksApplication.TAG, "Noisetracks Authentication Service started.");
         }
         mAuthenticator = new Authenticator(this);
     }
 
     @Override
     public void onDestroy() {
-        if (Log.isLoggable(NoisetracksApplication.LOG_TAG, Log.VERBOSE)) {
-            Log.v(NoisetracksApplication.LOG_TAG, "Noisetracks Authentication Service stopped.");
+        if (Log.isLoggable(NoisetracksApplication.TAG, Log.VERBOSE)) {
+            Log.v(NoisetracksApplication.TAG, "Noisetracks Authentication Service stopped.");
         }
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        if (Log.isLoggable(NoisetracksApplication.LOG_TAG, Log.VERBOSE)) {
-            Log.v(NoisetracksApplication.LOG_TAG, "getBinder()...  returning the AccountAuthenticator binder for intent " + intent);
+        if (Log.isLoggable(NoisetracksApplication.TAG, Log.VERBOSE)) {
+            Log.v(NoisetracksApplication.TAG, "getBinder()...  returning the AccountAuthenticator binder for intent " + intent);
         }
         return mAuthenticator.getIBinder();
     }

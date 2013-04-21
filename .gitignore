@@ -1,4 +1,9 @@
-#################
+#######################
+## Project specific
+#######################
+res/values/maps_api_key.xml
+
+
 ## Android
 #################
 gen

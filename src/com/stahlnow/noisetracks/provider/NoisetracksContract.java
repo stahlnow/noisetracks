@@ -18,6 +18,14 @@ public final class NoisetracksContract {
 
         // This class cannot be instantiated
         private Entries() {}
+        
+        
+        public enum TYPE {
+        	DOWNLOADED,	 	// Entry was downloaded from api.
+        	TRACKED,		// Entry was recorded / tracked in the background. Tracked entries will be processed and uploaded automatically. These entries don't show up anywhere.
+        	RECORDED,		// Entry was manually recorded via the record menu. User has to manually upload. Theses entries show up only in profile view of logged in user.
+        	LOAD_MORE,		// Special entry to load more items from api
+        }
 
         /**
          * The table name offered by this provider
@@ -139,7 +147,7 @@ public final class NoisetracksContract {
          * Column that indicates if the entry has been uploaded (this is not mirrored on the web DB)
          * <P>Type: INTEGER</P>
          */
-        public static final String COLUMN_NAME_UPLOADED = "uploaded";
+        public static final String COLUMN_NAME_TYPE = "type";
               
         /**
          * Column name for the mugshot URL

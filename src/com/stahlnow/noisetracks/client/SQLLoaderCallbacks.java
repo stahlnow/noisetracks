@@ -7,6 +7,8 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.util.Log;
+
 import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
@@ -14,11 +16,83 @@ import com.stahlnow.noisetracks.ui.FeedActivity.FeedListFragment;
 import com.stahlnow.noisetracks.ui.ProfileActivity.ProfileListFragment;
 
 public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
-		
+	
+	private static final String TAG = "SQLLoaderCallbacks";
+	
 	// selection args
-	public static final String SELECT = "select";
-	public static final String SELECT_ENTRIES = "((" + Entries.COLUMN_NAME_FILENAME + " NOTNULL) AND (" + Entries.COLUMN_NAME_FILENAME + " != '' ))";
-	public static final String SELECT_ENTRIES_WITHOUT_LOAD_MORE = "((" + Entries.COLUMN_NAME_FILENAME + " NOTNULL) AND (" + Entries.COLUMN_NAME_FILENAME + " != 'load' ))";
+	public static final String SELECT = "select"; 
+	
+	/**
+	 * Select all entries
+	 * @param loadmore Set to true, if 'load more' entries should be selected
+	 * @return String selection for SQL query
+	 */
+	public static String EntriesFeed(boolean loadmore) {
+		return Entries(loadmore, false, "");
+	}
+	
+	/**
+	 * Select entries for user
+	 * @param loadmore Set to true, if 'load more' entries should be selected
+	 * @param recorded Set to true, if 'recorded' entries should be selected
+	 * @param username Username for the selection
+	 * @return String selection for SQL query
+	 */
+	public static String EntriesUser(boolean recorded, String username) {
+		return Entries(false, recorded, username);
+	}
+	
+	/**
+	 * Generates selection argument for query with only user entries
+	 * @param loadmore Set to true, if 'load more' entries should be selected
+	 * @param recorded Set to true, if 'recorded' entries should be selected
+	 * @param username The username 
+	 * @return String selection for SQL query
+	 */
+	private static String Entries(boolean loadmore, boolean recorded, String username) {
+		
+		// if username is empty, load all entries, ignore recorded parameter
+		if (username == "") {
+			if (loadmore) {
+				return "(" + 
+						"(" + Entries.COLUMN_NAME_TYPE + " NOTNULL)" +
+						" AND (" +
+							Entries.COLUMN_NAME_TYPE + " = '" + Entries.TYPE.DOWNLOADED.ordinal() + "'" +
+							" OR " +
+							Entries.COLUMN_NAME_TYPE + " = '" + Entries.TYPE.LOAD_MORE.ordinal() + "'" + " )" +
+						")";
+			} else {
+				return "((" + Entries.COLUMN_NAME_TYPE + " NOTNULL)" +
+						" AND (" +
+							Entries.COLUMN_NAME_TYPE + " = '" + Entries.TYPE.DOWNLOADED.ordinal() + "' ))";
+			}
+		}
+		// load user entries, ignore load more
+		else
+			if (recorded) {
+				return "(" +
+						"(" + Entries.COLUMN_NAME_USERNAME + " = '" + username + "' )" +
+						"AND (" +
+							Entries.COLUMN_NAME_TYPE + " NOTNULL)" +
+						"AND (" +
+							Entries.COLUMN_NAME_TYPE + " = '" + Entries.TYPE.DOWNLOADED.ordinal() + "'" +
+							" OR " +
+							Entries.COLUMN_NAME_TYPE + " = '" + Entries.TYPE.RECORDED.ordinal() + "'" + " )" +
+						")";
+			} else {
+				return "(" +
+						"(" + Entries.COLUMN_NAME_USERNAME + " = '" + username + "' )" +
+						"AND (" +
+							Entries.COLUMN_NAME_TYPE + " NOTNULL)" +
+						"AND (" +
+							Entries.COLUMN_NAME_TYPE + " = '" + Entries.TYPE.DOWNLOADED.ordinal() + "'" + " )" +
+						")";
+			}
+	}
+	
+	public static String selectProfileForUser(String username) {
+		return "((" + Profiles.COLUMN_NAME_USERNAME + " NOTNULL) AND (" + Profiles.COLUMN_NAME_USERNAME + " == '" + username + "' ))";
+	}
 	
 	// projection
 	public static final String PROJECTION = "projection";
@@ -30,23 +104,6 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 		super();
 		mContext = c;
 		mFragment = f;
-	}
-	
-	/**
-	 * Generates selection argument for query with only user entries
-	 * @param username The username 
-	 * @return The selection argument
-	 */
-	public static String selectEntriesFromUser(String username, boolean loadmore) {
-		if (loadmore) {
-			return "((" + Entries.COLUMN_NAME_FILENAME + " NOTNULL) AND (" + Entries.COLUMN_NAME_FILENAME + " != '' ) AND (" + Entries.COLUMN_NAME_USERNAME + " == '" + username + "' ))";
-		} else {
-			return "((" + Entries.COLUMN_NAME_FILENAME + " NOTNULL) AND (" + Entries.COLUMN_NAME_FILENAME + " != '' ) AND (" + Entries.COLUMN_NAME_USERNAME + " == '" + username + "' ) AND (" + Entries.COLUMN_NAME_FILENAME + " != 'load' ))";
-		}
-	}
-	
-	public static String selectProfileForUser(String username) {
-		return "((" + Profiles.COLUMN_NAME_USERNAME + " NOTNULL) AND (" + Profiles.COLUMN_NAME_USERNAME + " == '" + username + "' ))";
 	}
     
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {

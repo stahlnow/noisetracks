@@ -29,7 +29,7 @@ import java.util.HashMap;
 
 public class NoisetracksProvider extends ContentProvider {
     // Used for debugging and logging
-    private static final String TAG = NoisetracksApplication.LOG_TAG + ".NoisetracksProvider";
+    private static final String TAG = NoisetracksApplication.TAG + ".NoisetracksProvider";
 
     /**
      * The database that the provider uses as its underlying data store
@@ -63,7 +63,7 @@ public class NoisetracksProvider extends ContentProvider {
         Entries.COLUMN_NAME_MUGSHOT,
         Entries.COLUMN_NAME_USERNAME,
         Entries.COLUMN_NAME_UUID,
-        Entries.COLUMN_NAME_UPLOADED,
+        Entries.COLUMN_NAME_TYPE,
         Entries.COLUMN_NAME_SCORE,
         Entries.COLUMN_NAME_VOTE
     };
@@ -153,7 +153,7 @@ public class NoisetracksProvider extends ContentProvider {
         sEntriesProjectionMap.put(Entries.COLUMN_NAME_MUGSHOT, Entries.COLUMN_NAME_MUGSHOT);
         sEntriesProjectionMap.put(Entries.COLUMN_NAME_USERNAME, Entries.COLUMN_NAME_USERNAME);
         sEntriesProjectionMap.put(Entries.COLUMN_NAME_UUID, Entries.COLUMN_NAME_UUID);
-        sEntriesProjectionMap.put(Entries.COLUMN_NAME_UPLOADED, Entries.COLUMN_NAME_UPLOADED);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_TYPE, Entries.COLUMN_NAME_TYPE);
         sEntriesProjectionMap.put(Entries.COLUMN_NAME_SCORE, Entries.COLUMN_NAME_SCORE);
         sEntriesProjectionMap.put(Entries.COLUMN_NAME_VOTE, Entries.COLUMN_NAME_VOTE);
 
@@ -200,7 +200,7 @@ public class NoisetracksProvider extends ContentProvider {
                    + Entries.COLUMN_NAME_MUGSHOT + " TEXT,"
                    + Entries.COLUMN_NAME_USERNAME + " TEXT,"
                    + Entries.COLUMN_NAME_UUID + " TEXT,"
-                   + Entries.COLUMN_NAME_UPLOADED + " INTEGER,"
+                   + Entries.COLUMN_NAME_TYPE + " INTEGER,"
                    + Entries.COLUMN_NAME_SCORE + " INTEGER,"
                    + Entries.COLUMN_NAME_VOTE + " INTEGER,"
                    + "UNIQUE(" + Entries.COLUMN_NAME_UUID + ")" //  ON CONFLICT REPLACE see insert(...)
@@ -461,16 +461,19 @@ public class NoisetracksProvider extends ContentProvider {
             if (values.containsKey(Entries.COLUMN_NAME_RECORDED) == false) {
                 values.put(Entries.COLUMN_NAME_RECORDED, NoisetracksApplication.SDF.format(new Date()));
             }
-            // If the values map doesn't contain 'uploaded', set it to 1 (uploaded)
-            // Entries created by the user must have set it to 0 so the syncadapter will upload it.
-            if (values.containsKey(Entries.COLUMN_NAME_UPLOADED) == false) {
-                values.put(Entries.COLUMN_NAME_UPLOADED, 1);
+            if (values.containsKey(Entries.COLUMN_NAME_CREATED) == false) {
+                values.put(Entries.COLUMN_NAME_CREATED, NoisetracksApplication.SDF.format(new Date()));
+            }
+            // If the values map doesn't contain 'type', set it to DOWNLOADED by default
+            // Entries created by the user must have set it to RECORDED or TRACKED.
+            if (values.containsKey(Entries.COLUMN_NAME_TYPE) == false) {
+                values.put(Entries.COLUMN_NAME_TYPE, Entries.TYPE.DOWNLOADED.ordinal());
             }
             if (values.containsKey(Entries.COLUMN_NAME_USERNAME) == false) {
             	values.put(Entries.COLUMN_NAME_USERNAME, "");
             }
             if (values.containsKey(Entries.COLUMN_NAME_UUID) == false) {
-            	values.put(Entries.COLUMN_NAME_UUID, ""); // TODO generate unique uuid
+            	values.put(Entries.COLUMN_NAME_UUID, "");
             }
             
             // Performs the insert and returns the ID of the new entry.
@@ -636,7 +639,7 @@ public class NoisetracksProvider extends ContentProvider {
      * @param where An SQL "WHERE" clause that selects records based on their column values. If this
      * is null, then all records that match the URI pattern are selected.
      * @param whereArgs An array of selection criteria. If the "where" param contains value
-     * placeholders ("?"), then each placeholder is replaced by the corresponding element in the
+     * place holders ("?"), then each placeholder is replaced by the corresponding element in the
      * array.
      * @return The number of rows updated.
      * @throws IllegalArgumentException if the incoming URI pattern is invalid.
@@ -692,7 +695,7 @@ public class NoisetracksProvider extends ContentProvider {
                 	Entries.TABLE_NAME, // The database table name.
                     values,                   // A map of column names and new values to use.
                     finalWhere,               // The final WHERE clause to use
-                                              // placeholders for whereArgs
+                                              // place holders for whereArgs
                     whereArgs                 // The where clause column values to select on, or
                                               // null if the values are in the where argument.
                 );
@@ -717,7 +720,7 @@ public class NoisetracksProvider extends ContentProvider {
                 count = db.update(
                 	Profiles.TABLE_NAME,	  // The database table name.
                     values,                   // A map of column names and new values to use.
-                    finalWhere,               // The final WHERE clause to use placeholders for whereArgs
+                    finalWhere,               // The final WHERE clause to use place holders for whereArgs
                     whereArgs                 // The where clause column values to select on, or null if the values are in the where argument.
                 );
                 break;

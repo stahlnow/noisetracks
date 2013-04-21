@@ -7,16 +7,25 @@ import com.stahlnow.noisetracks.authenticator.AuthenticationService;
 import com.stahlnow.noisetracks.helper.httpimage.FileSystemPersistence;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
-import com.stahlnow.noisetracks.utility.AppLog;
-
 import android.app.Application;
+import android.util.Log;
 
 public class NoisetracksApplication extends Application {
 
-	public static final String LOG_TAG = "Noisetracks";
+	public static final String TAG = "Noisetracks"; // Log tag
 	
-	// The global date format used everywhere.
+	public static final String HOST = "192.168.1.217";
+	public static final int HTTP_PORT = 8000;
+	public static final int HTTPS_PORT = 443;
+	public static final String DOMAIN = "http://" + HOST + ":" + HTTP_PORT;
+	
+	/**
+	 *  The global SDF (simple date format) used everywhere: "yyyy-MM-dd'T'HH:mm:ss"
+	 */
 	public static SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+	
+	// Maximum recording duration in seconds
+	public static final int MAX_RECORDING_DURATION_SECONDS = 5; // TODO 10
 	
 	// The global SQL loader ids.
 	public static final int ENTRIES_SQL_LOADER_FEED = 0;
@@ -33,10 +42,10 @@ public class NoisetracksApplication extends Application {
 	public static final int SIGNUP_REST_LOADER = 600;
 	public static final int VOTE_LOADER = 700;
 	
-	// Provide an instance for our static accessors
-	private static NoisetracksApplication instance = null;
+	// Provide an instance for static accessories
+	private static NoisetracksApplication mInstance = null;
 	
-	// Keep references to our global resources.
+	// Keep references to global resources.
 	private static FileSystemPersistence mFileSystemPersistence;
 	private static HttpImageManager mHttpImageManager;
 	
@@ -45,16 +54,14 @@ public class NoisetracksApplication extends Application {
 	public void onCreate() {
 		super.onCreate();
 		
-		// create new cache
-		mFileSystemPersistence = new FileSystemPersistence(this.getCacheDir().toString());
+		mFileSystemPersistence = new FileSystemPersistence(this.getCacheDir().toString()); // Create new cache
+		Log.v(TAG,"Cache dir is: " + getCacheDir().toString());
 		
-		AppLog.logString("cache dir is: " + getCacheDir().toString());
-		
-		instance = this;
+		mInstance = this;
 	}
 	
 	public static void logout() {
-		AppLog.logString("Logging out...");
+		Log.v(TAG, "Logging out...");
 		
 		// remove account from device
 		AuthenticationService.removeAccount(getInstance().getApplicationContext());
@@ -70,34 +77,37 @@ public class NoisetracksApplication extends Application {
 		System.gc();
 		System.exit(0);
 	}
-	
-	/**
-	 * Convenient accessor, saves having to call and cast
-	 * getApplicationContext()
-	 */
-	public static NoisetracksApplication getInstance() {
-		checkInstance();
-		return instance;
-	}
 
 	/**
-	 * Accessor for some resource that depends on a context
+	 * Gets the HTTP Image Manager or creates one, if necessary.
+	 * @return HttpImageManager instance
 	 */
 	public static HttpImageManager getHttpImageManager() {
 		if (mHttpImageManager == null) {
 			checkInstance();
-			// init HttpImageManager manager.
 			mHttpImageManager = new HttpImageManager(HttpImageManager.createDefaultMemoryCache(), mFileSystemPersistence);
 		}
 		return mHttpImageManager;
 	}
 	
 	public static FileSystemPersistence getFileSystemPersistence() {
+		checkInstance();
 		return mFileSystemPersistence;
 	}
+	
+	
+	/**
+	 * Convenient accessory, saves having to call and cast
+	 * getApplicationContext()
+	 */
+	public static NoisetracksApplication getInstance() {
+		checkInstance();
+		return mInstance;
+	}
+	
 
 	private static void checkInstance() {
-		if (instance == null)
+		if (mInstance == null)
 			throw new IllegalStateException("Application not created yet!");
 	}
 

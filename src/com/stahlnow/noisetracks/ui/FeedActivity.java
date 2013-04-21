@@ -134,11 +134,11 @@ public class FeedActivity extends SherlockFragmentActivity {
             // Prepare the loader.  Either re-connect with an existing one, or start a new one.
             Bundle args = new Bundle();
             args.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_ENTRY_PROJECTION);
-            args.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.SELECT_ENTRIES);
+            args.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.EntriesFeed(true));
             SQLLoaderCallbacks sql = new SQLLoaderCallbacks(getActivity(), this);
             getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_SQL_LOADER_FEED, args, sql);
             
-            // Prepare and init REST loader
+            // Prepare and initialize REST loader
             Bundle params = new Bundle();
 	        params.putString("format", "json");				// we need json format
 	        params.putString("order_by", "-created");		// newest first
@@ -212,17 +212,18 @@ public class FeedActivity extends SherlockFragmentActivity {
 			
 			if (c != null) {
 				
-				if (c.getString(c.getColumnIndex(Entries.COLUMN_NAME_FILENAME)).contains("load")) { // user clicked on 'load more'
+				if (c.getInt(c.getColumnIndex(Entries.COLUMN_NAME_TYPE)) == Entries.TYPE.LOAD_MORE.ordinal()) { // user clicked on 'load more'
 					// remove 'load more' entry
-	            	Uri u = ContentUris.withAppendedId(Entries.CONTENT_ID_URI_BASE, c.getInt(c.getColumnIndex(Entries._ID))); //c.getPosition()+1 
-	            	getActivity().getContentResolver().delete(u, null, null);
+	            	Uri lm = ContentUris.withAppendedId(Entries.CONTENT_ID_URI_BASE, id);
+	            	getActivity().getContentResolver().delete(lm, null, null);
+	            	getActivity().getContentResolver().notifyAll();
 	            	
 	            	// load items
 					Bundle params = new Bundle(); // no params
 					Bundle argsEntries= new Bundle();
 	            	argsEntries.putParcelable(
 	            			RESTLoaderCallbacks.ARGS_URI,
-	            			Uri.parse(AppSettings.DOMAIN + c.getString(c.getColumnIndex(Entries.COLUMN_NAME_RESOURCE_URI)))); // resource uri contains 'next' from last api call
+	            			Uri.parse(NoisetracksApplication.DOMAIN + c.getString(c.getColumnIndex(Entries.COLUMN_NAME_RESOURCE_URI)))); // resource uri contains 'next' from last api call
 	            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 	            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntries, r);
 	            	
@@ -230,8 +231,8 @@ public class FeedActivity extends SherlockFragmentActivity {
 				// start entry activity
 				else {
 					Intent i = new Intent(getActivity().getApplicationContext(), EntryActivity.class);
-					i.putExtra(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.SELECT_ENTRIES_WITHOUT_LOAD_MORE); 	// select entries exclude 'load more' entries
-					i.putExtra("item", position - l.getHeaderViewsCount());
+					i.putExtra(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.EntriesFeed(false));
+					i.putExtra(EntryActivity.ID, id);
 					startActivity(i);
 				}
 			}

@@ -4,42 +4,103 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 public class AppSettings {
-	public static final String HOST = "stahlnow";
-	public static final int HTTP_PORT = 8000;
-	public static final int HTTPS_PORT = 443;
-	public static final String DOMAIN = "http://" + HOST + ":" + HTTP_PORT;
-	public static final String NOISETRACK_PREF_NAME = "Noisetrack_8879461315648797161";
-	public static final String SETTING_SERVICE_STATE = "isServiceRunning";
-	public static final String SETTING_LOGGING_INTERVAL = "loggingInterval";
-	public static final String SETTING_USER = "username";
 	
-	public static boolean getServiceRunning(Context context){
-		SharedPreferences pref = context.getSharedPreferences(NOISETRACK_PREF_NAME, 0);
+	private static final String NOISETRACKS_PREF_NAME = "com.stahlnow.noisetracks";	// Preference file
+	private static final String SETTING_SERVICE_STATE = "is_service_running";		// Status of service
+	private static final String SETTING_TRACKING_INTERVAL = "tracking_interval";	// Tracking interval in minutes
+	private static final String SETTING_USERNAME = "username";						// Username
+	private static final String SETTING_MUGSHOT = "mugshot";						// URL of user mugshot TODO: set after login
+	
+	/*
+	 *  Getters and setters
+	 */
+	
+	/**
+	 * Get the status of the tracking service
+	 * @param context
+	 * @return True, if the tracking service is running
+	 */
+	public static boolean getServiceRunning(Context context) {
+		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
 		return pref.getBoolean(SETTING_SERVICE_STATE, false);
 	}
 	
-	public static void setServiceRunning(Context context, boolean isRunning){
-		SharedPreferences pref = context.getSharedPreferences(NOISETRACK_PREF_NAME, 0);
+	/**
+	 * Set the status for the tracking service
+	 * @param context
+	 * @param isRunning Set to true, if the service was started or false if the service was stopped.
+	 */
+	public static void setServiceRunning(Context context, boolean isRunning) {
+		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
 		SharedPreferences.Editor editor = pref.edit();
 		editor.putBoolean(SETTING_SERVICE_STATE, isRunning);
 		editor.commit();
 	}
 	
-	public static int getLoggingInterval(Context context){
-		SharedPreferences pref = context.getSharedPreferences(NOISETRACK_PREF_NAME, 0);
-		return pref.getInt(SETTING_LOGGING_INTERVAL, 5);
+	/**
+	 * Get tracking interval in minutes
+	 * @param context
+	 * @return Tracking interval in minutes
+	 */
+	public static int getTrackingInterval(Context context) {
+		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
+		return pref.getInt(SETTING_TRACKING_INTERVAL, 5);
 	}
 	
-	public static void setLoggingInterval(Context context, int interval){
-		SharedPreferences pref = context.getSharedPreferences(NOISETRACK_PREF_NAME, 0);
+	/**
+	 * Set tracking interval in minutes
+	 * @param context
+	 * @param interval Interval in minutes
+	 */
+	public static void setTrackingInterval(Context context, int interval) {
+		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
 		SharedPreferences.Editor editor = pref.edit();
-		editor.putInt(SETTING_LOGGING_INTERVAL, interval);
+		editor.putInt(SETTING_TRACKING_INTERVAL, interval);
 		editor.commit();
 	}
 	
-	public static String getUser(Context context) {
-		SharedPreferences pref = context.getSharedPreferences(NOISETRACK_PREF_NAME, 0);
-		return pref.getString(SETTING_USER, ""); // TODO
+	/**
+	 * Get username of logged in user or "AnonymousUser"
+	 * @param context
+	 * @return Username of logged in user
+	 */
+	public static String getUsername(Context context) {
+		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
+		return pref.getString(SETTING_USERNAME, "AnonymousUser");
+	}
+	
+	/**
+	 * Set user name
+	 * @param context
+	 * @param username Username of logged in user
+	 */
+	public static void setUsername(Context context, String username) {
+		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
+		SharedPreferences.Editor editor = pref.edit();
+		editor.putString(SETTING_USERNAME, username);
+		editor.commit();
+	}
+	
+	/**
+	 * Get mugshot of logged in user or null
+	 * @param context
+	 * @return Mugshot url of logged in user
+	 */
+	public static String getMugshot(Context context) {
+		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
+		return pref.getString(SETTING_MUGSHOT, null);
+	}
+	
+	/**
+	 * Set mugshot url of logged in user
+	 * @param context
+	 * @param username Mugshot url of logged in user
+	 */
+	public static void setMugshot(Context context, String mugshot) {
+		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
+		SharedPreferences.Editor editor = pref.edit();
+		editor.putString(SETTING_MUGSHOT, mugshot);
+		editor.commit();
 	}
 	
 

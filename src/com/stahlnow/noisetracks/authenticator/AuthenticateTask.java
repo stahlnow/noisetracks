@@ -19,6 +19,7 @@ import android.os.AsyncTask;
 import android.os.Handler;
 import android.widget.LinearLayout.LayoutParams;
 
+import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.utility.AppLog;
 import com.stahlnow.noisetracks.utility.AppSettings;
@@ -68,13 +69,13 @@ public class AuthenticateTask extends AsyncTask<String, Void, Boolean> {
 		DefaultHttpClient httpclient = new DefaultHttpClient();
 		
 		try {
-			// Set Basic Auth credentials in header
+			// Set Basic Authentication credentials in header
 			httpclient.getCredentialsProvider().setCredentials(
-					new AuthScope(AppSettings.HOST, AppSettings.HTTP_PORT),	//TODO set to 443 = SSL
+					new AuthScope(NoisetracksApplication.HOST, NoisetracksApplication.HTTP_PORT),	//TODO set to 443 = SSL
 					new UsernamePasswordCredentials(user, password));
 
 			// Request key from api
-			HttpGet httpget = new HttpGet(AppSettings.DOMAIN + "/api/v1/token/auth/?format=json"); // https = SSL
+			HttpGet httpget = new HttpGet(NoisetracksApplication.DOMAIN + "/api/v1/token/auth/?format=json"); // https = SSL
 			HttpResponse response = httpclient.execute(httpget);
 			
 			if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {

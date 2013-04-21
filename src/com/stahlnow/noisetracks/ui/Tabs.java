@@ -51,7 +51,7 @@ public class Tabs extends SherlockFragmentActivity {
 				"android.accounts.LOGIN_ACCOUNTS_CHANGED"));
 
 		// set default settings
-		AppSettings.setLoggingInterval(this, 1); // each minute
+		AppSettings.setTrackingInterval(this, 1); // Set tracking default to 1 minute TODO change to reasonable value
 		
 		// disable 'up' navigation in action bar for home screen
 		getSupportActionBar().setHomeButtonEnabled(false);
@@ -67,6 +67,7 @@ public class Tabs extends SherlockFragmentActivity {
 		mTabsAdapter.addTab(mTabHost.newTabSpec("explore").setIndicator("Explore"), FeedActivity.FeedListFragment.class, null);
 		// add profile tab (Me)
 		String username = AccountManager.get(this).getAccountsByType(getString(R.string.ACCOUNT_TYPE))[0].name;
+		AppSettings.setUsername(this, username); // TODO: move somewhere else (ie after login)
 		Bundle profile_args = new Bundle();
 		profile_args.putString("username", username);
 		mTabsAdapter.addTab(mTabHost.newTabSpec("profile").setIndicator("Me"), ProfileActivity.ProfileListFragment.class, profile_args);
@@ -131,51 +132,54 @@ public class Tabs extends SherlockFragmentActivity {
 		return super.onPrepareOptionsMenu(menu);
 	}
 
+	@SuppressLint("NewApi")
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.menu_record:
-			// TODO start recording activity
+			Intent record = new Intent(this, RecordingActivity.class);
+			startActivity(record);
 			return true;
 		case R.id.menu_toggle_tracking:
-			toggleTracking(AppSettings.getServiceRunning(this), AppSettings.getLoggingInterval(this));
-			
-			// check/uncheck menu item
-			//item.setCheckable(true); // this is already set in main_menu.xml but not working somehow.
-			//item.setChecked(AppSettings.getServiceRunning(this));
-						
+			toggleTracking(AppSettings.getServiceRunning(this), AppSettings.getTrackingInterval(this));
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
 				invalidateOptionsMenu();
 			return true;
 		case R.id.menu_settings:
-			Intent i = new Intent().setClass(Tabs.this, SettingsActivity.class);
-			startActivity(i);
+			startActivity (new Intent(this, SettingsActivity.class));
+			return true;
 		default:
 			return super.onOptionsItemSelected(item);
 		}
 	}
 
 	private void toggleTracking(boolean isStart, float interval) {
+		
 		AlarmManager manager = (AlarmManager) getSystemService(Service.ALARM_SERVICE);
-		PendingIntent loggerIntent = PendingIntent.getBroadcast(this, 0,
-				new Intent(this, RecordingReceiver.class), 0);
+		
+		PendingIntent tracking = PendingIntent.getBroadcast(
+				this,
+				0,
+				new Intent(this, RecordingReceiver.class),
+				0);
 
 		if (isStart) {
-			manager.cancel(loggerIntent);
+			manager.cancel(tracking);
 			AppSettings.setServiceRunning(this, false);
-			AppLog.logString("Service Stopped.");
+			AppLog.logString("Tracking service stopped.");
+			
 		} else {
-
-			long duration = (int) (interval * 60.0f * 1000.0f); // calculate
-																// duration in
-																// milliseconds
-
-			manager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,
-					SystemClock.elapsedRealtime(), duration, loggerIntent);
+			
+			// Schedule tracking
+			manager.setRepeating(
+					AlarmManager.ELAPSED_REALTIME_WAKEUP,
+					SystemClock.elapsedRealtime(),
+					(long) (interval * 60.0f * 1000.0f), // Tracking interval in milliseconds
+					tracking);
 
 			AppSettings.setServiceRunning(this, true);
 
-			AppLog.logString("Service Started with interval " + interval * 60 + " seconds.");
+			AppLog.logString("Tracking service started with interval " + interval * 60.0f + " seconds.");
 		}
 	}
 

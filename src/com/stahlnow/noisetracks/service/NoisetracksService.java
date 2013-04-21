@@ -11,13 +11,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.stahlnow.noisetracks.utility.AppLog;
+import com.stahlnow.noisetracks.NoisetracksApplication;
 
 import android.app.Service;
 import android.content.Context;
@@ -32,6 +31,7 @@ import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
+import android.util.Log;
 
 public class NoisetracksService extends Service implements LocationListener {
 	
@@ -40,11 +40,11 @@ public class NoisetracksService extends Service implements LocationListener {
 	private static final int TIMER_DELAY = 1000;
 	private static final int GEOCODER_MAX_RESULTS = 5;
 	
-	private LocationManager manager = null;
-	private double latitude = 0.0;
-	private double longitude = 0.0;
-	private double altitude = 0.0;
-	private Timer monitoringTimer = null;
+	private LocationManager mLocationManager = null;
+	private double mLatitude = 0.0;
+	private double mLongitude = 0.0;
+	private double mAltitude = 0.0;
+	private Timer mMonitoringTimer = null;
 	
 	// recorder variables
 	private static final String AUDIO_RECORDER_FILE_EXT_WAV = ".wav";
@@ -55,30 +55,28 @@ public class NoisetracksService extends Service implements LocationListener {
 	private static final int RECORDER_CHANNELS = AudioFormat.CHANNEL_IN_STEREO;
 	private static final int RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
 	
-	private static final int RECORDER_DURATION = 10; // duration of recording in seconds
+	private AudioRecord mAudioRecord = null;
+	private int mBufferSize = 0;
+	private Thread mRecordingThread = null;
+	private boolean mIsRecording = false;
 	
-	private AudioRecord recorder = null;
-	private int bufferSize = 0;
-	private Thread recordingThread = null;
-	private boolean isRecording = false;
-	
-	private Timer recordingTimer = null;
+	private Timer mRecordingTimer = null;
 
 	public NoisetracksService() {
-		AppLog.logString("NoisetracksService.NoisetrackService().");
+		Log.v(NoisetracksApplication.TAG, "NoisetracksService.NoisetrackService().");
 		
-		bufferSize = 10 * AudioRecord.getMinBufferSize(RECORDER_SAMPLERATE,RECORDER_CHANNELS,RECORDER_AUDIO_ENCODING);
+		mBufferSize = 16 * AudioRecord.getMinBufferSize(RECORDER_SAMPLERATE,RECORDER_CHANNELS,RECORDER_AUDIO_ENCODING);
 	}
 
 	@Override
 	public IBinder onBind(Intent arg0) {
-		AppLog.logString("NoisetracksService.onBind().");
+		Log.v(NoisetracksApplication.TAG, "NoisetracksService.onBind().");
 		return null;
 	}
 
 	@Override
 	public void onCreate() {
-		AppLog.logString("NoisetracksService.onCreate().");
+		Log.v(NoisetracksApplication.TAG, "NoisetracksService.onCreate().");
 		super.onCreate();
 	}
 	
@@ -91,7 +89,7 @@ public class NoisetracksService extends Service implements LocationListener {
     	String pathToOurFile = Environment.getExternalStorageDirectory().getPath();
     	pathToOurFile += "/Noisetracks";
     	pathToOurFile += "/test.wav";
-    	AppLog.logString("path is: "+pathToOurFile);
+    	Log.v(NoisetracksApplication.TAG, "path is: "+pathToOurFile);
     	String urlServer = "http://192.168.1.111:8000/upload/";
     	String lineEnd = "\r\n";
     	String twoHyphens = "--";
@@ -168,13 +166,13 @@ public class NoisetracksService extends Service implements LocationListener {
 	        	response.append('\r');
 	        }
 	        rd.close();
-	        AppLog.logString(response.toString());
+	        Log.v(NoisetracksApplication.TAG, response.toString());
 	        return response.toString();
 	    	
     	}
     	catch (Exception e)
     	{
-    		AppLog.logString("Oooops: " + e.toString());
+    		Log.v(NoisetracksApplication.TAG, "Oooops: " + e.toString());
     		return null;
     	}
     	finally
@@ -189,44 +187,13 @@ public class NoisetracksService extends Service implements LocationListener {
 	
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		AppLog.logString("NoisetracksService.onStartCommand().");
+		Log.v(NoisetracksApplication.TAG, "NoisetracksService.onStartCommand().");
 		
-		startLoggingService();
-		startMonitoringTimer();
+		Log.v(NoisetracksApplication.TAG, "Started tracking...");
 		
-		return Service.START_STICKY;
-	}
-
-	@Override
-	public void onLocationChanged(Location location) {
-		AppLog.logString("NoisetracksService.onLocationChanged().");
-		
-		latitude = location.getLatitude();
-		longitude = location.getLongitude();
-		altitude = location.getAltitude();
-	}
-
-	@Override
-	public void onProviderDisabled(String provider) {
-		AppLog.logString("NoisetracksService.onProviderDisabled().");
-	}
-
-	@Override
-	public void onProviderEnabled(String provider) {
-		AppLog.logString("NoisetracksService.onProviderEnabled().");
-	}
-
-	@Override
-	public void onStatusChanged(String provider, int status, Bundle extras) {
-		AppLog.logString("NoisetracksService.onStatusChanged().");
-	}
-	
-	private void startLoggingService(){
-		AppLog.logString("started logging...");
-		
-		if (manager == null)
+		if (mLocationManager == null)
 		{
-			manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+			mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 		}
 		
 		final Criteria criteria = new Criteria();
@@ -237,47 +204,76 @@ public class NoisetracksService extends Service implements LocationListener {
 		criteria.setCostAllowed(true);
 		criteria.setPowerRequirement(Criteria.POWER_LOW);
 		
-		final String bestProvider = manager.getBestProvider(criteria, true);
+		final String bestProvider = mLocationManager.getBestProvider(criteria, true);
 		
 		if (bestProvider != null && bestProvider.length() > 0)
 		{
-			manager.requestLocationUpdates(bestProvider, gpsMinTime,gpsMinDistance, this);
+			mLocationManager.requestLocationUpdates(bestProvider, gpsMinTime, gpsMinDistance, this);
 		}
 		else
 		{
-			final List<String> providers = manager.getProviders(true);
+			final List<String> providers = mLocationManager.getProviders(true);
 			
 			for (final String provider : providers)
 			{
-				manager.requestLocationUpdates(provider, gpsMinTime, gpsMinDistance, this);
+				mLocationManager.requestLocationUpdates(provider, gpsMinTime, gpsMinDistance, this);
 			}
 		}
+		
+		startMonitoringTimer();
+		
+		return Service.START_STICKY;
+	}
+
+	@Override
+	public void onLocationChanged(Location location) {
+		Log.v(NoisetracksApplication.TAG, "Got location fix at " + location.toString());
+		
+		mLatitude = location.getLatitude();
+		mLongitude = location.getLongitude();
+		mAltitude = location.getAltitude();
+	}
+
+	@Override
+	public void onProviderDisabled(String provider) {
+		Log.v(NoisetracksApplication.TAG, "NoisetracksService.onProviderDisabled().");
+	}
+
+	@Override
+	public void onProviderEnabled(String provider) {
+		Log.v(NoisetracksApplication.TAG, "NoisetracksService.onProviderEnabled().");
+	}
+
+	@Override
+	public void onStatusChanged(String provider, int status, Bundle extras) {
+		Log.v(NoisetracksApplication.TAG, "NoisetracksService.onStatusChanged().");
 	}
 	
-	private void stopLoggingService(){
+	private void stopLoggingService() {
 		stopSelf();
 	}
 	
 	private void startMonitoringTimer() {
 		
-		AppLog.logString("started monitoring...");
+		Log.v(NoisetracksApplication.TAG, "Waiting for location fix...");
 		
-		monitoringTimer = new Timer();
-		monitoringTimer.scheduleAtFixedRate(
+		mMonitoringTimer = new Timer();
+		mMonitoringTimer.scheduleAtFixedRate(
 				new TimerTask() {
 					@Override
 					public void run()
 					{						
-						//if (longitude != 0.0 && latitude != 0.0)
-						//{
-							monitoringTimer.cancel();
-							monitoringTimer = null;
+						if (mLatitude != 0.0 && mLongitude != 0.0)
+						{
+							Log.v(NoisetracksApplication.TAG, "Start Recording");
+							mMonitoringTimer.cancel();
+							mMonitoringTimer = null;
 							
-							manager.removeUpdates(NoisetracksService.this);
+							mLocationManager.removeUpdates(NoisetracksService.this);
 							
 							//saveCoordinates(latitude, longitude, altitude, getLocationName(latitude,longitude));
 							//startTimedRecording();	// start recording
-						//}
+						}
 					}
 				}, 
 				NoisetracksService.TIMER_DELAY,
@@ -288,26 +284,108 @@ public class NoisetracksService extends Service implements LocationListener {
 	 * Recorder
 	 ***********************************************************/
 	
-	private void startTimedRecording(){
+	private void startTimedRecording() {
 		
 		startRecording();						// start recording
 		
 		// schedule timer to stop recording
-		recordingTimer = new Timer();
-		recordingTimer.schedule(
+		mRecordingTimer = new Timer();
+		mRecordingTimer.schedule(
 				new TimerTask()
 				{
 					@Override
 					public void run()
 					{
-						recordingTimer.cancel();
-						recordingTimer = null;
+						mRecordingTimer.cancel();
+						mRecordingTimer = null;
 							
 						stopRecording();		// stop recording
 						stopLoggingService();	// stop service
 					}
 				}, 
-				NoisetracksService.RECORDER_DURATION * 1000);
+				NoisetracksApplication.MAX_RECORDING_DURATION_SECONDS * 1000);
+	}
+	
+	
+	public void startRecording() {
+		
+		Log.v(NoisetracksApplication.TAG, "Start recording ...");
+		
+		mAudioRecord = new AudioRecord(
+				MediaRecorder.AudioSource.MIC,
+				RECORDER_SAMPLERATE,
+				RECORDER_CHANNELS,
+				RECORDER_AUDIO_ENCODING,
+				mBufferSize);
+		
+		mAudioRecord.startRecording();
+		
+		mIsRecording = true;
+		
+		mRecordingThread = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				writeAudioDataToFile();
+			}
+		}, "AudioRecorder Thread");
+		
+		mRecordingThread.start();
+	}
+	
+	private void writeAudioDataToFile() {
+		byte data[] = new byte[mBufferSize];
+		String filename = getTempFilename();
+		FileOutputStream os = null;
+		
+		try {
+			os = new FileOutputStream(filename);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		
+		int read = 0;
+		
+		if(null != os) {
+			while(mIsRecording) {
+				read = mAudioRecord.read(data, 0, mBufferSize);
+				
+				if(AudioRecord.ERROR_INVALID_OPERATION != read){
+					try {
+						os.write(data);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			
+			try {
+				os.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public void stopRecording() {
+		if(null != mAudioRecord){
+			mIsRecording = false;
+			
+			mAudioRecord.stop();
+			mAudioRecord.release();
+			
+			mAudioRecord = null;
+			mRecordingThread = null;
+		}
+		
+		copyWaveFile(getTempFilename(), getFilename());
+		deleteTempFile();
+	}
+
+	private void deleteTempFile() {
+		File file = new File(getTempFilename());
+		
+		file.delete();
 	}
 	
 	private String getFilename(){
@@ -318,8 +396,7 @@ public class NoisetracksService extends Service implements LocationListener {
 			file.mkdirs();
 		}
 		
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-		String dateString = sdf.format(new Date());
+		String dateString = NoisetracksApplication.SDF.format(new Date());
 		
 		return (file.getAbsolutePath() + "/" + dateString + AUDIO_RECORDER_FILE_EXT_WAV);
 	}
@@ -340,85 +417,6 @@ public class NoisetracksService extends Service implements LocationListener {
 		return (file.getAbsolutePath() + "/" + AUDIO_RECORDER_TEMP_FILE);
 	}
 	
-	public void startRecording(){
-		
-		AppLog.logString("start recording ...");
-		
-		
-		recorder = new AudioRecord(
-				MediaRecorder.AudioSource.MIC, RECORDER_SAMPLERATE, RECORDER_CHANNELS, RECORDER_AUDIO_ENCODING, bufferSize);
-		
-		recorder.startRecording();
-		
-		isRecording = true;
-		
-		recordingThread = new Thread(new Runnable() {
-			
-			@Override
-			public void run() {
-				//uploadFile();
-				writeAudioDataToFile();
-			}
-		}, "AudioRecorder Thread");
-		
-		recordingThread.start();
-	}
-	
-	private void writeAudioDataToFile(){
-		byte data[] = new byte[bufferSize];
-		String filename = getTempFilename();
-		FileOutputStream os = null;
-		
-		try {
-			os = new FileOutputStream(filename);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		int read = 0;
-		
-		if(null != os){
-			while(isRecording){
-				read = recorder.read(data, 0, bufferSize);
-				
-				if(AudioRecord.ERROR_INVALID_OPERATION != read){
-					try {
-						os.write(data);
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-			
-			try {
-				os.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-	
-	public void stopRecording(){
-		if(null != recorder){
-			isRecording = false;
-			
-			recorder.stop();
-			recorder.release();
-			
-			recorder = null;
-			recordingThread = null;
-		}
-		
-		copyWaveFile(getTempFilename(), getFilename());
-		deleteTempFile();
-	}
-
-	private void deleteTempFile() {
-		File file = new File(getTempFilename());
-		
-		file.delete();
-	}
 	
 	private void copyWaveFile(String inFilename, String outFilename){
 		FileInputStream in = null;
@@ -429,7 +427,7 @@ public class NoisetracksService extends Service implements LocationListener {
 		int channels = 2;
 		long byteRate = RECORDER_BPP * RECORDER_SAMPLERATE * channels/8;
 		
-		byte[] data = new byte[bufferSize];
+		byte[] data = new byte[mBufferSize];
                 
 		try {
 			in = new FileInputStream(inFilename);
@@ -437,7 +435,7 @@ public class NoisetracksService extends Service implements LocationListener {
 			totalAudioLen = in.getChannel().size();
 			totalDataLen = totalAudioLen + 36;
 			
-			AppLog.logString("File size: " + totalDataLen);
+			Log.v(NoisetracksApplication.TAG, "File size: " + totalDataLen);
 			
 			WriteWaveFileHeader(out, totalAudioLen, totalDataLen,
 					longSampleRate, channels, byteRate);

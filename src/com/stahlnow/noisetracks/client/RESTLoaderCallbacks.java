@@ -29,10 +29,10 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	public static final String ARGS_URI    = "com.stahlnow.noisetracks.ARGS_URI";
 	public static final String ARGS_PARAMS = "com.stahlnow.noisetracks.ARGS_PARAMS";
     
-	public static final Uri URI_ENTRIES = Uri.parse(AppSettings.DOMAIN + "/api/v1/entry/");
-	public static final Uri URI_PROFILES = Uri.parse(AppSettings.DOMAIN + "/api/v1/profile/");
-	public static final Uri URI_SIGNUP = Uri.parse(AppSettings.DOMAIN + "/api/v1/signup/");
-	public static final Uri URI_VOTE = Uri.parse(AppSettings.DOMAIN + "/api/v1/vote/");
+	public static final Uri URI_ENTRIES = Uri.parse(NoisetracksApplication.DOMAIN + "/api/v1/entry/");
+	public static final Uri URI_PROFILES = Uri.parse(NoisetracksApplication.DOMAIN + "/api/v1/profile/");
+	public static final Uri URI_SIGNUP = Uri.parse(NoisetracksApplication.DOMAIN + "/api/v1/signup/");
+	public static final Uri URI_VOTE = Uri.parse(NoisetracksApplication.DOMAIN + "/api/v1/vote/");
     
     private Context mContext;
     private Fragment mFragment;
@@ -144,8 +144,8 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
                 
 				             
 				ContentValues values = new ContentValues();
-				values.put(Entries.COLUMN_NAME_FILENAME, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString("file"));
-				values.put(Entries.COLUMN_NAME_SPECTROGRAM, AppSettings.DOMAIN + entry.getJSONObject("audiofile").getString(Entries.COLUMN_NAME_SPECTROGRAM));
+				values.put(Entries.COLUMN_NAME_FILENAME, NoisetracksApplication.DOMAIN + entry.getJSONObject("audiofile").getString("file"));
+				values.put(Entries.COLUMN_NAME_SPECTROGRAM, NoisetracksApplication.DOMAIN + entry.getJSONObject("audiofile").getString(Entries.COLUMN_NAME_SPECTROGRAM));
 				values.put(Entries.COLUMN_NAME_LATITUDE, location.getDouble(1));
 				values.put(Entries.COLUMN_NAME_LONGITUDE, location.getDouble(0));
 				values.put(Entries.COLUMN_NAME_CREATED, entry.getString(Entries.COLUMN_NAME_CREATED).substring(0,19));					
@@ -156,22 +156,20 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 				values.put(Entries.COLUMN_NAME_UUID, entry.getString(Entries.COLUMN_NAME_UUID));
 				values.put(Entries.COLUMN_NAME_SCORE, entry.getInt(Entries.COLUMN_NAME_SCORE));
 				values.put(Entries.COLUMN_NAME_VOTE, entry.getInt(Entries.COLUMN_NAME_VOTE));
+				values.put(Entries.COLUMN_NAME_TYPE, Entries.TYPE.DOWNLOADED.ordinal()); // set type to DOWNLOADED
 				
 				// add entry to database
 				mContext.getContentResolver().insert(Entries.CONTENT_URI, values);
 				
             }
             
-            // hack: add 'load more' special entry
+            // add 'load more' special entry
             if (meta.getString("next") != "null") {
             	ContentValues values = new ContentValues();
-            	values.put(Entries.COLUMN_NAME_FILENAME, "load");
-            	String created = entries.getJSONObject(entries.length()-1).getString("created").substring(0,23);
+            	String created = entries.getJSONObject(entries.length()-1).getString("created").substring(0,19);
             	values.put(Entries.COLUMN_NAME_CREATED, created); // set created to last entry, so the 'load more' entry appears right after the last entry we loaded.
-            	values.putNull(Entries.COLUMN_NAME_RECORDED); // set recorded to null
-            	values.put(Entries.COLUMN_NAME_RESOURCE_URI, meta.getString("next")); // special: resorce uri is value of 'next'
-            	String username = entries.getJSONObject(entries.length()-1).getJSONObject("user").getString("username");
-            	values.put(Entries.COLUMN_NAME_USERNAME, username);
+            	values.put(Entries.COLUMN_NAME_RESOURCE_URI, meta.getString("next")); // special: resource uri is value of 'next'
+            	values.put(Entries.COLUMN_NAME_TYPE, Entries.TYPE.LOAD_MORE.ordinal()); // Set type to LOAD_MORE
             	mContext.getContentResolver().insert(Entries.CONTENT_URI, values);
             }
             

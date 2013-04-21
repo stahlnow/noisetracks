@@ -45,7 +45,8 @@
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/entry_mugshot_layout"
         android:layout_toRightOf="@+id/entry_mugshot_layout"
-        android:textSize="10dp"
+        android:textIsSelectable="false"
+        android:textSize="12sp"
         android:textStyle="bold" />
 
     <TextView
@@ -56,6 +57,7 @@
         android:layout_alignTop="@+id/entry_mugshot_layout"
         android:layout_marginRight="10dp"
         android:gravity="right"
-        android:textSize="10dp" />
+        android:textIsSelectable="false"
+        android:textSize="12sp" />
 
 </RelativeLayout>

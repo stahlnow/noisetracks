@@ -4,11 +4,13 @@
     android:versionName="1.0" xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-sdk android:minSdkVersion="8" android:targetSdkVersion="17"/>
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
     <uses-permission android:name="android.permission.MANAGE_ACCOUNTS"/>   
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
@@ -17,6 +19,15 @@
     <uses-permission android:name="android.permission.READ_SYNC_STATS" />
     <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
     <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />  
+    
+    <permission
+        android:name="com.stahlnow.noisetracks.permission.MAPS_RECEIVE"
+        android:protectionLevel="signature"/>
+    <uses-permission android:name="com.stahlnow.noisetracks.permission.MAPS_RECEIVE"/>
+    
+    <uses-feature
+        android:glEsVersion="0x00020000"
+        android:required="true"/>
 
     <application
         android:name="NoisetracksApplication"
@@ -62,10 +73,12 @@
         <!-- Launcher Activity -->
         <activity android:name=".ui.Noisetracks"
             android:theme="@style/Theme.Noise.Fullscreen">
+             
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            
         </activity>
         <!-- User Activity -->
         <activity
@@ -95,6 +108,16 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="vnd.android.cursor.item/vnd.noisetracks.entry" />
             </intent-filter>
+        </activity>
+        <!-- Recording View -->
+        <activity
+            android:name=".ui.RecordingActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize">
+        </activity>
+        <!-- Location View -->
+        <activity
+            android:name=".ui.LocationActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize">
         </activity>
         <!-- Single Entry View -->
         <activity
@@ -129,6 +152,11 @@
                 someone who explicitly knows the class name
             -->
         </activity>
+        
+        <!-- Maps API Key -->
+        <meta-data
+            android:name="com.google.android.maps.v2.API_KEY"
+            android:value="@string/maps_api_key"/>
         
     </application>
 

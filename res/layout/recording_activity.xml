@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/recording_activity"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@color/background_light"
+    android:gravity="center"
+    android:orientation="vertical" >
+    
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:text="" />
+ 
+    <SeekBar
+        android:id="@+id/rec_seekbar_top"
+        android:layout_width="fill_parent"
+        android:layout_height="5dp"
+        android:paddingLeft="0dp"
+        android:paddingRight="0dp"
+        android:progressDrawable="@drawable/seekbar_progress_recording"
+        android:secondaryProgress="0"
+        android:thumb="@drawable/scroll_thumb" />
+<!--
+    <com.stahlnow.noisetracks.audio.Scope
+        android:id="@+id/scope"
+        android:layout_width="fill_parent"
+        android:layout_height="180dp"
+        android:soundEffectsEnabled="true" />
+-->    
+    <com.stahlnow.noisetracks.audio.WaveForm
+        android:id="@+id/waveform"
+        android:layout_width="fill_parent"
+        android:layout_height="180dp"
+        android:visibility="visible"
+        android:soundEffectsEnabled="true" />
+    
+    <SeekBar
+        android:id="@+id/rec_seekbar_bottom"
+        android:layout_width="fill_parent"
+        android:layout_height="5dp"
+        android:paddingLeft="0dp"
+        android:paddingRight="0dp"
+        android:progressDrawable="@drawable/seekbar_progress_recording"
+        android:secondaryProgress="0"
+        android:thumb="@drawable/scroll_thumb" />
+
+    <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="0dp"
+        android:layout_marginLeft="@dimen/entry_margin_left_right"
+        android:layout_marginRight="@dimen/entry_margin_left_right"
+        android:layout_marginBottom="@dimen/entry_margin_left_right"
+        android:layout_weight="0.01"
+        android:gravity="bottom"
+        android:orientation="horizontal"
+        android:weightSum="10" >
+
+        <Button
+            android:id="@+id/rec_delete"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:background="@drawable/btn_default_grey_holo_light"
+            android:onClick="delete"
+            android:text="Delete" />
+
+        <Button
+            android:id="@+id/rec_next"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:background="@drawable/btn_default_grey_holo_light"
+            android:onClick="next"
+            android:text="Next" />
+
+        <ImageButton
+            android:id="@+id/rec_play"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_centerInParent="true"
+            android:background="@color/indicator"
+            android:contentDescription="play/pause"
+            android:onClick="play"
+            android:src="@drawable/av_play"
+            tools:ignore="HardcodedText" />
+
+    </RelativeLayout>
+
+</LinearLayout>

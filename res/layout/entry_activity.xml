@@ -18,14 +18,13 @@
         ptr:ptrRefreshableViewBackground="?android:attr/windowBackground" />
 
     <RelativeLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="84dp"
         android:layout_gravity="bottom"
         android:background="@color/lightest_grey"
         android:orientation="horizontal"
         android:paddingBottom="5dp" >
-
+
         <ImageButton
             android:id="@+id/entry_previous"
             android:layout_width="100dp"
@@ -50,7 +49,7 @@
             android:onClick="play"
             android:src="@drawable/av_play"
             tools:ignore="HardcodedText" />
-
+
         <ImageButton
             android:id="@+id/entry_next"
             android:layout_width="100dp"
@@ -63,7 +62,6 @@
             android:onClick="next"
             android:src="@drawable/av_next"
             tools:ignore="HardcodedText" />
-
     </RelativeLayout>
 
 </LinearLayout>

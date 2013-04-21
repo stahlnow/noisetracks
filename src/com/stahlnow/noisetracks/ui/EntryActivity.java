@@ -4,30 +4,20 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONTokener;
-
 import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.client.RESTLoaderCallbacks;
 import com.stahlnow.noisetracks.client.SQLLoaderCallbacks;
 import com.stahlnow.noisetracks.helper.FixedSpeedScroller;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
-import com.stahlnow.noisetracks.provider.NoisetracksContract;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
-import com.stahlnow.noisetracks.ui.EntryActivity.EntryDetailFragment;
 import com.stahlnow.noisetracks.utility.AppLog;
 
-import android.support.v4.content.LocalBroadcastManager;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.media.AudioManager;
@@ -41,9 +31,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
-import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.text.Html;
@@ -72,48 +59,73 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		OnRefreshListener<ViewPager>, OnPageChangeListener, OnPreparedListener,
 		OnErrorListener, OnCompletionListener, OnSeekCompleteListener {
 
+	private static final String TAG = "EntryActivity";
+	public static final String ID = "id";
 	private static final int UPDATE_FREQUENCY = 1;
+	
 	private final Handler handler = new Handler();
-
 	private static MediaPlayer player;
-
 	private Cursor mCursor = null;
 	private PullToRefreshViewPager mPullToRefreshViewPager;
 	private ViewPager mPager;
 	private EntryPagerAdapter mAdapter;
-	private ImageButton playButton = null;
+	private ImageButton mPlayBtn = null;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		getSupportActionBar().setDisplayHomeAsUpEnabled(true); // enable 'up'
-																// navigation in
-																// action bar
-
+		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 		setContentView(R.layout.entry_activity);
 
-		playButton = (ImageButton) findViewById(R.id.entry_play_pause);
+		mPlayBtn = (ImageButton) findViewById(R.id.entry_play_pause);
 
 		mPullToRefreshViewPager = (PullToRefreshViewPager) findViewById(R.id.entry_activity_pull_refresh_view_pager);
 		mPullToRefreshViewPager.setOnRefreshListener(this);
 		mPager = mPullToRefreshViewPager.getRefreshableView();
 
 		String select = getIntent().getExtras().getString(SQLLoaderCallbacks.SELECT);
-
-		mCursor = getContentResolver().query(Entries.CONTENT_URI,
-				NoisetracksProvider.READ_ENTRY_PROJECTION, select, null,
+		
+		mCursor = getContentResolver().query(
+				Entries.CONTENT_URI,
+				NoisetracksProvider.READ_ENTRY_PROJECTION,
+				select,
+				null,
 				Entries.DEFAULT_SORT_ORDER);
+		
+		
+		// Move cursor to right position and set view pager position
+		long id = getIntent().getLongExtra(ID, -1);						// sql _id of the selected entry
+		int position = -1;												// position in view pager used later
+		
+		if (mCursor != null) {
+			mCursor.moveToPosition(-1);
+			while (mCursor.moveToNext()) {
+				position++;
+				if (mCursor.getLong(mCursor.getColumnIndex(Entries._ID)) == id) {
+					Log.v(TAG, "Selected entry with _ID " + id);
+					break;
+				}
+			}
+		} else {
+			Log.e(TAG, "Cursor is invalid.");
+			finish();
+		}
 
-		mAdapter = new EntryPagerAdapter(getSupportFragmentManager(),
-				NoisetracksProvider.READ_ENTRY_PROJECTION, mCursor);
+		// Set adapter
+		mAdapter = new EntryPagerAdapter(this, getSupportFragmentManager(), mCursor) {
+			@Override
+			public Fragment getItem(Context context, Cursor cursor) {
+				
+				EntryDetailFragment f;
+				try {
+					f = EntryDetailFragment.newInstance(cursor);
+				} catch (Exception ex) {
+					throw new RuntimeException(ex);
+				}
+				return f;				
+			}
+		};
 		mPager.setAdapter(mAdapter);
-		mPager.setCurrentItem(getIntent().getExtras().getInt("item"), false); // select
-																				// item
-		mCursor.moveToPosition(getIntent().getExtras().getInt("item")); // move
-																		// cursor
-																		// in
-																		// position
 
 		// Set custom scroller for slow item scroll animation
 		try {
@@ -121,49 +133,35 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			mScroller = ViewPager.class.getDeclaredField("mScroller");
 			mScroller.setAccessible(true);
 			DecelerateInterpolator sInterpolator = new DecelerateInterpolator();
-			FixedSpeedScroller scroller = new FixedSpeedScroller(
-					mPager.getContext(), sInterpolator);
+			FixedSpeedScroller scroller = new FixedSpeedScroller(mPager.getContext(), sInterpolator);
 			mScroller.set(mPager, scroller);
 		} catch (NoSuchFieldException e) {
 		} catch (IllegalArgumentException e) {
 		} catch (IllegalAccessException e) {
 		}
 
-		// create media player
+		// Create media player
 		player = new MediaPlayer();
 		player.setOnPreparedListener(this);
 		player.setOnCompletionListener(this);
 		player.setOnErrorListener(this);
-
 		player.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
-		// set media url
-		try {
-			player.setDataSource(mCursor.getString(mCursor.getColumnIndex(Entries.COLUMN_NAME_FILENAME)));
-		} catch (IllegalArgumentException e) {
-			Toast.makeText(this, R.string.player_error + "Stream not found.",
-					Toast.LENGTH_SHORT).show();
-		} catch (SecurityException e) {
-			Toast.makeText(this, R.string.player_error + "Stream not found.",
-					Toast.LENGTH_SHORT).show();
-		} catch (IllegalStateException e) {
-			Toast.makeText(this, R.string.player_error + "Stream not found.",
-					Toast.LENGTH_SHORT).show();
-		} catch (IOException e) {
-			Toast.makeText(this, R.string.player_error + "Stream not found.",
-					Toast.LENGTH_SHORT).show();
-		}
-
-		// prepare buffer and start playback
-		player.prepareAsync();
-
+		
+		// Listen to page changes and select current page based on position calculated above
 		mPager.setOnPageChangeListener(this);
+		mPager.setCurrentItem(position, false);
+		onPageSelected(mPager.getCurrentItem());
 
 	}
 
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
+		
+		if (mCursor != null) {
+			if (!mCursor.isClosed())
+				mCursor.close();
+		}
 
 		// Stop the seekbar handler from sending updates to UI
 		handler.removeCallbacks(updatePositionRunnable);
@@ -184,10 +182,10 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		if (player.isPlaying()) {
 			handler.removeCallbacks(updatePositionRunnable);
 			player.pause();
-			playButton.setImageResource(R.drawable.av_play);
+			mPlayBtn.setImageResource(R.drawable.av_play);
 		} else {
 			player.start();
-			playButton.setImageResource(R.drawable.av_pause);
+			mPlayBtn.setImageResource(R.drawable.av_pause);
 			updatePosition();
 		}
 	}
@@ -207,17 +205,15 @@ public class EntryActivity extends SherlockFragmentActivity implements
 	}
 
 	@Override
-	public void onPageScrollStateChanged(int arg0) {
-	}
+	public void onPageScrollStateChanged(int state) {}
 
 	@Override
-	public void onPageScrolled(int arg0, float arg1, int arg2) {
-	}
+	public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
 
 	@Override
-	public void onPageSelected(int page) {
+	public void onPageSelected(int position) {
 
-		mCursor.moveToPosition(page);
+		mCursor.moveToPosition(position);
 
 		if (player.isPlaying()) {
 			player.stop();
@@ -241,10 +237,10 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		}
 
 		try {
-			EntryDetailFragment f = mAdapter.getFragment(mPager
-					.getCurrentItem());
+			EntryDetailFragment f = (EntryDetailFragment)mAdapter.getFragmentAtPosition(mPager.getCurrentItem());
 			f.mSeekBar.setProgress(0);
 		} catch (NullPointerException e) {
+			Log.e(TAG, "onPageSelected: could not get fragment: " + e.toString());
 		}
 
 		// buffer and start media playback
@@ -256,15 +252,14 @@ public class EntryActivity extends SherlockFragmentActivity implements
 	public void onPrepared(MediaPlayer player) {
 		if (!player.isPlaying()) {
 			player.start();
-			playButton.setImageResource(R.drawable.av_pause);
+			mPlayBtn.setImageResource(R.drawable.av_pause);
 
 			try {
-				EntryDetailFragment f = mAdapter.getFragment(mPager
-						.getCurrentItem());
+				EntryDetailFragment f = (EntryDetailFragment)mAdapter.getFragmentAtPosition(mPager.getCurrentItem());
 				f.mSeekBar.setMax(player.getDuration());
 				updatePosition();
 			} catch (NullPointerException e) {
-
+				Log.e(TAG, "Could not get fragment: " + e.toString());
 			}
 		}
 	}
@@ -272,12 +267,11 @@ public class EntryActivity extends SherlockFragmentActivity implements
 	private void updatePosition() {
 		handler.removeCallbacks(updatePositionRunnable);
 		try {
-			EntryDetailFragment f = mAdapter.getFragment(mPager
-					.getCurrentItem());
+			EntryDetailFragment f = (EntryDetailFragment)mAdapter.getFragmentAtPosition(mPager.getCurrentItem());
 			f.mSeekBar.setProgress(player.getCurrentPosition());
 		} catch (NullPointerException e) {
+			Log.e(TAG, "Could not get fragment: " + e.toString());
 		}
-		//AppLog.logString("pos: " + player.getCurrentPosition());
 
 		handler.postDelayed(updatePositionRunnable, UPDATE_FREQUENCY);
 	}
@@ -297,11 +291,8 @@ public class EntryActivity extends SherlockFragmentActivity implements
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case android.R.id.home:
-			// This is called when the Home (Up) button is pressed
-			// in the Action Bar.
 			Intent parentActivityIntent = new Intent(this, Tabs.class);
-			parentActivityIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
-					| Intent.FLAG_ACTIVITY_NEW_TASK);
+			parentActivityIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
 			startActivity(parentActivityIntent);
 			finish();
 			return true;
@@ -311,10 +302,10 @@ public class EntryActivity extends SherlockFragmentActivity implements
 
 	@Override
 	public void onCompletion(MediaPlayer mp) {
-		playButton.setImageResource(R.drawable.av_play);
+		mPlayBtn.setImageResource(R.drawable.av_play);
 		handler.removeCallbacks(updatePositionRunnable);
-		// select next item
-		mPager.setCurrentItem(mPager.getCurrentItem() + 1, true);
+		// auto move to next item TODO: add as an option in preferences
+		//mPager.setCurrentItem(mPager.getCurrentItem() + 1, true);
 	}
 
 	@Override
@@ -329,108 +320,6 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		}
 	}
 
-	private static class EntryPagerAdapter extends FragmentStatePagerAdapter {
-		@SuppressLint("UseSparseArrays")
-		private Map<Integer, EntryDetailFragment> mPageReferenceMap = new HashMap<Integer, EntryDetailFragment>();
-		private final String[] mProjection;
-		private Cursor mCursor;
-
-		public EntryPagerAdapter(FragmentManager fm, String[] projection,
-				Cursor cursor) {
-			super(fm);
-			this.mProjection = projection;
-			this.mCursor = cursor;
-		}
-
-		@Override
-		public Fragment getItem(int position) {
-			if (mCursor == null) // shouldn't happen
-				return null;
-
-			mCursor.moveToPosition(position);
-
-			EntryDetailFragment f;
-
-			try {
-				f = EntryDetailFragment.newInstance();
-				mPageReferenceMap.put(position, f); // put it in a map, so we
-													// have a reference!
-			} catch (Exception ex) {
-				throw new RuntimeException(ex);
-			}
-			
-			Bundle args = new Bundle();
-			
-			int i = -1;
-			i = mCursor.getColumnIndex(Entries.COLUMN_NAME_FILENAME);
-			args.putString(mProjection[i], mCursor.getString(i));
-			i = mCursor.getColumnIndex(Entries.COLUMN_NAME_MUGSHOT);
-			args.putString(mProjection[i], mCursor.getString(i));
-			i = mCursor.getColumnIndex(Entries.COLUMN_NAME_RESOURCE_URI);
-			args.putString(mProjection[i], mCursor.getString(i));
-			i = mCursor.getColumnIndex(Entries.COLUMN_NAME_SPECTROGRAM);
-			args.putString(mProjection[i], mCursor.getString(i));
-			i = mCursor.getColumnIndex(Entries.COLUMN_NAME_USERNAME);
-			args.putString(mProjection[i], mCursor.getString(i));
-			i = mCursor.getColumnIndex(Entries.COLUMN_NAME_UUID);
-			args.putString(mProjection[i], mCursor.getString(i));
-			
-			i = mCursor.getColumnIndex(Entries.COLUMN_NAME_LATITUDE);
-			args.putFloat(mProjection[i], mCursor.getFloat(i));
-			i = mCursor.getColumnIndex(Entries.COLUMN_NAME_LONGITUDE);
-			args.putFloat(mProjection[i], mCursor.getFloat(i));
-			
-			i = mCursor.getColumnIndex(Entries.COLUMN_NAME_VOTE);
-			args.putInt(mProjection[i], mCursor.getInt(i));
-			
-			i = mCursor.getColumnIndex(Entries.COLUMN_NAME_SCORE);
-			args.putInt(mProjection[i], mCursor.getInt(i));
-			
-			i = mCursor.getColumnIndex(Entries.COLUMN_NAME_RECORDED);
-			args.putString(mProjection[i], mCursor.getString(i));
-			i = mCursor.getColumnIndex(Entries.COLUMN_NAME_CREATED);
-			args.putString(mProjection[i], mCursor.getString(i));
-			
-			i = mCursor.getColumnIndex(Entries.COLUMN_NAME_UPLOADED);
-			args.putInt(mProjection[i], mCursor.getInt(i));
-			
-			f.setArguments(args);
-
-			return f;
-		}
-
-		@Override
-		public int getCount() {
-			if (mCursor == null)
-				return 0;
-			else
-				return mCursor.getCount();
-		}
-
-		@Override
-		public void destroyItem(ViewGroup container, int position, Object object) {
-			super.destroyItem(container, position, object);
-			mPageReferenceMap.remove(Integer.valueOf(position));
-		}
-
-		public EntryDetailFragment getFragment(int key) {
-			return mPageReferenceMap.get(key);
-		}
-
-		public void swapCursor(Cursor c) {
-			if (mCursor == c)
-				return;
-
-			this.mCursor = c;
-			notifyDataSetChanged();
-		}
-
-		public Cursor getCursor() {
-			return mCursor;
-		}
-
-	}
-
 	public static class EntryDetailFragment extends Fragment implements OnCheckedChangeListener {
 		private SeekBar mSeekBar;
 		private TextView mTVScore;
@@ -440,11 +329,48 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		private ToggleButton mToggleButtonVoteUp = null;
 		private ToggleButton mToggleButtonVoteDown = null;
 		private Boolean mCurrentLikes = null;
-		private int mScore = 0;
+		
 		private int mScoreDiff = 0;
 		
-		public static EntryDetailFragment newInstance() {
+		// user variables
+		private String mFilname;
+		private String mResourceUri;
+		private String mMugshot;
+		private String mSpectrogram;
+		private String mUsername;
+		private String mUuid;
+		private String mRecorded;
+		private String mCreated;
+		
+		private Float mLatitude;
+		private Float mLongitude;
+		
+		private int mVote;
+		private int mScore;
+		
+		private int mType;
+		
+		
+		public static EntryDetailFragment newInstance(Cursor cursor) {
+			
 			EntryDetailFragment f = new EntryDetailFragment();
+			
+			Bundle args = new Bundle();
+			args.putString(Entries.COLUMN_NAME_FILENAME, cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_FILENAME)));
+			args.putString(Entries.COLUMN_NAME_RESOURCE_URI, cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_RESOURCE_URI)));
+			args.putString(Entries.COLUMN_NAME_MUGSHOT, cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_MUGSHOT)));
+			args.putString(Entries.COLUMN_NAME_SPECTROGRAM, cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_SPECTROGRAM)));
+			args.putString(Entries.COLUMN_NAME_USERNAME, cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_USERNAME)));
+			args.putString(Entries.COLUMN_NAME_UUID, cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_UUID)));
+			args.putString(Entries.COLUMN_NAME_RECORDED, cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_RECORDED)));
+			args.putString(Entries.COLUMN_NAME_CREATED, cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_CREATED)));
+			args.putFloat(Entries.COLUMN_NAME_LATITUDE, cursor.getFloat(cursor.getColumnIndex(Entries.COLUMN_NAME_LATITUDE)));
+			args.putFloat(Entries.COLUMN_NAME_LONGITUDE, cursor.getFloat(cursor.getColumnIndex(Entries.COLUMN_NAME_LONGITUDE)));
+			args.putInt(Entries.COLUMN_NAME_VOTE, cursor.getInt(cursor.getColumnIndex(Entries.COLUMN_NAME_VOTE)));
+			args.putInt(Entries.COLUMN_NAME_SCORE, cursor.getInt(cursor.getColumnIndex(Entries.COLUMN_NAME_SCORE)));
+			args.putInt(Entries.COLUMN_NAME_TYPE, cursor.getInt(cursor.getColumnIndex(Entries.COLUMN_NAME_TYPE)));
+			
+			f.setArguments(args);
 			return f;
 		}
 
@@ -453,6 +379,23 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			super.onCreate(savedInstanceState);
 			this.mHttpImageManager = NoisetracksApplication.getHttpImageManager();
 			this.mRESTLoaderCallback = new RESTLoaderCallbacks(getActivity(), this);
+			
+			 mFilname = getArguments() != null ? getArguments().getString(Entries.COLUMN_NAME_FILENAME) : null;
+			 mResourceUri = getArguments() != null ? getArguments().getString(Entries.COLUMN_NAME_RESOURCE_URI) : null;
+			 mMugshot = getArguments() != null ? getArguments().getString(Entries.COLUMN_NAME_MUGSHOT) : null;
+			 mSpectrogram = getArguments() != null ? getArguments().getString(Entries.COLUMN_NAME_SPECTROGRAM) : null;
+			 mUsername = getArguments() != null ? getArguments().getString(Entries.COLUMN_NAME_USERNAME) : null;
+			 mUuid = getArguments() != null ? getArguments().getString(Entries.COLUMN_NAME_UUID) : null;
+			 mRecorded = getArguments() != null ? getArguments().getString(Entries.COLUMN_NAME_RECORDED) : null;
+			 mCreated = getArguments() != null ? getArguments().getString(Entries.COLUMN_NAME_CREATED) : null;
+			 
+			 mLatitude = getArguments() != null ? getArguments().getFloat(Entries.COLUMN_NAME_LATITUDE) : 0.0f;
+			 mLongitude = getArguments() != null ? getArguments().getFloat(Entries.COLUMN_NAME_LONGITUDE) : 0.0f;
+			 
+			 mVote = getArguments() != null ? getArguments().getInt(Entries.COLUMN_NAME_VOTE) : null;
+			 mScore = getArguments() != null ? getArguments().getInt(Entries.COLUMN_NAME_SCORE) : null;
+			 mType = getArguments() != null ? getArguments().getInt(Entries.COLUMN_NAME_TYPE) : null;
+			 
 		}
 
 		/**
@@ -486,16 +429,13 @@ public class EntryActivity extends SherlockFragmentActivity implements
 				}
 
 				@Override
-				public void onProgressChanged(SeekBar sb, int progress,
-						boolean fromUser) {
+				public void onProgressChanged(SeekBar sb, int progress, boolean fromUser) {
 					if (fromUser) {
-						player.seekTo(sb.getProgress()); // update player
-															// position
+						player.seekTo(sb.getProgress()); // update player position
 					}
 				}
 			});
 
-			mScore = getArguments().getInt(Entries.COLUMN_NAME_SCORE); // get the current score
 			mTVScore.setText("Score: " + mScore);
 
 			mToggleButtonVoteUp.setOnCheckedChangeListener(null);
@@ -503,22 +443,18 @@ public class EntryActivity extends SherlockFragmentActivity implements
 
 			// Set initial states of the vote buttons based on user's past
 			// actions
-			int vote = getArguments().getInt(Entries.COLUMN_NAME_VOTE);
-			if (vote == 0) {
+			if (mVote == 0) {
 				// User is currently neutral
-				AppLog.logString("User gives a shit: " + vote);
 				mCurrentLikes = null;
 				mToggleButtonVoteUp.setChecked(false);
 				mToggleButtonVoteDown.setChecked(false);
-			} else if (vote == 1) {
-				AppLog.logString("User likes: " + vote);
-				// User currenty likes it
+			} else if (mVote == 1) {
+				// User currently likes it
 				mCurrentLikes = true;
 				mToggleButtonVoteUp.setChecked(true);
 				mToggleButtonVoteDown.setChecked(false);
-			} else if (vote == -1) {
+			} else if (mVote == -1) {
 				// User currently dislikes it
-				AppLog.logString("User dislikes: " + vote);
 				mCurrentLikes = false;
 				mToggleButtonVoteUp.setChecked(false);
 				mToggleButtonVoteDown.setChecked(true);
@@ -528,9 +464,8 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			mToggleButtonVoteDown.setOnCheckedChangeListener(this);
 
 			// mugshot.setImageResource(R.drawable.default_image);
-			String mug = getArguments().getString(Entries.COLUMN_NAME_MUGSHOT);
-			if (mug != null) {
-				Uri mugshotUri = Uri.parse(mug);
+			if (mMugshot != null) {
+				Uri mugshotUri = Uri.parse(mMugshot);
 				if (mugshotUri != null) {
 					Bitmap bitmap = mHttpImageManager
 							.loadImage(new HttpImageManager.LoadRequest(
@@ -542,9 +477,8 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			}
 
 			// spectrogram.setImageResource(R.drawable.default_image);
-			String spect = getArguments().getString(Entries.COLUMN_NAME_SPECTROGRAM);
-			if (spect != null) {
-				Uri specUri = Uri.parse(spect);
+			if (mSpectrogram != null) {
+				Uri specUri = Uri.parse(mSpectrogram);
 				if (specUri != null) {
 					Bitmap bitmap = mHttpImageManager
 							.loadImage(new HttpImageManager.LoadRequest(
@@ -556,15 +490,12 @@ public class EntryActivity extends SherlockFragmentActivity implements
 				}
 			}
 
-			String info = "<b>" + getArguments().getString(Entries.COLUMN_NAME_USERNAME) + "</b>" + "<br />"
-					+ getArguments().getString(Entries.COLUMN_NAME_UUID) + "<br />"
-					+ getArguments().getInt(Entries.COLUMN_NAME_VOTE);
+			String info = "<b>" + mUsername + "</b>";
 			username.setText(Html.fromHtml(info));
 
-			String recorded = getArguments().getString(Entries.COLUMN_NAME_RECORDED);
-			if (recorded != null) {
+			if (mRecorded != null) {
 				try {
-					Date d = NoisetracksApplication.SDF.parse(recorded);
+					Date d = NoisetracksApplication.SDF.parse(mRecorded);
 					String time = DateUtils.formatDateTime(getActivity(), d.getTime(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_12HOUR | DateUtils.FORMAT_CAP_AMPM);
 					String date = DateUtils.formatDateTime(getActivity(), d.getTime(), DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_ABBREV_ALL);
 					recordedAgo.setText(time + Html.fromHtml("&nbsp;\u00B7&nbsp;") + date);
@@ -584,7 +515,6 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		@Override
 		public void onDestroy() {
 			super.onDestroy();
-
 		}
 		
 		public void onVoteComplete(String json) {
@@ -601,16 +531,13 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			mScore += mScoreDiff; // add the new score difference
 			
 			mTVScore.setText("Score: " + mScore); // update score text view
-			
-			//mToggleButtonVoteUp.setOnCheckedChangeListener(this); // activate button listeners again
-			//mToggleButtonVoteDown.setOnCheckedChangeListener(this);
-			
+						
 		}
 
 		private void vote(int vote) {
 			JSONObject json = new JSONObject();
 			try {
-				json.put(Entries.COLUMN_NAME_UUID, getArguments().getString(Entries.COLUMN_NAME_UUID));
+				json.put(Entries.COLUMN_NAME_UUID, mUuid);
 				json.put(Entries.COLUMN_NAME_VOTE, vote);
 			} catch (JSONException e) {
 				AppLog.logString(e.toString());
@@ -629,9 +556,6 @@ public class EntryActivity extends SherlockFragmentActivity implements
 
 		@Override
 		public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-			
-			//mToggleButtonVoteUp.setOnCheckedChangeListener(null);
-			//mToggleButtonVoteDown.setOnCheckedChangeListener(null);			
 			
 			if (mCurrentLikes != null) {
 				if (mCurrentLikes == true && buttonView == mToggleButtonVoteDown) {
@@ -688,7 +612,7 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		protected Void doInBackground(Void... params) {
 			// Simulates a background job.
 			try {
-				Thread.sleep(2000);
+				Thread.sleep(500);
 			} catch (InterruptedException e) {
 			}
 			return null;
