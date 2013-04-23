@@ -29,7 +29,7 @@ import java.util.HashMap;
 
 public class NoisetracksProvider extends ContentProvider {
     // Used for debugging and logging
-    private static final String TAG = NoisetracksApplication.TAG + ".NoisetracksProvider";
+    private static final String TAG = "NoisetracksProvider";
 
     /**
      * The database that the provider uses as its underlying data store

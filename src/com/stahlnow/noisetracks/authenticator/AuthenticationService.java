@@ -30,27 +30,29 @@ import android.util.Log;
  */
 public class AuthenticationService extends Service {
     
+	private static final String TAG = "AuthenticationService";
+	
     private Authenticator mAuthenticator;
 
     @Override
     public void onCreate() {
-        if (Log.isLoggable(NoisetracksApplication.TAG, Log.VERBOSE)) {
-            Log.v(NoisetracksApplication.TAG, "Noisetracks Authentication Service started.");
+        if (Log.isLoggable(TAG, Log.VERBOSE)) {
+            Log.v(TAG, "Noisetracks Authentication Service started.");
         }
         mAuthenticator = new Authenticator(this);
     }
 
     @Override
     public void onDestroy() {
-        if (Log.isLoggable(NoisetracksApplication.TAG, Log.VERBOSE)) {
-            Log.v(NoisetracksApplication.TAG, "Noisetracks Authentication Service stopped.");
+        if (Log.isLoggable(TAG, Log.VERBOSE)) {
+            Log.v(TAG, "Noisetracks Authentication Service stopped.");
         }
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        if (Log.isLoggable(NoisetracksApplication.TAG, Log.VERBOSE)) {
-            Log.v(NoisetracksApplication.TAG, "getBinder()...  returning the AccountAuthenticator binder for intent " + intent);
+        if (Log.isLoggable(TAG, Log.VERBOSE)) {
+            Log.v(TAG, "getBinder()...  returning the AccountAuthenticator binder for intent " + intent);
         }
         return mAuthenticator.getIBinder();
     }

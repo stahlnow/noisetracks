@@ -19,6 +19,8 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.stahlnow.noisetracks.R;
+import com.stahlnow.noisetracks.authenticator.AuthenticateTask;
+import com.stahlnow.noisetracks.client.UploadTask;
 import com.stahlnow.noisetracks.helper.MyLocation;
 import com.stahlnow.noisetracks.helper.MyLocation.LocationResult;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
@@ -84,6 +86,39 @@ public class LocationActivity extends SherlockFragmentActivity implements Locati
 		}
 	}
 	
+	/**
+	 * User clicked 'Post' button
+	 * @param view
+	 */
+	public void post(View view) {
+		
+		Cursor c = mContext.getContentResolver().query(mEntry, null, null, null, null);
+		if (c != null) {
+			if (c.moveToFirst()) {
+		        ContentValues cv = new ContentValues();
+		        cv.put(Entries.COLUMN_NAME_TYPE, Entries.TYPE.UPLOADING.ordinal());
+		        mContext.getContentResolver().update(mEntry, cv, null, null);
+		        
+		        c.close();
+			}
+		}
+		
+		new UploadTask(this).execute(mEntry);
+		finish();
+	}
+	
+	/**
+	 * User clicked 'Back' button
+	 * @param view
+	 */
+	public void back(View view) {
+		Intent locationActivity = new Intent(this, RecordingActivity.class);
+		locationActivity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+		locationActivity.putExtra(RecordingActivity.EXTRA_URI, mEntry);
+		startActivity(locationActivity);
+		finish();
+	}
+	
 	
 	private LocationResult locationResult = new LocationResult() {
 	    @Override
@@ -120,26 +155,6 @@ public class LocationActivity extends SherlockFragmentActivity implements Locati
 	private void setUpMap() {
 		// Enable MyLocation overlay
 		mMap.setMyLocationEnabled(true);
-	}
-	
-	/**
-	 * User clicked 'Post' button
-	 * @param view
-	 */
-	public void post(View view) {
-		
-	}
-	
-	/**
-	 * User clicked 'Back' button
-	 * @param view
-	 */
-	public void back(View view) {
-		Intent locationActivity = new Intent(this, RecordingActivity.class);
-		locationActivity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-		locationActivity.putExtra(RecordingActivity.EXTRA_URI, mEntry);
-		startActivity(locationActivity);
-		finish();
 	}
 	
 	@Override

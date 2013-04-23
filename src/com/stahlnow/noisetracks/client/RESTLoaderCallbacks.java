@@ -12,9 +12,6 @@ import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
 import com.stahlnow.noisetracks.ui.EntryActivity.EntryDetailFragment;
 import com.stahlnow.noisetracks.ui.FeedActivity.FeedListFragment;
 import com.stahlnow.noisetracks.ui.ProfileActivity.ProfileListFragment;
-import com.stahlnow.noisetracks.utility.AppLog;
-import com.stahlnow.noisetracks.utility.AppSettings;
-
 import android.content.ContentValues;
 import android.content.Context;
 import android.net.Uri;
@@ -22,17 +19,15 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.Loader;
+import android.util.Log;
 import android.widget.Toast;
 
 public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RESTResponse> {
 	
+	private static final String TAG = "RESTLoaderCallbacks";
+	
 	public static final String ARGS_URI    = "com.stahlnow.noisetracks.ARGS_URI";
 	public static final String ARGS_PARAMS = "com.stahlnow.noisetracks.ARGS_PARAMS";
-    
-	public static final Uri URI_ENTRIES = Uri.parse(NoisetracksApplication.DOMAIN + "/api/v1/entry/");
-	public static final Uri URI_PROFILES = Uri.parse(NoisetracksApplication.DOMAIN + "/api/v1/profile/");
-	public static final Uri URI_SIGNUP = Uri.parse(NoisetracksApplication.DOMAIN + "/api/v1/signup/");
-	public static final Uri URI_VOTE = Uri.parse(NoisetracksApplication.DOMAIN + "/api/v1/vote/");
     
     private Context mContext;
     private Fragment mFragment;
@@ -71,9 +66,7 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	        int    code = data.getCode();
 	        String json = data.getData();
 	        
-	        // check to see if we got an HTTP 200 code and have some data.
 	        if (code == 200 && !json.equals("")) {
-	            
 	            switch (loader.getId()) {
 	            case NoisetracksApplication.ENTRIES_REST_LOADER:
 	            case NoisetracksApplication.ENTRIES_OLDER_REST_LOADER:
@@ -99,7 +92,6 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	        	default:
 	        		break;
 	        	}
-	        	
 	        } else if (code == 400) {
 	        	switch (loader.getId()) {
 	        	case NoisetracksApplication.SIGNUP_REST_LOADER:
@@ -108,11 +100,13 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	        	default:
 	        		break;
 	        	}
+	        } else if (code == 500) {
+	        	Toast.makeText(mContext, "Server responded with error. Try again later.", Toast.LENGTH_SHORT).show();
 	        } else {
-	        	Toast.makeText(mContext, "Failed to load data from Server.", Toast.LENGTH_SHORT).show();
+	        	Toast.makeText(mContext, "Could not connect to Noisetracks.", Toast.LENGTH_SHORT).show();
 	        }
     	} else {
-    		Toast.makeText(mContext, "Failed to load data from Server.\nCheck your internet settings.", Toast.LENGTH_SHORT).show();        
+    		Toast.makeText(mContext, "Could not connect to Noisetracks.", Toast.LENGTH_SHORT).show();        
     	}
     	
     	if (mFragment.getClass().getSimpleName() == "ProfileListFragment") {
@@ -130,7 +124,7 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
     
     }
     
-    private void addEntriesFromJSON(String json) {
+    public static void addEntriesFromJSON(String json) {
     	
     	try {
             JSONObject entryWrapper = (JSONObject) new JSONTokener(json).nextValue();
@@ -159,28 +153,35 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 				values.put(Entries.COLUMN_NAME_TYPE, Entries.TYPE.DOWNLOADED.ordinal()); // set type to DOWNLOADED
 				
 				// add entry to database
-				mContext.getContentResolver().insert(Entries.CONTENT_URI, values);
+				NoisetracksApplication.getInstance().getContentResolver().insert(Entries.CONTENT_URI, values);
 				
             }
             
+            /*
             // add 'load more' special entry
             if (meta.getString("next") != "null") {
             	ContentValues values = new ContentValues();
             	String created = entries.getJSONObject(entries.length()-1).getString("created").substring(0,19);
-            	values.put(Entries.COLUMN_NAME_CREATED, created); // set created to last entry, so the 'load more' entry appears right after the last entry we loaded.
+            	// add 1 second to 'created' time
+            	Integer sec = Integer.getInteger(Character.valueOf(created.charAt(18)).toString());
+            	sec++;
+            	StringBuilder _created_ = new StringBuilder(created);
+            	_created_.setCharAt(18, Integer.toString(sec).toCharArray()[0]); // replace second with new value
+            	values.put(Entries.COLUMN_NAME_CREATED, _created_.toString()); // set created to last entry + one second
             	values.put(Entries.COLUMN_NAME_RESOURCE_URI, meta.getString("next")); // special: resource uri is value of 'next'
             	values.put(Entries.COLUMN_NAME_TYPE, Entries.TYPE.LOAD_MORE.ordinal()); // Set type to LOAD_MORE
             	mContext.getContentResolver().insert(Entries.CONTENT_URI, values);
             }
+            */
             
         }
         catch (JSONException e) {
-            AppLog.logString("Failed to parse JSON. " + e.toString());
+            Log.w(TAG, "Failed to parse JSON. " + e.toString());
         }
     	
     }
     
-    private void addProfilesFromJSON(String json) {
+    public static void addProfilesFromJSON(String json) {
     	try {
             JSONObject profileWrapper = (JSONObject) new JSONTokener(json).nextValue();
             JSONObject meta 		= profileWrapper.getJSONObject("meta");
@@ -203,19 +204,18 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 			    }
 					
 				values.put(Profiles.COLUMN_NAME_MUGSHOT, user.getString("mugshot"));
-					
 				values.put(Profiles.COLUMN_NAME_BIO, profile.getString(Profiles.COLUMN_NAME_BIO));
 				values.put(Profiles.COLUMN_NAME_NAME, profile.getString(Profiles.COLUMN_NAME_NAME));
 				values.put(Profiles.COLUMN_NAME_TRACKS, profile.getInt(Profiles.COLUMN_NAME_TRACKS));
 				values.put(Profiles.COLUMN_NAME_WEBSITE, profile.getString(Profiles.COLUMN_NAME_WEBSITE));
 					
 				// add entry to database
-				mContext.getContentResolver().insert(Profiles.CONTENT_URI, values);
+				NoisetracksApplication.getInstance().getContentResolver().insert(Profiles.CONTENT_URI, values);
 				
             }
         }
         catch (JSONException e) {
-            AppLog.logString("Failed to parse JSON. " + e.toString());
+            Log.w(TAG, "Failed to parse JSON. " + e.toString());
         }
     }
     

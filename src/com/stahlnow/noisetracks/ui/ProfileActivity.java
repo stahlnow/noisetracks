@@ -22,6 +22,9 @@ import android.support.v4.app.ListFragment;
 import android.text.Html;
 import android.text.format.DateUtils;
 import android.util.Log;
+import android.accounts.Account;
+import android.accounts.AccountManager;
+import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
@@ -37,6 +40,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 public class ProfileActivity extends SherlockFragmentActivity {
+	
+	private static final String TAG = "ProfileActivity";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -104,9 +109,6 @@ public class ProfileActivity extends SherlockFragmentActivity {
             super.onActivityCreated(savedInstanceState);
             
             r = new RESTLoaderCallbacks(getActivity(), this);
-            
-            // We have a menu item to show in action bar.
-		    //setHasOptionsMenu(true);	
 		    
             // add profile header
 		    mProfileHeader = getLayoutInflater(savedInstanceState).inflate(R.layout.profile_header, null, false);
@@ -182,7 +184,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 	        params.putString("audiofile__status", "1");		// only get entries with status = Done
 	        params.putString("user__username", getArguments().getString("username"));	// only entries from specific user
         	Bundle argsEntriesREST = new Bundle();
-        	argsEntriesREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
+        	argsEntriesREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
         	argsEntriesREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
     		getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntriesREST, r);
     		
@@ -198,7 +200,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		            paramsProfile.putString("format", "json");				// we need json format
 		            paramsProfile.putString("user__username", getArguments().getString("username"));	// get profile for specific user
 		        	Bundle argsProfileREST = new Bundle();
-		        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_PROFILES);
+		        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_PROFILES);
 		        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, paramsProfile);
 		        	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.PROFILE_REST_LOADER, argsProfileREST, r);
 	            	
@@ -213,7 +215,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		    	        params.putString("created__gt", created);		// only entries newer than first (latest) entry in list
 		    	        params.putString("user__username", getArguments().getString("username"));	// only entries from specific user
 		            	Bundle argsEntriesNewer = new Bundle();
-		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
+		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
 		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_NEWER_REST_LOADER, argsEntriesNewer, r);
 	            	} else {
@@ -223,7 +225,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
 		    	        params.putString("user__username", getArguments().getString("username"));	// only entries from specific user
 		            	Bundle argsEntries = new Bundle();
-		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
+		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
 	            	}
@@ -244,7 +246,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		    	        params.putString("created__lt", created);		// older entries only
 		    	        params.putString("user__username", getArguments().getString("username"));	// only entries from specific user
 		    	        Bundle argsEntriesOlder = new Bundle();
-		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
+		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
 		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntriesOlder, r);
 	            	}
@@ -253,6 +255,9 @@ public class ProfileActivity extends SherlockFragmentActivity {
 			});
             
         }
+		
+		
+		
 		
 		public void setProfileHeader(Cursor data) {
 			try  {
@@ -285,7 +290,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 	            paramsProfile.putString("format", "json");				// we need json format
 	            paramsProfile.putString("user__username", getArguments().getString("username"));	// get profile for specific user
 	        	Bundle argsProfileREST = new Bundle();
-	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_PROFILES);
+	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_PROFILES);
 	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, paramsProfile);
 	        	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.PROFILE_REST_LOADER, argsProfileREST, r);
 	    		
@@ -304,7 +309,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 					// remove 'load more' entry
 	            	Uri lm = ContentUris.withAppendedId(Entries.CONTENT_ID_URI_BASE, id);
 	            	getActivity().getContentResolver().delete(lm, null, null);
-	            	getActivity().getContentResolver().notifyAll();
+	            	//getActivity().getContentResolver().notifyAll();
 	            	
 	            	// load items
 					Bundle params = new Bundle(); // no params
@@ -360,7 +365,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		public void onRefreshComplete() {
 			// Reset pull refresh view
 	    	mPullToRefreshView.onRefreshComplete();
-	    	// Set updated text	    	
+	    	// Set updated text
 	    	mPullToRefreshView.setLastUpdatedLabel("Last updated: " + DateUtils.formatDateTime(getActivity(), System.currentTimeMillis(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_ABBREV_TIME));
 
 	    	if (mEntryAdapter != null) {
@@ -431,6 +436,17 @@ public class ProfileActivity extends SherlockFragmentActivity {
 	    }
 	    
 
+	}
+
+	public static void onUploadResult(Boolean result, Uri uri) {		
+		if (result) {
+			// Entry has been uploaded and we delete it.
+			NoisetracksApplication.getInstance().getContentResolver().delete(uri, null, null); 
+			// Request sync
+			AccountManager am = AccountManager.get(NoisetracksApplication.getInstance());
+	        Account a = am.getAccountsByType(NoisetracksApplication.getInstance().getString(R.string.ACCOUNT_TYPE))[0];
+			ContentResolver.requestSync(a, NoisetracksApplication.getInstance().getString(R.string.AUTHORITY_PROVIDER), new Bundle());
+		}
 	}
 
 }

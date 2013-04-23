@@ -146,7 +146,7 @@ public class Sampler {
 					try {
 						os.close();
 					} catch (IOException e) {
-						e.printStackTrace();
+						Log.e(TAG, e.toString());
 					}
 		        }
 				
@@ -203,7 +203,6 @@ public class Sampler {
 		}
 		
 		String filename = NoisetracksApplication.SDF.format(new Date());
-		filename = "test";
 		
 		mFilename = file.getAbsolutePath() + "/" + filename + AUDIO_RECORDER_FILE_EXT_WAV;
 		
@@ -247,7 +246,7 @@ public class Sampler {
 			totalAudioLen = in.getChannel().size();
 			totalDataLen = totalAudioLen + 36; // Chunk size: 4 + 24 + 8 + Bytes per Sample * Nc * Sr + (0 or 1)
 			
-			Log.v(NoisetracksApplication.TAG, "Data size: " + totalDataLen);
+			Log.v(TAG, "Data size: " + totalDataLen);
 			
 			WriteWaveFileHeader(out, totalAudioLen, totalDataLen,
 					longSampleRate, CHANNELS, byteRate);
@@ -257,14 +256,14 @@ public class Sampler {
 				out.write(data);
 			}
 			
-			Log.v(NoisetracksApplication.TAG, "File size: " + out.getChannel().size());
+			Log.v(TAG, "File size: " + out.getChannel().size());
 			
 			in.close();
 			out.close();
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			Log.e(TAG, e.toString());
 		} catch (IOException e) {
-			e.printStackTrace();
+			Log.e(TAG, e.toString());
 		}
 	}
 

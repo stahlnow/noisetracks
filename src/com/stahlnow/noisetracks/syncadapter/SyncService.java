@@ -6,7 +6,7 @@ import android.os.IBinder;
 
 /**
  * Service to handle Account sync. This is invoked with an intent with action
- * ACTION_AUTHENTICATOR_INTENT. It instantiates the syncadapter and returns its
+ * ACTION_AUTHENTICATOR_INTENT. It instantiates the sync adapter and returns its
  * IBinder.
  */
 public class SyncService extends Service {

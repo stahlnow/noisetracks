@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
+import java.util.Date;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -328,10 +329,12 @@ public class RecordingActivity extends SherlockActivity implements
 			// add entry to database
 			ContentValues values = new ContentValues();
 			values.put(Entries.COLUMN_NAME_FILENAME, mSampler.getFilename());
+			values.put(Entries.COLUMN_NAME_RECORDED, NoisetracksApplication.SDF.format(new Date()));
 			values.put(Entries.COLUMN_NAME_USERNAME, AppSettings.getUsername(mContext));
 			values.put(Entries.COLUMN_NAME_MUGSHOT, AppSettings.getMugshot(mContext));
 			values.put(Entries.COLUMN_NAME_LATITUDE, 0.0f);
 			values.put(Entries.COLUMN_NAME_LONGITUDE, 0.0f);
+			values.put(Entries.COLUMN_NAME_UUID, mSampler.getFilename()); // for uuid we just set the filename, so it's unique.
 			values.put(Entries.COLUMN_NAME_TYPE, Entries.TYPE.RECORDED.ordinal());
 			mEntry = mContext.getContentResolver().insert(Entries.CONTENT_URI, values);
 			showEntry();

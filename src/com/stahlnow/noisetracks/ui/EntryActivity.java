@@ -14,7 +14,6 @@ import com.stahlnow.noisetracks.helper.FixedSpeedScroller;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
-import com.stahlnow.noisetracks.utility.AppLog;
 
 import android.content.Context;
 import android.content.Intent;
@@ -102,7 +101,7 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			while (mCursor.moveToNext()) {
 				position++;
 				if (mCursor.getLong(mCursor.getColumnIndex(Entries._ID)) == id) {
-					Log.v(TAG, "Selected entry with _ID " + id);
+					// we got the right one ... cursor is at correct position and 'position' can be used for pager
 					break;
 				}
 			}
@@ -240,7 +239,7 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			EntryDetailFragment f = (EntryDetailFragment)mAdapter.getFragmentAtPosition(mPager.getCurrentItem());
 			f.mSeekBar.setProgress(0);
 		} catch (NullPointerException e) {
-			Log.e(TAG, "onPageSelected: could not get fragment: " + e.toString());
+			Log.w(TAG, "onPageSelected: could not get fragment: " + e.toString());
 		}
 
 		// buffer and start media playback
@@ -259,7 +258,7 @@ public class EntryActivity extends SherlockFragmentActivity implements
 				f.mSeekBar.setMax(player.getDuration());
 				updatePosition();
 			} catch (NullPointerException e) {
-				Log.e(TAG, "Could not get fragment: " + e.toString());
+				Log.w(TAG, "Could not get fragment: " + e.toString());
 			}
 		}
 	}
@@ -270,7 +269,7 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			EntryDetailFragment f = (EntryDetailFragment)mAdapter.getFragmentAtPosition(mPager.getCurrentItem());
 			f.mSeekBar.setProgress(player.getCurrentPosition());
 		} catch (NullPointerException e) {
-			Log.e(TAG, "Could not get fragment: " + e.toString());
+			Log.w(TAG, "Could not get fragment: " + e.toString());
 		}
 
 		handler.postDelayed(updatePositionRunnable, UPDATE_FREQUENCY);
@@ -500,7 +499,7 @@ public class EntryActivity extends SherlockFragmentActivity implements
 					String date = DateUtils.formatDateTime(getActivity(), d.getTime(), DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_ABBREV_ALL);
 					recordedAgo.setText(time + Html.fromHtml("&nbsp;\u00B7&nbsp;") + date);
 				} catch (ParseException e) {
-					AppLog.logString("Failed to parse recorded date: " + e.toString());
+					Log.e(TAG, "Failed to parse recorded date: " + e.toString());
 				}
 			}
 
@@ -540,15 +539,13 @@ public class EntryActivity extends SherlockFragmentActivity implements
 				json.put(Entries.COLUMN_NAME_UUID, mUuid);
 				json.put(Entries.COLUMN_NAME_VOTE, vote);
 			} catch (JSONException e) {
-				AppLog.logString(e.toString());
+				Log.e(TAG, e.toString());
 			}
-
-			AppLog.logString(json.toString());
 
 			Bundle params = new Bundle();
 			params.putString("json", json.toString());
 			Bundle args = new Bundle();
-			args.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_VOTE);
+			args.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_VOTE);
 			args.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 
 			getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.VOTE_LOADER, args, mRESTLoaderCallback);

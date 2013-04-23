@@ -23,6 +23,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
+import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
 
 import android.accounts.Account;
@@ -36,7 +37,8 @@ import android.support.v4.content.AsyncTaskLoader;
 import android.util.Log;
 
 public class RESTLoader extends AsyncTaskLoader<RESTLoader.RESTResponse> {
-    private static final String TAG = RESTLoader.class.getName();
+    
+	private static final String TAG = "RESTLoader";
     
     // We use this delta to determine if our cached data is 
     // old or not. The value we have here is 10 minutes;
@@ -137,10 +139,6 @@ public class RESTLoader extends AsyncTaskLoader<RESTLoader.RESTResponse> {
                     HttpPost postRequest = (HttpPost) request;
                     
                     if (mParams != null) {
-                        // POST form data
-                    	//UrlEncodedFormEntity formEntity = new UrlEncodedFormEntity(paramsToList(mParams));
-                        //postRequest.setEntity(formEntity);
-                    	
                     	// POST json
                     	postRequest.setHeader("Content-Type", "application/json");
                     	StringEntity stringEntity = new StringEntity(mParams.getString("json"));
@@ -169,8 +167,8 @@ public class RESTLoader extends AsyncTaskLoader<RESTLoader.RESTResponse> {
             if (request != null) {
                 HttpClient client = new DefaultHttpClient();
                 
-                // Set ApiKey request header (not set for signup action)
-                if (mAction != RESTLoaderCallbacks.URI_SIGNUP) {
+                // Add Authorization to header (not set for sign up action)
+                if (mAction != NoisetracksApplication.URI_SIGNUP) {
 	                AccountManager am = AccountManager.get(mContext);
 	                Account a[] = am.getAccountsByType(mContext.getString(R.string.ACCOUNT_TYPE));
 	                if (a[0] != null) {
@@ -179,11 +177,9 @@ public class RESTLoader extends AsyncTaskLoader<RESTLoader.RESTResponse> {
 							// set header: http://django-tastypie.readthedocs.org/en/latest/authentication_authorization.html#apikeyauthentication
 							request.setHeader("Authorization", "ApiKey " + a[0].name + ":" + apikey);
 						} catch (OperationCanceledException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+							Log.e(TAG, e.toString());
 						} catch (AuthenticatorException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+							Log.e(TAG, e.toString());
 						}
 	                }
                 }
@@ -300,8 +296,13 @@ public class RESTLoader extends AsyncTaskLoader<RESTLoader.RESTResponse> {
     	data = null;
     }
     
-
-    private static void attachUriWithQuery(HttpRequestBase request, Uri uri, Bundle params) {
+    /**
+     * Helper function to create request. If params are null, only the uri is set.
+     * @param request The request
+     * @param uri The uri of the request
+     * @param params Name/Value pairs for URL params
+     */
+    public static void attachUriWithQuery(HttpRequestBase request, Uri uri, Bundle params) {
         try {
             if (params == null) {
                 // No params were given or they have already been

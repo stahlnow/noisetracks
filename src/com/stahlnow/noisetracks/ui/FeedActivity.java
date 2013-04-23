@@ -144,7 +144,7 @@ public class FeedActivity extends SherlockFragmentActivity {
 	        params.putString("order_by", "-created");		// newest first
 	        params.putString("audiofile__status", "1");		// only get entries with status = Done
         	Bundle argsEntries = new Bundle();
-        	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
+        	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
         	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
         	getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
 
@@ -164,7 +164,7 @@ public class FeedActivity extends SherlockFragmentActivity {
 		    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
 		    	        params.putString("created__gt", created);		// only entries newer than first (latest) entry in list
 		            	Bundle argsEntriesNewer = new Bundle();
-		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
+		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
 		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_NEWER_REST_LOADER, argsEntriesNewer, r);
 	            	} else {
@@ -173,7 +173,7 @@ public class FeedActivity extends SherlockFragmentActivity {
 		    	        params.putString("order_by", "-created");		// newest first
 		    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
 		            	Bundle argsEntries = new Bundle();
-		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
+		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
 	            	}
@@ -194,7 +194,7 @@ public class FeedActivity extends SherlockFragmentActivity {
 		    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
 		    	        params.putString("created__lt", created);		// older entries only
 		    	        Bundle argsEntriesOlder = new Bundle();
-		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_ENTRIES);
+		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
 		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntriesOlder, r);
 	            	}
@@ -216,7 +216,7 @@ public class FeedActivity extends SherlockFragmentActivity {
 					// remove 'load more' entry
 	            	Uri lm = ContentUris.withAppendedId(Entries.CONTENT_ID_URI_BASE, id);
 	            	getActivity().getContentResolver().delete(lm, null, null);
-	            	getActivity().getContentResolver().notifyAll();
+	            	//getActivity().getContentResolver().notifyAll();
 	            	
 	            	// load items
 					Bundle params = new Bundle(); // no params

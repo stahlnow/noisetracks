@@ -77,7 +77,9 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 						"AND (" +
 							Entries.COLUMN_NAME_TYPE + " = '" + Entries.TYPE.DOWNLOADED.ordinal() + "'" +
 							" OR " +
-							Entries.COLUMN_NAME_TYPE + " = '" + Entries.TYPE.RECORDED.ordinal() + "'" + " )" +
+							Entries.COLUMN_NAME_TYPE + " = '" + Entries.TYPE.RECORDED.ordinal() + "'" +
+							" OR " +
+							Entries.COLUMN_NAME_TYPE + " = '" + Entries.TYPE.UPLOADING.ordinal() + "'" + " )" +
 						")";
 			} else {
 				return "(" +

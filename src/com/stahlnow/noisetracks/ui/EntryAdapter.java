@@ -34,7 +34,8 @@ public class EntryAdapter extends SimpleCursorAdapter implements BitmapFilter {
 	private static final int VIEW_TYPE_ENTRY = 0x0;
 	private static final int VIEW_TYPE_LOAD_MORE = 0x1;
 	private static final int VIEW_TYPE_RECORDING = 0x2;
-	private static final int NUM_VIEW_TYPES = 3; // total different views
+	private static final int VIEW_TYPE_UPLOADING = 0x3;
+	private static final int NUM_VIEW_TYPES = 4; // total different views
 	
 	private Activity mContext;
 	private HttpImageManager mHttpImageManager;
@@ -68,16 +69,19 @@ public class EntryAdapter extends SimpleCursorAdapter implements BitmapFilter {
 		Cursor c = getCursor();
 		c.moveToPosition(position);
 		
-	    if (c.getInt(c.getColumnIndex(Entries.COLUMN_NAME_TYPE)) == Entries.TYPE.DOWNLOADED.ordinal()) {
-	    	return VIEW_TYPE_ENTRY;
-	    } else if (c.getInt(c.getColumnIndex(Entries.COLUMN_NAME_TYPE)) == Entries.TYPE.LOAD_MORE.ordinal()) {
-	    	return VIEW_TYPE_LOAD_MORE;
-	    } else if (c.getInt(c.getColumnIndex(Entries.COLUMN_NAME_TYPE)) == Entries.TYPE.RECORDED.ordinal()) {
-	    	return VIEW_TYPE_RECORDING;
-	    } else {
-	    	Log.e(TAG, "Error, unknown entry type.");
-	    	return -1;
-	    }
+		int type = c.getInt(c.getColumnIndex(Entries.COLUMN_NAME_TYPE));
+		if (type == Entries.TYPE.DOWNLOADED.ordinal()) {
+			return VIEW_TYPE_ENTRY;
+		} else if (type == Entries.TYPE.LOAD_MORE.ordinal()) {
+			return VIEW_TYPE_LOAD_MORE;
+		} else if (type == Entries.TYPE.RECORDED.ordinal()) {
+			return VIEW_TYPE_RECORDING;
+		} else if (type == Entries.TYPE.UPLOADING.ordinal()) {
+			return VIEW_TYPE_UPLOADING;
+		} else {
+			Log.e(TAG, "Error, unknown entry view type.");
+			return -1;
+		}
 	}
 	
 	@Override
@@ -186,6 +190,30 @@ public class EntryAdapter extends SimpleCursorAdapter implements BitmapFilter {
     		}
         	
 			holder.username.setText(getCursor().getString(getCursor().getColumnIndex(Entries.COLUMN_NAME_USERNAME)));
+			
+			recorded = getCursor().getString(getCursor().getColumnIndex(Entries.COLUMN_NAME_RECORDED));
+			if (recorded != null) {
+				try {
+					Date d = NoisetracksApplication.SDF.parse(recorded);
+					String rec_ago = DateUtils.getRelativeTimeSpanString(d.getTime(), System.currentTimeMillis(), 0L, DateUtils.FORMAT_ABBREV_ALL).toString();
+					holder.recorded_ago.setText(rec_ago);
+				} catch (ParseException e) {			
+					AppLog.logString("Failed to parse recorded date: " + e.toString());
+				}
+			}
+        	break;
+        case VIEW_TYPE_UPLOADING:
+        	if (convertView == null) {
+	        	convertView = mInflater.inflate(R.layout.entry_uploading, null);
+	        	holder = new ViewHolder();
+	        	holder.username = (TextView) convertView.findViewById(R.id.entry_username);
+    			holder.recorded_ago = (TextView) convertView.findViewById(R.id.entry_recorded_ago);
+				convertView.setTag(holder);
+        	} else {
+    			holder = (ViewHolder) convertView.getTag();
+    		}
+        	
+        	holder.username.setText(getCursor().getString(getCursor().getColumnIndex(Entries.COLUMN_NAME_USERNAME)));
 			
 			recorded = getCursor().getString(getCursor().getColumnIndex(Entries.COLUMN_NAME_RECORDED));
 			if (recorded != null) {

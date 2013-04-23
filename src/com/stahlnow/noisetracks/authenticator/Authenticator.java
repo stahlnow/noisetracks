@@ -96,7 +96,7 @@ class Authenticator extends AbstractAccountAuthenticator {
         final AccountManager am = AccountManager.get(mContext);
         final String apikey = am.getPassword(account);
         if (apikey != null) {
-            final boolean verified = true; // TODO: confirm apikey? instead of onlineConfirmPassword(account.name, password);
+            final boolean verified = true; // TODO: confirm api key? instead of onlineConfirmPassword(account.name, password);
             if (verified) {
                 final Bundle result = new Bundle();
                 result.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);

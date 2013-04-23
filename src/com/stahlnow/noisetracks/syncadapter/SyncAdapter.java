@@ -11,22 +11,32 @@ import android.content.SyncResult;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
-import com.stahlnow.noisetracks.utility.AppLog;
+import com.stahlnow.noisetracks.client.RESTLoader;
+import com.stahlnow.noisetracks.client.RESTLoaderCallbacks;
+import com.stahlnow.noisetracks.client.SQLLoaderCallbacks;
+import com.stahlnow.noisetracks.provider.NoisetracksProvider;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.ParseException;
-import org.apache.http.auth.AuthenticationException;
+import org.apache.http.StatusLine;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Date;
 
-/**
- * SyncAdapter implementation for syncing sample SyncAdapter contacts to the
- * platform ContactOperations provider.
- */
 public class SyncAdapter extends AbstractThreadedSyncAdapter {
-    private static final String TAG = "SyncAdapter";
+    
+	private static final String TAG = "SyncAdapter";
 
     private final AccountManager mAccountManager;
     private final Context mContext;
@@ -42,41 +52,74 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
     @Override
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
         
-		AppLog.logString("onPerformSync: Start ...");
-
-		String apikey = null;
+		Log.v(TAG, "Start syncing ...");
 		
 		try {
+			
+			String apikey;
+			
 			// use the account manager to request the credentials
 			apikey = mAccountManager.blockingGetAuthToken(
 					account, mContext.getString(R.string.AUTHTOKEN_TYPE), true); // true -> notifyAuthFailure
 
-			if (apikey != null) {
-				AppLog.logString(apikey);
+			if (apikey != null)
+			{
+				DefaultHttpClient httpclient = new DefaultHttpClient();
+				HttpResponse response;
+				HttpEntity responseEntity;
+				StatusLine responseStatus;
+				int statusCode;
+				
+	            // Get entries from REST api.
+		    	HttpGet entries = new HttpGet();
+		    	entries.setHeader("Authorization", "ApiKey " + account.name + ":" + apikey);
+	            Bundle entriesURLParams = new Bundle();
+	            entriesURLParams.putString("format", "json");				// we need json format
+	            entriesURLParams.putString("order_by", "-created");			// newest first
+	            entriesURLParams.putString("audiofile__status", "1");		// only get entries with status = Done
+	        	RESTLoader.attachUriWithQuery(entries, NoisetracksApplication.URI_ENTRIES, entriesURLParams);
+	        	response = httpclient.execute(entries);
+	        	
+	        	responseEntity = response.getEntity();
+	        	responseStatus= response.getStatusLine();
+	        	statusCode = responseStatus != null ? responseStatus.getStatusCode() : 0;
+                
+                if (statusCode == HttpStatus.SC_OK) {
+                	String json = (responseEntity != null ? EntityUtils.toString(responseEntity) : null);
+                	if (json != null)
+                		RESTLoaderCallbacks.addEntriesFromJSON(json);
+                }
+                
+                
+                // Get profile from REST api.
+		    	HttpGet profile = new HttpGet();
+		    	profile.setHeader("Authorization", "ApiKey " + account.name + ":" + apikey);
+	            Bundle profileURLParams = new Bundle();
+	            entriesURLParams.putString("format", "json");					// we need json format
+	            entriesURLParams.putString("user__username", account.name);		// username
+	        	RESTLoader.attachUriWithQuery(profile, NoisetracksApplication.URI_PROFILES, profileURLParams);
+	        	response = httpclient.execute(profile);
+	        	
+	        	responseEntity = response.getEntity();
+                responseStatus = response.getStatusLine();
+                statusCode     = responseStatus != null ? responseStatus.getStatusCode() : 0;
+                
+                if (statusCode == HttpStatus.SC_OK) {
+                	String json = (responseEntity != null ? EntityUtils.toString(responseEntity) : null);
+                	if (json != null)
+                		RESTLoaderCallbacks.addProfilesFromJSON(json);
+                }
+	        	
 			}
-			
-			// fetch updates from the sample service over the cloud
-			// users = NetworkUtilities.fetchFriendUpdates(account, authtoken,
-			// mLastUpdated);
-
-			// update the last synced date.
-			mLastUpdated = new Date();
-			// update platform contacts.
-
-			// ContactManager.syncContacts(mContext, account.name, users);
-
-			// fetch and update status messages for all the synced users.
-			// statuses = NetworkUtilities.fetchFriendStatuses(account,
-			// authtoken);
-			// ContactManager.insertStatuses(mContext, account.name, statuses);
+				
 
 		} catch (final AuthenticatorException e) {
 			syncResult.stats.numParseExceptions++;
-			Log.e(TAG, "AuthenticatorException", e);
+			Log.w(TAG, "AuthenticatorException", e);
 		} catch (final OperationCanceledException e) {
-			Log.e(TAG, "OperationCanceledExcetpion", e);
+			Log.w(TAG, "OperationCanceledExcetpion", e);
 		} catch (final IOException e) {
-			Log.e(TAG, "IOException", e);
+			Log.w(TAG, "IOException", e);
 			syncResult.stats.numIoExceptions++;
 		} 
 		/*
@@ -91,12 +134,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 			syncResult.stats.numParseExceptions++;
 			Log.e(TAG, "ParseException", e);
 		}
-		/*
-		catch (final JSONException e) {
-			syncResult.stats.numParseExceptions++;
-			Log.e(TAG, "JSONException", e);
-		}
-		*/
+		
+		
 	}
 }
 

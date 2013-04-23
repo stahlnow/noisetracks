@@ -7,17 +7,27 @@ import com.stahlnow.noisetracks.authenticator.AuthenticationService;
 import com.stahlnow.noisetracks.helper.httpimage.FileSystemPersistence;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
+
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Application;
+import android.content.ContentResolver;
+import android.net.Uri;
 import android.util.Log;
 
 public class NoisetracksApplication extends Application {
 
-	public static final String TAG = "Noisetracks"; // Log tag
+	private static final String TAG = "NoisetracksApplication"; 
 	
 	public static final String HOST = "192.168.1.217";
 	public static final int HTTP_PORT = 8000;
 	public static final int HTTPS_PORT = 443;
 	public static final String DOMAIN = "http://" + HOST + ":" + HTTP_PORT;
+	public static final Uri URI_ENTRIES = Uri.parse(DOMAIN + "/api/v1/entry/");
+	public static final Uri URI_PROFILES = Uri.parse(DOMAIN + "/api/v1/profile/");
+	public static final Uri URI_SIGNUP = Uri.parse(DOMAIN + "/api/v1/signup/");
+	public static final Uri URI_VOTE = Uri.parse(DOMAIN + "/api/v1/vote/");
+	public static final Uri URI_UPLOAD = Uri.parse(DOMAIN + "/upload/");
 	
 	/**
 	 *  The global SDF (simple date format) used everywhere: "yyyy-MM-dd'T'HH:mm:ss"

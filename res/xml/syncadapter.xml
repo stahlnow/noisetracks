@@ -5,4 +5,5 @@
     android:contentAuthority="com.stahlnow.noisetracks.provider"
     android:accountType="com.stahlnow.noisetracks"
     android:isAlwaysSyncable="true"
+    android:userVisible="true"
 />

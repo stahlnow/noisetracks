@@ -35,6 +35,8 @@ import android.util.Log;
 
 public class NoisetracksService extends Service implements LocationListener {
 	
+	private static final String TAG = "NoisetracksService";
+	
 	private static final int gpsMinTime = 500;
 	private static final int gpsMinDistance = 0;
 	private static final int TIMER_DELAY = 1000;
@@ -63,20 +65,20 @@ public class NoisetracksService extends Service implements LocationListener {
 	private Timer mRecordingTimer = null;
 
 	public NoisetracksService() {
-		Log.v(NoisetracksApplication.TAG, "NoisetracksService.NoisetrackService().");
+		Log.v(TAG, "NoisetracksService.NoisetrackService().");
 		
 		mBufferSize = 16 * AudioRecord.getMinBufferSize(RECORDER_SAMPLERATE,RECORDER_CHANNELS,RECORDER_AUDIO_ENCODING);
 	}
 
 	@Override
 	public IBinder onBind(Intent arg0) {
-		Log.v(NoisetracksApplication.TAG, "NoisetracksService.onBind().");
+		Log.v(TAG, "NoisetracksService.onBind().");
 		return null;
 	}
 
 	@Override
 	public void onCreate() {
-		Log.v(NoisetracksApplication.TAG, "NoisetracksService.onCreate().");
+		Log.v(TAG, "NoisetracksService.onCreate().");
 		super.onCreate();
 	}
 	
@@ -89,7 +91,7 @@ public class NoisetracksService extends Service implements LocationListener {
     	String pathToOurFile = Environment.getExternalStorageDirectory().getPath();
     	pathToOurFile += "/Noisetracks";
     	pathToOurFile += "/test.wav";
-    	Log.v(NoisetracksApplication.TAG, "path is: "+pathToOurFile);
+    	Log.v(TAG, "path is: "+pathToOurFile);
     	String urlServer = "http://192.168.1.111:8000/upload/";
     	String lineEnd = "\r\n";
     	String twoHyphens = "--";
@@ -166,13 +168,13 @@ public class NoisetracksService extends Service implements LocationListener {
 	        	response.append('\r');
 	        }
 	        rd.close();
-	        Log.v(NoisetracksApplication.TAG, response.toString());
+	        Log.v(TAG, response.toString());
 	        return response.toString();
 	    	
     	}
     	catch (Exception e)
     	{
-    		Log.v(NoisetracksApplication.TAG, "Oooops: " + e.toString());
+    		Log.v(TAG, "Oooops: " + e.toString());
     		return null;
     	}
     	finally
@@ -187,9 +189,9 @@ public class NoisetracksService extends Service implements LocationListener {
 	
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		Log.v(NoisetracksApplication.TAG, "NoisetracksService.onStartCommand().");
+		Log.v(TAG, "NoisetracksService.onStartCommand().");
 		
-		Log.v(NoisetracksApplication.TAG, "Started tracking...");
+		Log.v(TAG, "Started tracking...");
 		
 		if (mLocationManager == null)
 		{
@@ -227,7 +229,7 @@ public class NoisetracksService extends Service implements LocationListener {
 
 	@Override
 	public void onLocationChanged(Location location) {
-		Log.v(NoisetracksApplication.TAG, "Got location fix at " + location.toString());
+		Log.v(TAG, "Got location fix at " + location.toString());
 		
 		mLatitude = location.getLatitude();
 		mLongitude = location.getLongitude();
@@ -236,17 +238,17 @@ public class NoisetracksService extends Service implements LocationListener {
 
 	@Override
 	public void onProviderDisabled(String provider) {
-		Log.v(NoisetracksApplication.TAG, "NoisetracksService.onProviderDisabled().");
+		Log.v(TAG, "NoisetracksService.onProviderDisabled().");
 	}
 
 	@Override
 	public void onProviderEnabled(String provider) {
-		Log.v(NoisetracksApplication.TAG, "NoisetracksService.onProviderEnabled().");
+		Log.v(TAG, "NoisetracksService.onProviderEnabled().");
 	}
 
 	@Override
 	public void onStatusChanged(String provider, int status, Bundle extras) {
-		Log.v(NoisetracksApplication.TAG, "NoisetracksService.onStatusChanged().");
+		Log.v(TAG, "NoisetracksService.onStatusChanged().");
 	}
 	
 	private void stopLoggingService() {
@@ -255,7 +257,7 @@ public class NoisetracksService extends Service implements LocationListener {
 	
 	private void startMonitoringTimer() {
 		
-		Log.v(NoisetracksApplication.TAG, "Waiting for location fix...");
+		Log.v(TAG, "Waiting for location fix...");
 		
 		mMonitoringTimer = new Timer();
 		mMonitoringTimer.scheduleAtFixedRate(
@@ -265,7 +267,7 @@ public class NoisetracksService extends Service implements LocationListener {
 					{						
 						if (mLatitude != 0.0 && mLongitude != 0.0)
 						{
-							Log.v(NoisetracksApplication.TAG, "Start Recording");
+							Log.v(TAG, "Start Recording");
 							mMonitoringTimer.cancel();
 							mMonitoringTimer = null;
 							
@@ -309,7 +311,7 @@ public class NoisetracksService extends Service implements LocationListener {
 	
 	public void startRecording() {
 		
-		Log.v(NoisetracksApplication.TAG, "Start recording ...");
+		Log.v(TAG, "Start recording ...");
 		
 		mAudioRecord = new AudioRecord(
 				MediaRecorder.AudioSource.MIC,
@@ -341,7 +343,7 @@ public class NoisetracksService extends Service implements LocationListener {
 		try {
 			os = new FileOutputStream(filename);
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			Log.e(TAG, e.toString());
 		}
 		
 		int read = 0;
@@ -354,7 +356,7 @@ public class NoisetracksService extends Service implements LocationListener {
 					try {
 						os.write(data);
 					} catch (IOException e) {
-						e.printStackTrace();
+						Log.e(TAG, e.toString());
 					}
 				}
 			}
@@ -362,7 +364,7 @@ public class NoisetracksService extends Service implements LocationListener {
 			try {
 				os.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				Log.e(TAG, e.toString());
 			}
 		}
 	}
@@ -435,7 +437,7 @@ public class NoisetracksService extends Service implements LocationListener {
 			totalAudioLen = in.getChannel().size();
 			totalDataLen = totalAudioLen + 36;
 			
-			Log.v(NoisetracksApplication.TAG, "File size: " + totalDataLen);
+			Log.v(TAG, "File size: " + totalDataLen);
 			
 			WriteWaveFileHeader(out, totalAudioLen, totalDataLen,
 					longSampleRate, channels, byteRate);
@@ -447,9 +449,9 @@ public class NoisetracksService extends Service implements LocationListener {
 			in.close();
 			out.close();
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			Log.e(TAG, e.toString());
 		} catch (IOException e) {
-			e.printStackTrace();
+			Log.e(TAG, e.toString());
 		}
 	}
 

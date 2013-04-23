@@ -21,9 +21,10 @@ public final class NoisetracksContract {
         
         
         public enum TYPE {
-        	DOWNLOADED,	 	// Entry was downloaded from api.
+        	DOWNLOADED,	 	// Entry was downloaded from REST api.
         	TRACKED,		// Entry was recorded / tracked in the background. Tracked entries will be processed and uploaded automatically. These entries don't show up anywhere.
         	RECORDED,		// Entry was manually recorded via the record menu. User has to manually upload. Theses entries show up only in profile view of logged in user.
+        	UPLOADING,		// Entry is being uploaded
         	LOAD_MORE,		// Special entry to load more items from api
         }
 

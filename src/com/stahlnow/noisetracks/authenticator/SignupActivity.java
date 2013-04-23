@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.text.method.PasswordTransformationMethod;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +26,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 public class SignupActivity extends SherlockFragmentActivity {
+	
+	private static final String TAG = "SignupActivity";
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -106,7 +109,7 @@ public class SignupActivity extends SherlockFragmentActivity {
 				json.put("password1", mPassword);
 				json.put("password2", mPassword2);
 			} catch (JSONException e) {
-				e.printStackTrace();
+				Log.e(TAG, e.toString());
 			}  
 		    
 		    AppLog.logString(json.toString());
@@ -115,7 +118,7 @@ public class SignupActivity extends SherlockFragmentActivity {
 			Bundle params = new Bundle();
 			params.putString("json", json.toString());
 			Bundle args = new Bundle();
-			args.putParcelable(RESTLoaderCallbacks.ARGS_URI, RESTLoaderCallbacks.URI_SIGNUP);
+			args.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_SIGNUP);
 			args.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 
 			RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), this);

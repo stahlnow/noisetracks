@@ -118,7 +118,6 @@ public class AuthenticateTask extends AsyncTask<String, Void, Boolean> {
      * thread through its handler.
      * 
      * @param result The boolean holding authentication result
-     * @param key The api key
      */
     private void sendResult(final Boolean result) {
         if (mHandler == null || mContext == null) {
