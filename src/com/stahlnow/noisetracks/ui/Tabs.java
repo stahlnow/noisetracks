@@ -14,10 +14,13 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.widget.TabHost;
 import android.widget.TabWidget;
@@ -29,10 +32,12 @@ import com.actionbarsherlock.view.MenuInflater;
 
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.receivers.TrackingReceiver;
+import com.stahlnow.noisetracks.ui.FeedActivity.FeedListFragment;
+import com.stahlnow.noisetracks.ui.ProfileActivity.ProfileListFragment;
 import com.stahlnow.noisetracks.utility.AppSettings;
 import com.stahlnow.noisetracks.utility.SettingsActivity;
 
-public class Tabs extends SherlockFragmentActivity {
+public class Tabs extends SherlockFragmentActivity implements OnTouchListener {
 
 	private static final String TAG = "Tabs";
 	
@@ -65,19 +70,18 @@ public class Tabs extends SherlockFragmentActivity {
 		mTabsAdapter.addTab(mTabHost.newTabSpec("profile").setIndicator("Me"), ProfileActivity.ProfileListFragment.class, profile_args);
 
 		// ridiculously complicated method to set tab indicator and tab text colors.
+		// set on touch listener
 		for (int i = 0; i < mTabHost.getTabWidget().getChildCount(); i++) {
+			View v = mTabHost.getTabWidget().getChildAt(i);
 			
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
-				mTabHost.getTabWidget()
-						.getChildAt(i)
-						.setBackground(
-								getResources()
-										.getDrawable(
-												R.drawable.tab_indicator_ab_noise));
+				v.setBackground(getResources().getDrawable(R.drawable.tab_indicator_ab_noise));
 			
-			TextView tv = (TextView) mTabHost.getTabWidget().getChildAt(i)
-					.findViewById(android.R.id.title);
+			TextView tv = (TextView) v.findViewById(android.R.id.title);
 			tv.setTextColor(getResources().getColor(R.color.light_grey));
+			
+			v.setOnTouchListener(this);	
+
 		}
 
 		// try to restore tab
@@ -85,6 +89,25 @@ public class Tabs extends SherlockFragmentActivity {
 			mTabHost.setCurrentTabByTag(savedInstanceState.getString("tab"));
 		}
 	}
+	
+	@Override
+	public boolean onTouch(View v, MotionEvent event) {
+		boolean consumed = false;
+		// use mTabHost.getCurrentTabView to decide if the current tab is touched again
+		if (event.getAction() == MotionEvent.ACTION_DOWN && v.equals(mTabHost.getCurrentTabView())) {
+			if (mTabHost.getCurrentTabTag().equals("explore")) {
+				FeedListFragment f = (FeedListFragment) mTabsAdapter.findFragment(0);
+				f.onReselectedTab();
+				consumed = true;
+			} else if (mTabHost.getCurrentTabTag().equals("profile")) {
+				ProfileListFragment f = (ProfileListFragment) mTabsAdapter.findFragment(1);
+				f.onReselectedTab();
+				consumed = true;
+			}
+		}
+		return consumed;
+	}
+
 
 	@Override
 	protected void onDestroy() {
@@ -227,6 +250,16 @@ public class Tabs extends SherlockFragmentActivity {
 			mTabHost.addTab(tabSpec);
 			notifyDataSetChanged();
 		}
+		
+		public Fragment findFragment(int position) {
+            String name = "android:switcher:" + mViewPager.getId() + ":" + position;
+            FragmentManager fm = ((FragmentActivity) mContext).getSupportFragmentManager();
+            Fragment fragment = fm.findFragmentByTag(name);
+            if (fragment == null) {
+                fragment = getItem(position);
+            }
+            return fragment;
+        }
 
 		@Override
 		public int getCount() {
@@ -236,8 +269,7 @@ public class Tabs extends SherlockFragmentActivity {
 		@Override
 		public Fragment getItem(int position) {
 			TabInfo info = mTabs.get(position);
-			return Fragment.instantiate(mContext, info.clss.getName(),
-					info.args);
+			return Fragment.instantiate(mContext, info.clss.getName(), info.args);
 		}
 
 		@Override
@@ -268,6 +300,7 @@ public class Tabs extends SherlockFragmentActivity {
 		@Override
 		public void onPageScrollStateChanged(int state) {
 		}
-	}
 
+		
+	}
 }

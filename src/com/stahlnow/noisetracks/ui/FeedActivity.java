@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Bundle;
 
 import android.support.v4.app.FragmentManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,6 +32,8 @@ import com.handmark.pulltorefresh.library.PullToRefreshListView;
 
 public class FeedActivity extends SherlockFragmentActivity {
 	
+	private static final String TAG = "FeedActivity";
+	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -45,8 +48,9 @@ public class FeedActivity extends SherlockFragmentActivity {
         
     }
 
-    public static class FeedListFragment extends SherlockListFragment
+    public static class FeedListFragment extends SherlockListFragment 
     {
+    	private static final String TAG = "FeedListFragment";
     	private RESTLoaderCallbacks r;
     	
         private EntryAdapter mEntryAdapter;
@@ -228,12 +232,18 @@ public class FeedActivity extends SherlockFragmentActivity {
 				}
 				// start entry activity
 				else {
+					Log.v(TAG, "selected id: " + id);
 					Intent i = new Intent(getActivity().getApplicationContext(), EntryActivity.class);
 					i.putExtra(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.EntriesFeed(false));
 					i.putExtra(EntryActivity.ID, id);
 					startActivity(i);
 				}
 			}
+		}
+		
+		
+		public void onReselectedTab () {
+			getListView().setSelection(0);
 		}
 		
 		

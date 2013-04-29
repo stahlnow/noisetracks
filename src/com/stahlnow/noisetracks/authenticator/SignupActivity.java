@@ -113,6 +113,7 @@ public class SignupActivity extends SherlockFragmentActivity {
 		    
 		    // create loader
 			Bundle params = new Bundle();
+			params.putString("json", json.toString());
 			Bundle args = new Bundle();
 			args.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_SIGNUP);
 			args.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);

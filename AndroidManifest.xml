@@ -71,9 +71,11 @@
         <receiver android:name=".receivers.TrackingReceiver" />
         
         <!-- Launcher Activity -->
-        <activity android:name=".ui.Noisetracks"
-            android:theme="@style/Theme.Noise.Fullscreen">
-             
+        <activity
+            android:name=".ui.Noisetracks"
+            android:theme="@style/Theme.Noise.Fullscreen"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait"> 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -84,6 +86,7 @@
         <activity
             android:name=".ui.Tabs"
             android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait"
             android:exported="false">
             <intent-filter>
                 <action android:name="noisetracks.intent.view" />
@@ -101,6 +104,8 @@
         <!-- Profile View -->
         <activity
             android:name=".ui.ProfileActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -112,17 +117,20 @@
         <!-- Recording View -->
         <activity
             android:name=".ui.RecordingActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize">
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait">
         </activity>
         <!-- Location View -->
         <activity
             android:name=".ui.LocationActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize">
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait">
         </activity>
         <!-- Single Entry View -->
         <activity
             android:name=".ui.EntryActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize">
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait">
         </activity>
         <!-- Settings activity -->
         <activity
@@ -132,6 +140,7 @@
         <activity
             android:name=".authenticator.AuthenticateActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustPan|stateAlwaysHidden"
             android:excludeFromRecents="true"
             android:theme="@style/Theme.Noise.Fullscreen">
@@ -144,6 +153,7 @@
         <activity
             android:name=".authenticator.SignupActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustPan|stateAlwaysHidden"
             android:excludeFromRecents="true"
             android:theme="@style/Theme.Noise.Fullscreen">

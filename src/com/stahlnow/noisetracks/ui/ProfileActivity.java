@@ -297,46 +297,6 @@ public class ProfileActivity extends SherlockFragmentActivity {
         }
 		
 		
-		
-		
-		public void setProfileHeader(Cursor data) {
-			try  {
-				data.moveToFirst();
-				// Set mugshot image
-				//mMugshot.setImageResource(R.drawable.default_image); // TODO set default image
-				String mugshot = data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_MUGSHOT));
-				if (mugshot != null) {
-					Uri mugshotUri = Uri.parse(mugshot);
-					if (mugshotUri != null){
-						Bitmap bitmap = NoisetracksApplication.getHttpImageManager().loadImage(new HttpImageManager.LoadRequest(mugshotUri, mMugshot));
-						if (bitmap != null) {
-							mMugshot.setImageBitmap(bitmap);
-					    }
-					}
-				}
-				mProfileHeaderText.setText(Html.fromHtml(
-						"<b>" + data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_USERNAME)) + "</b>" +  "<br />" + 
-			            "<b>" + data.getInt(data.getColumnIndex(Profiles.COLUMN_NAME_TRACKS)) + "</b>" +
-						"<font color=\"#FF777777\"> TRACKS </font>" +
-						"<br />"));
-			}
-			
-			catch (Exception e) {
-				
-				Log.v(TAG, "Could not load from db, will try loading with REST client...");
-				
-				// Prepare and initialize REST loader for profile
-	            Bundle paramsProfile = new Bundle();
-	            paramsProfile.putString("format", "json");				// we need json format
-	            paramsProfile.putString("user__username", getArguments().getString("username"));	// get profile for specific user
-	        	Bundle argsProfileREST = new Bundle();
-	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_PROFILES);
-	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, paramsProfile);
-	        	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.PROFILE_REST_LOADER, argsProfileREST, r);
-	    		
-			}
-		}
-		
 		@Override
 		public void onListItemClick (ListView l, View v, int position, long id) {
 			super.onListItemClick(l, v, position, id);
@@ -377,6 +337,49 @@ public class ProfileActivity extends SherlockFragmentActivity {
 				}
 				
 				//c.close();
+			}
+		}
+		
+		public void onReselectedTab () {
+			getListView().setSelection(0);
+		}
+		
+		
+		public void setProfileHeader(Cursor data) {
+			try  {
+				data.moveToFirst();
+				// Set mugshot image
+				//mMugshot.setImageResource(R.drawable.default_image); // TODO set default image
+				String mugshot = data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_MUGSHOT));
+				if (mugshot != null) {
+					Uri mugshotUri = Uri.parse(mugshot);
+					if (mugshotUri != null){
+						Bitmap bitmap = NoisetracksApplication.getHttpImageManager().loadImage(new HttpImageManager.LoadRequest(mugshotUri, mMugshot));
+						if (bitmap != null) {
+							mMugshot.setImageBitmap(bitmap);
+					    }
+					}
+				}
+				mProfileHeaderText.setText(Html.fromHtml(
+						"<b>" + data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_USERNAME)) + "</b>" +  "<br />" + 
+			            "<b>" + data.getInt(data.getColumnIndex(Profiles.COLUMN_NAME_TRACKS)) + "</b>" +
+						"<font color=\"#FF777777\"> TRACKS </font>" +
+						"<br />"));
+			}
+			
+			catch (Exception e) {
+				
+				Log.v(TAG, "Could not load from db, will try loading with REST client...");
+				
+				// Prepare and initialize REST loader for profile
+	            Bundle paramsProfile = new Bundle();
+	            paramsProfile.putString("format", "json");				// we need json format
+	            paramsProfile.putString("user__username", getArguments().getString("username"));	// get profile for specific user
+	        	Bundle argsProfileREST = new Bundle();
+	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_PROFILES);
+	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, paramsProfile);
+	        	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.PROFILE_REST_LOADER, argsProfileREST, r);
+	    		
 			}
 		}
 		
