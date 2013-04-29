@@ -1,6 +1,8 @@
 package com.stahlnow.noisetracks.ui;
 
 import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.app.SherlockListFragment;
+import com.actionbarsherlock.view.MenuItem;
 import com.handmark.pulltorefresh.library.PullToRefreshBase;
 import com.handmark.pulltorefresh.library.PullToRefreshListView;
 import com.handmark.pulltorefresh.library.PullToRefreshBase.OnLastItemVisibleListener;
@@ -15,17 +17,15 @@ import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.utility.AppSettings;
-
-
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.ListFragment;
 import android.text.Html;
-import android.text.format.DateUtils;
 import android.util.Log;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -41,11 +41,13 @@ import android.widget.TextView;
 
 public class ProfileActivity extends SherlockFragmentActivity {
 	
+	@SuppressWarnings("unused")
 	private static final String TAG = "ProfileActivity";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 		
 		FragmentManager fm = getSupportFragmentManager();
 
@@ -58,8 +60,48 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		
 
 	}	
+	
+	public static void onUploadResult(Boolean result, Uri uri) {	
+		Context ctx = (Context)NoisetracksApplication.getInstance();
+		if (result) {
+			// Entry has been posted and we delete temporary entry.
+			ctx.getContentResolver().delete(uri, null, null); 
+			// Request sync
+			Bundle extras = new Bundle();
+			extras.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true); // sync immediately
+			extras.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);	// allow sync if global sync is disabled
+			AccountManager am = AccountManager.get(ctx);
+	        Account a = am.getAccountsByType(ctx.getString(R.string.ACCOUNT_TYPE))[0];
+			ContentResolver.requestSync(a, ctx.getString(R.string.AUTHORITY_PROVIDER), extras);
+		} else {
+			// Failed to post file, set type to 'recorded' for retry
+			Cursor c = ctx.getContentResolver().query(uri, null, null, null, null);
+			if (c != null) {
+				if (c.moveToFirst()) {
+			        ContentValues cv = new ContentValues();
+			        cv.put(Entries.COLUMN_NAME_TYPE, Entries.TYPE.RECORDED.ordinal());
+			        ctx.getContentResolver().update(uri, cv, null, null);
+			        c.close();
+				}
+			}
+		}
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case android.R.id.home:
+			Intent parentActivityIntent = new Intent(this, Tabs.class);
+			parentActivityIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+			startActivity(parentActivityIntent);
+			finish();
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
+	}
 
-	public static class ProfileListFragment extends ListFragment {
+	public static class ProfileListFragment extends SherlockListFragment {
 		
 		private static final String TAG = "ProfileListFragment";
 		
@@ -107,7 +149,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		@Override
 		public void onActivityCreated(Bundle savedInstanceState) {
             super.onActivityCreated(savedInstanceState);
-            
+                    
             r = new RESTLoaderCallbacks(getActivity(), this);
 		    
             // add profile header
@@ -159,7 +201,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
             Bundle argsEntriesSQL = new Bundle();
             argsEntriesSQL.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_ENTRY_PROJECTION);
             String username = getArguments().getString("username");
-            if (AppSettings.getUsername(getActivity()).compareTo(username) == 0) {  // if it's the users own entries, load also 'recorded' entries
+            if (AppSettings.getUsername(getActivity()).equals(username)) {  // if it's the users own entries, load also 'recorded' entries
             	argsEntriesSQL.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.EntriesUser(true, username));
             } else {
             	argsEntriesSQL.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.EntriesUser(false, username));
@@ -193,8 +235,6 @@ public class ProfileActivity extends SherlockFragmentActivity {
 	        mPullToRefreshView.setOnRefreshListener(new OnRefreshListener<ListView>() {
 	            @Override
 	            public void onRefresh(PullToRefreshBase<ListView> refreshView) {
-	            	Log.v(TAG, "Profile onRefresh");
-	            	
 	            	// Prepare and initialize REST loader for profile
 		            Bundle paramsProfile = new Bundle();
 		            paramsProfile.putString("format", "json");				// we need json format
@@ -366,7 +406,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 			// Reset pull refresh view
 	    	mPullToRefreshView.onRefreshComplete();
 	    	// Set updated text
-	    	mPullToRefreshView.setLastUpdatedLabel("Last updated: " + DateUtils.formatDateTime(getActivity(), System.currentTimeMillis(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_ABBREV_TIME));
+	    	//mPullToRefreshView.setLastUpdatedLabel("Last updated: " + DateUtils.formatDateTime(getActivity(), System.currentTimeMillis(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_ABBREV_TIME));
 
 	    	if (mEntryAdapter != null) {
 		    	if (mEntryAdapter.isEmpty()) {
@@ -434,19 +474,9 @@ public class ProfileActivity extends SherlockFragmentActivity {
 	    public void setListShownNoAnimation(boolean shown) {
 	        setListShown(shown, false);
 	    }
-	    
 
 	}
 
-	public static void onUploadResult(Boolean result, Uri uri) {		
-		if (result) {
-			// Entry has been uploaded and we delete it.
-			NoisetracksApplication.getInstance().getContentResolver().delete(uri, null, null); 
-			// Request sync
-			AccountManager am = AccountManager.get(NoisetracksApplication.getInstance());
-	        Account a = am.getAccountsByType(NoisetracksApplication.getInstance().getString(R.string.ACCOUNT_TYPE))[0];
-			ContentResolver.requestSync(a, NoisetracksApplication.getInstance().getString(R.string.AUTHORITY_PROVIDER), new Bundle());
-		}
-	}
+	
 
 }

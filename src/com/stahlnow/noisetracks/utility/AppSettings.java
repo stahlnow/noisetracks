@@ -1,5 +1,7 @@
 package com.stahlnow.noisetracks.utility;
 
+import com.stahlnow.noisetracks.NoisetracksApplication;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -9,6 +11,7 @@ public class AppSettings {
 	private static final String SETTING_SERVICE_STATE = "is_service_running";		// Status of service
 	private static final String SETTING_TRACKING_INTERVAL = "tracking_interval";	// Tracking interval in minutes
 	private static final String SETTING_USERNAME = "username";						// Username
+	private static final String SETTING_APIKEY = "apikey";							// ApiKey
 	private static final String SETTING_MUGSHOT = "mugshot";						// URL of user mugshot TODO: set after login
 	
 	/*
@@ -44,7 +47,7 @@ public class AppSettings {
 	 */
 	public static int getTrackingInterval(Context context) {
 		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
-		return pref.getInt(SETTING_TRACKING_INTERVAL, 5);
+		return pref.getInt(SETTING_TRACKING_INTERVAL, NoisetracksApplication.DEFAULT_TRACKING_INTERVAL);
 	}
 	
 	/**
@@ -78,6 +81,28 @@ public class AppSettings {
 		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
 		SharedPreferences.Editor editor = pref.edit();
 		editor.putString(SETTING_USERNAME, username);
+		editor.commit();
+	}
+	
+	/**
+	 * Get username of logged in user or "AnonymousUser"
+	 * @param context
+	 * @return Username of logged in user
+	 */
+	public static String getApiKey(Context context) {
+		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
+		return pref.getString(SETTING_APIKEY, "AnonymousUser");
+	}
+	
+	/**
+	 * Set user name
+	 * @param context
+	 * @param username Username of logged in user
+	 */
+	public static void setApiKey(Context context, String apikey) {
+		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
+		SharedPreferences.Editor editor = pref.edit();
+		editor.putString(SETTING_APIKEY, apikey);
 		editor.commit();
 	}
 	

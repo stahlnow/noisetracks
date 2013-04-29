@@ -13,8 +13,8 @@
         android:layout_weight="0.17"
         android:animateLayoutChanges="true"
         ptr:ptrAnimationStyle="flip"
-        ptr:ptrHeaderBackground="@color/medium_grey"
-        ptr:ptrMode="pullFromEnd"
+        ptr:ptrHeaderBackground="@color/lightest_grey"
+        ptr:ptrMode="pullFromStart"
         ptr:ptrRefreshableViewBackground="?android:attr/windowBackground" />
 
     <RelativeLayout

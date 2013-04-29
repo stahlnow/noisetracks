@@ -5,8 +5,9 @@ import android.provider.BaseColumns;
 
 public final class NoisetracksContract {
 
-    public static final String AUTHORITY = "com.stahlnow.noisetracks.provider";
-
+	// this must match the provider authority defined in the Manifest.
+	public static final String AUTHORITY = "com.stahlnow.noisetracks.provider";
+	
     // This class cannot be instantiated
     private NoisetracksContract() {
     }

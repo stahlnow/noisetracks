@@ -46,9 +46,10 @@
             android:paddingLeft="3dp"
             android:paddingRight="3dp"
             android:scrollbars="none"            
-            android:soundEffectsEnabled="false" />
+            android:soundEffectsEnabled="false"
+            ptr:ptrHeaderTextColor="@color/medium_grey"
+        />
         <!--
-        ptr:ptrHeaderTextColor="#ffcccccc"
     	android:scrollbarStyle="outsideInset"
     	android:translationX="5dp"
     	android:scrollbarThumbVertical="@drawable/scroll_thumb"

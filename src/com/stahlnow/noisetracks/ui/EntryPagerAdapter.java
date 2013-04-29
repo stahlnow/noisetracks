@@ -5,13 +5,15 @@ import android.content.Context;
 import android.database.Cursor;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.app.FragmentTransaction;
+import android.util.Log;
 import android.view.ViewGroup;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class EntryPagerAdapter extends FragmentPagerAdapter {
+public abstract class EntryPagerAdapter extends FragmentStatePagerAdapter {
 	
 	private static final String TAG = "EntryPagerAdapter";
 
@@ -48,6 +50,13 @@ public abstract class EntryPagerAdapter extends FragmentPagerAdapter {
         }
     }
     
+    public abstract Fragment getItem(Context context, Cursor cursor);
+    
+    @Override
+    public int getItemPosition(Object object) {
+    	return POSITION_NONE;
+    }
+    
     /**
      * Get the fragment at the specified position from view pager.
      * @param position the page position in view pager.
@@ -56,13 +65,8 @@ public abstract class EntryPagerAdapter extends FragmentPagerAdapter {
     public Fragment getFragmentAtPosition(int position) {
 		return mPageReferenceMap.get(position);
 	}
-
-    @Override
-    public void destroyItem(ViewGroup container, int position, Object object) {
-        super.destroyItem(container, position, object);
-        mPageReferenceMap.remove(Integer.valueOf(position));
-    }
-
+    
+    
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
         if (!mDataValid) {
@@ -73,13 +77,28 @@ public abstract class EntryPagerAdapter extends FragmentPagerAdapter {
         }
 
         Object obj = super.instantiateItem(container, position);
-        
         mPageReferenceMap.put(position, (Fragment)obj); // put it in a map, so we have a reference!
+        
+        Log.v(TAG, "instantiateItem " + position);
         
         return obj;
     }
 
-    public abstract Fragment getItem(Context context, Cursor cursor);
+    @Override
+    public void destroyItem(ViewGroup container, int position, Object object) {
+        super.destroyItem(container, position, object);
+        
+        if (position <= getCount()) {
+            FragmentManager manager = ((Fragment) object).getFragmentManager();
+            FragmentTransaction trans = manager.beginTransaction();
+            trans.remove((Fragment) object);
+            trans.commit();
+        }
+        
+        mPageReferenceMap.remove(Integer.valueOf(position));
+        
+        Log.v(TAG, "destroyItem " + position);
+    }
 
     @Override
     public int getCount() {

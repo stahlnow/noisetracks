@@ -7,10 +7,8 @@ import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -18,6 +16,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TabHost;
@@ -29,14 +28,14 @@ import com.actionbarsherlock.view.MenuItem;
 import com.actionbarsherlock.view.MenuInflater;
 
 import com.stahlnow.noisetracks.R;
-import com.stahlnow.noisetracks.authenticator.AuthenticationService;
-import com.stahlnow.noisetracks.receivers.RecordingReceiver;
-import com.stahlnow.noisetracks.utility.AppLog;
+import com.stahlnow.noisetracks.receivers.TrackingReceiver;
 import com.stahlnow.noisetracks.utility.AppSettings;
 import com.stahlnow.noisetracks.utility.SettingsActivity;
 
 public class Tabs extends SherlockFragmentActivity {
 
+	private static final String TAG = "Tabs";
+	
 	TabHost mTabHost;
 	ViewPager mViewPager;
 	TabsAdapter mTabsAdapter;
@@ -45,13 +44,6 @@ public class Tabs extends SherlockFragmentActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		// register filter for 'account changed'.
-		registerReceiver(receiver, new IntentFilter(
-				"android.accounts.LOGIN_ACCOUNTS_CHANGED"));
-
-		// set default settings
-		AppSettings.setTrackingInterval(this, 1); // Set tracking default to 1 minute TODO change to reasonable value
 		
 		// disable 'up' navigation in action bar for home screen
 		getSupportActionBar().setHomeButtonEnabled(false);
@@ -94,20 +86,8 @@ public class Tabs extends SherlockFragmentActivity {
 		}
 	}
 
-	BroadcastReceiver receiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			if (!AuthenticationService.accountExists(context)) {
-				AppLog.logString("Noisetracks Account has been removed. Cleaning up...");
-				System.gc();
-				System.exit(0);
-			}
-		}
-	};
-
 	@Override
 	protected void onDestroy() {
-		unregisterReceiver(receiver);
 		super.onDestroy();
 	}
 
@@ -132,7 +112,7 @@ public class Tabs extends SherlockFragmentActivity {
 		return super.onPrepareOptionsMenu(menu);
 	}
 
-	@SuppressLint("NewApi")
+	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
@@ -142,8 +122,7 @@ public class Tabs extends SherlockFragmentActivity {
 			return true;
 		case R.id.menu_toggle_tracking:
 			toggleTracking(AppSettings.getServiceRunning(this), AppSettings.getTrackingInterval(this));
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
-				invalidateOptionsMenu();
+			//invalidateOptionsMenu();
 			return true;
 		case R.id.menu_settings:
 			startActivity (new Intent(this, SettingsActivity.class));
@@ -160,16 +139,15 @@ public class Tabs extends SherlockFragmentActivity {
 		PendingIntent tracking = PendingIntent.getBroadcast(
 				this,
 				0,
-				new Intent(this, RecordingReceiver.class),
+				new Intent(this, TrackingReceiver.class),
 				0);
 
 		if (isStart) {
 			manager.cancel(tracking);
 			AppSettings.setServiceRunning(this, false);
-			AppLog.logString("Tracking service stopped.");
+			Log.i(TAG, "Tracking service stopped.");
 			
 		} else {
-			
 			// Schedule tracking
 			manager.setRepeating(
 					AlarmManager.ELAPSED_REALTIME_WAKEUP,
@@ -178,8 +156,7 @@ public class Tabs extends SherlockFragmentActivity {
 					tracking);
 
 			AppSettings.setServiceRunning(this, true);
-
-			AppLog.logString("Tracking service started with interval " + interval * 60.0f + " seconds.");
+			Log.i(TAG, "Tracking service started with interval " + interval * 60.0f + " seconds.");
 		}
 	}
 

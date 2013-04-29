@@ -9,7 +9,6 @@ import com.actionbarsherlock.view.Window;
 import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.client.RESTLoaderCallbacks;
-import com.stahlnow.noisetracks.utility.AppLog;
 
 import android.content.Intent;
 import android.graphics.Typeface;
@@ -110,13 +109,10 @@ public class SignupActivity extends SherlockFragmentActivity {
 				json.put("password2", mPassword2);
 			} catch (JSONException e) {
 				Log.e(TAG, e.toString());
-			}  
-		    
-		    AppLog.logString(json.toString());
+			}
 		    
 		    // create loader
 			Bundle params = new Bundle();
-			params.putString("json", json.toString());
 			Bundle args = new Bundle();
 			args.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_SIGNUP);
 			args.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
@@ -126,7 +122,7 @@ public class SignupActivity extends SherlockFragmentActivity {
 		}
 		
 		public void onSignupComplete() {
-			AppLog.logString("onSignupComplete");
+			Log.v(TAG, "onSignupComplete");
 			final Intent intent = new Intent();
 			intent.putExtra("username", mUsername);
 			intent.putExtra("password", mPassword);
@@ -162,7 +158,7 @@ public class SignupActivity extends SherlockFragmentActivity {
 				}
 				
 			} catch (JSONException e) {
-				AppLog.logString("Failed to parse JSON. " + e.toString());
+				Log.e(TAG, "Failed to parse JSON. " + e.toString());
 			}
             
 		}

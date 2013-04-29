@@ -48,10 +48,9 @@
             android:paddingRight="3dp"
             android:scrollbars="none"
             android:soundEffectsEnabled="false"
-             />
+            ptr:ptrHeaderTextColor="@color/medium_grey"
+        />
         <!--
-        ptr:ptrHeaderTextColor="#ffcccccc"
-        
     	android:scrollbarStyle="outsideInset"
     	android:translationX="5dp"
     	android:scrollbarThumbVertical="@drawable/scroll_thumb"
@@ -62,6 +61,7 @@
             android:id="@+id/entries_empty"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
+            android:textIsSelectable="false"
             android:gravity="center" />
     </FrameLayout>
 

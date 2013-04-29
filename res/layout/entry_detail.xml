@@ -13,7 +13,6 @@
     <!-- Header -->
 
     <LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -221,6 +220,20 @@
                 android:textOff=""
                 android:textOn=""
                 tools:ignore="HardcodedText" />
+            
+            <ImageButton
+                android:id="@+id/entry_delete"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_toRightOf="@id/entry_favourite"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="@dimen/entry_margin_left_right"
+                android:alpha="0.25"
+                android:background="@null"
+                android:contentDescription="delete"
+                android:visibility="visible"
+                android:src="@drawable/ic_action__down_outlined"
+                tools:ignore="HardcodedText" />
 
             <ImageButton
                 android:id="@+id/entry_share"
@@ -237,7 +250,6 @@
     </LinearLayout>
 
     <LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/entry_detail_footer"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"

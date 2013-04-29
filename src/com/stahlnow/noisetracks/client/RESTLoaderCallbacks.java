@@ -9,6 +9,7 @@ import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.authenticator.SignupActivity.SignupFragment;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
+import com.stahlnow.noisetracks.ui.EntryActivity;
 import com.stahlnow.noisetracks.ui.EntryActivity.EntryDetailFragment;
 import com.stahlnow.noisetracks.ui.FeedActivity.FeedListFragment;
 import com.stahlnow.noisetracks.ui.ProfileActivity.ProfileListFragment;
@@ -30,13 +31,12 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	public static final String ARGS_PARAMS = "com.stahlnow.noisetracks.ARGS_PARAMS";
     
     private Context mContext;
-    private Fragment mFragment;
+    private Object mCaller;
     
-    
-	public RESTLoaderCallbacks(Context c, Fragment f) {
+	public RESTLoaderCallbacks(Context c, Object obj) {
 		super();
 		mContext = c;
-		mFragment = f;
+		mCaller = obj;
 	}
 			
 
@@ -51,6 +51,8 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	    	case NoisetracksApplication.SIGNUP_REST_LOADER:
 	    	case NoisetracksApplication.VOTE_LOADER:
 	    		return new RESTLoader(mContext, RESTLoader.HTTPVerb.POST, action, params);
+	    	case NoisetracksApplication.DELETE_LOADER:
+	    		return new RESTLoader(mContext, RESTLoader.HTTPVerb.DELETE, action, params);
 			default:
 	    		return new RESTLoader(mContext, RESTLoader.HTTPVerb.GET, action, params);
 	    	}	
@@ -66,7 +68,7 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	        int    code = data.getCode();
 	        String json = data.getData();
 	        
-	        if (code == 200 && !json.equals("")) {
+	        if (code == 200 && !json.equals("")) { // OK
 	            switch (loader.getId()) {
 	            case NoisetracksApplication.ENTRIES_REST_LOADER:
 	            case NoisetracksApplication.ENTRIES_OLDER_REST_LOADER:
@@ -76,31 +78,38 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	            case NoisetracksApplication.PROFILE_REST_LOADER:
 	            	addProfilesFromJSON(json);
 	            	break;
+	            case NoisetracksApplication.DELETE_LOADER:
+	        		((EntryActivity)mCaller).onDeleteEntry(json); // json contains only the uuid as string
+	        		break;
 	            default:
 	            	break;
 	            }
-	        } else if (code == 201) {
+	        } else if (code == 201) { // CREATED
 	        	switch (loader.getId()) {
 	        	case NoisetracksApplication.VOTE_LOADER:
-	        		EntryDetailFragment df = (EntryDetailFragment)mFragment;
-	        		df.onVoteComplete(json);
+	        		((EntryDetailFragment)mCaller).onVoteComplete(json);
 	        		break;
 	        	case NoisetracksApplication.SIGNUP_REST_LOADER:
-	        		SignupFragment sf = (SignupFragment)mFragment;
-	        		sf.onSignupComplete();
+	        		((SignupFragment)mCaller).onSignupComplete();
 	        		break;
 	        	default:
 	        		break;
 	        	}
-	        } else if (code == 400) {
+	        } else if (code == 204) { // NO CONTENT
+	        	switch (loader.getId()) {
+	        	
+	        	default:
+	        		break;
+	        	}
+	        	
+	        } else if (code == 400) { // BAD REQUEST
 	        	switch (loader.getId()) {
 	        	case NoisetracksApplication.SIGNUP_REST_LOADER:
-	        		SignupFragment sf = (SignupFragment)mFragment;
-	        		sf.onErrorSigningUp(json);
+	        		((SignupFragment)mCaller).onErrorSigningUp(json);
 	        	default:
 	        		break;
 	        	}
-	        } else if (code == 500) {
+	        } else if (code == 500) { // SERVER ERROR
 	        	Toast.makeText(mContext, "Server responded with error. Try again later.", Toast.LENGTH_SHORT).show();
 	        } else {
 	        	Toast.makeText(mContext, "Could not connect to Noisetracks.", Toast.LENGTH_SHORT).show();
@@ -108,17 +117,16 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
     	} else {
     		Toast.makeText(mContext, "Could not connect to Noisetracks.", Toast.LENGTH_SHORT).show();        
     	}
-    	
-    	if (mFragment.getClass().getSimpleName() == "ProfileListFragment") {
-    		ProfileListFragment plf = (ProfileListFragment)mFragment;
-    		plf.onRefreshComplete();
-    	} else if (mFragment.getClass().getSimpleName() == "FeedListFragment") {
-    		FeedListFragment plf = (FeedListFragment)mFragment;
-    		plf.onRefreshComplete();
+    	if (mCaller != null) {
+	    	if (mCaller.getClass().getSimpleName() == "ProfileListFragment") {
+	    		((ProfileListFragment)mCaller).onRefreshComplete();
+	    	} else if (mCaller.getClass().getSimpleName() == "FeedListFragment") {
+	    		((FeedListFragment)mCaller).onRefreshComplete();
+	    	}
     	}
     	
     }
-
+    
     @Override
     public void onLoaderReset(Loader<RESTLoader.RESTResponse> loader) {
     

@@ -143,11 +143,9 @@ public class UploadTask extends AsyncTask<Uri, Void, Boolean> {
 					return true;				// success
 				} else {
 					Log.e(TAG, "Response is emtpy.");
-					return false;
 				}
 			} else {
 				Log.e(TAG, "Unexpected response code: " + response.getStatusLine().getStatusCode());
-				return false;
 			}
 		} catch (ClientProtocolException e) {
 			Log.e(TAG, e.toString());
@@ -167,7 +165,7 @@ public class UploadTask extends AsyncTask<Uri, Void, Boolean> {
 	    try {
 	    	JSONObject coordinates = new JSONObject();
 	    	JSONArray points = new JSONArray();
-	    	points.put(mLat); points.put(mLng);
+	    	points.put(mLng); points.put(mLat); // django PointField is [Longitude, Latitude]
 	    	coordinates.put("coordinates", points);
 	    	coordinates.put("type", "Point");
 	    	json.put("location", coordinates);

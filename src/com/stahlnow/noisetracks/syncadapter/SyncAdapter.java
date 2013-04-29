@@ -15,24 +15,15 @@ import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.client.RESTLoader;
 import com.stahlnow.noisetracks.client.RESTLoaderCallbacks;
-import com.stahlnow.noisetracks.client.SQLLoaderCallbacks;
-import com.stahlnow.noisetracks.provider.NoisetracksProvider;
-
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.ParseException;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.json.JSONException;
-
 import java.io.IOException;
-import java.net.URI;
-import java.util.Date;
 
 public class SyncAdapter extends AbstractThreadedSyncAdapter {
     
@@ -40,8 +31,6 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
     private final AccountManager mAccountManager;
     private final Context mContext;
-
-    private Date mLastUpdated;
 
     public SyncAdapter(Context context, boolean autoInitialize) {
         super(context, autoInitialize);
@@ -52,7 +41,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
     @Override
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
         
-		Log.v(TAG, "Start syncing ...");
+		Log.v(TAG, "Sync.");
 		
 		try {
 			

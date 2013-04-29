@@ -51,7 +51,7 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 	 */
 	private static String Entries(boolean loadmore, boolean recorded, String username) {
 		
-		// if username is empty, load all entries, ignore recorded parameter
+		// if username is empty, load entries from any user, ignore recorded parameter
 		if (username == "") {
 			if (loadmore) {
 				return "(" + 

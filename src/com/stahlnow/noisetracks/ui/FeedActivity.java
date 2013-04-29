@@ -7,8 +7,6 @@ import android.net.Uri;
 import android.os.Bundle;
 
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.ListFragment;
-import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,8 +21,8 @@ import com.stahlnow.noisetracks.client.SQLLoaderCallbacks;
 import com.stahlnow.noisetracks.helper.ProgressWheel;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
-import com.stahlnow.noisetracks.utility.AppSettings;
 import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.app.SherlockListFragment;
 import com.handmark.pulltorefresh.library.PullToRefreshBase;
 import com.handmark.pulltorefresh.library.PullToRefreshBase.OnLastItemVisibleListener;
 import com.handmark.pulltorefresh.library.PullToRefreshBase.OnRefreshListener;
@@ -47,7 +45,7 @@ public class FeedActivity extends SherlockFragmentActivity {
         
     }
 
-    public static class FeedListFragment extends ListFragment
+    public static class FeedListFragment extends SherlockListFragment
     {
     	private RESTLoaderCallbacks r;
     	
@@ -265,7 +263,7 @@ public class FeedActivity extends SherlockFragmentActivity {
 			// Reset pull refresh view
 	    	mPullToRefreshView.onRefreshComplete();
 	    	// Set updated text	    	
-	    	mPullToRefreshView.setLastUpdatedLabel("Last updated: " + DateUtils.formatDateTime(getActivity(), System.currentTimeMillis(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_ABBREV_TIME));
+	    	//mPullToRefreshView.setLastUpdatedLabel("Last updated: " + DateUtils.formatDateTime(getActivity(), System.currentTimeMillis(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_ABBREV_TIME));
 
 	    	if (mEntryAdapter != null) {
 		    	if (mEntryAdapter.isEmpty()) {

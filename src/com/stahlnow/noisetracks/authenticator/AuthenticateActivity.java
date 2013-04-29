@@ -39,7 +39,7 @@ import com.actionbarsherlock.view.Window;
 
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.provider.NoisetracksContract;
-import com.stahlnow.noisetracks.utility.AppLog;
+import com.stahlnow.noisetracks.utility.AppSettings;
 
 /**
  * Activity which displays login screen to the user.
@@ -93,7 +93,7 @@ public class AuthenticateActivity extends SherlockFragmentActivity {
     }
     
     /**
-     * Retreives the AccountAuthenticatorResponse from either the intent of the icicle, if the
+     * Retrieves the AccountAuthenticatorResponse from either the intent of the icicle, if the
      * icicle is non-zero.
      * @param savedInstanceState the save instance data of this Activity, may be null
      */
@@ -191,10 +191,10 @@ public class AuthenticateActivity extends SherlockFragmentActivity {
      * 
      * @param the confirmCredentials result.
      */
-	protected void finishConfirmCredentials(boolean result, String password) {
-		AppLog.logString("finishConfirmCredentials()");
+	protected void finishConfirmCredentials(boolean result, String apikey) {
+		Log.v(TAG, "finishConfirmCredentials()");
         final Account account = new Account(mUsername, getString(R.string.ACCOUNT_TYPE));
-        mAccountManager.setPassword(account, password);
+        mAccountManager.setPassword(account, apikey);
         final Intent intent = new Intent();
         intent.putExtra(AccountManager.KEY_BOOLEAN_RESULT, result);
         setAccountAuthenticatorResult(intent.getExtras());
@@ -212,19 +212,19 @@ public class AuthenticateActivity extends SherlockFragmentActivity {
      * @param the confirmCredentials result.
      */
 
-    protected void finishLogin(String password) {
-        AppLog.logString("finishLogin()");
+    protected void finishLogin(String apikey) {
+        Log.v(TAG, "finishLogin()");
         final Account account = new Account(mUsername, getString(R.string.ACCOUNT_TYPE));
-
+        AppSettings.setApiKey(this, apikey);
         if (mRequestNewAccount) {
-            mAccountManager.addAccountExplicitly(account, password, null);
-            // Set noisetracks sync for this account.
+            mAccountManager.addAccountExplicitly(account, apikey, null);
+            // Set Noisetracks sync for this account.
             ContentResolver.setSyncAutomatically(account, NoisetracksContract.AUTHORITY, true);
         } else {
-            mAccountManager.setPassword(account, password);
+            mAccountManager.setPassword(account, apikey);
         }
         final Intent intent = new Intent();
-        mAuthtoken = password;
+        mAuthtoken = apikey;
         intent.putExtra(AccountManager.KEY_ACCOUNT_NAME, mUsername);
         intent.putExtra(AccountManager.KEY_ACCOUNT_TYPE, getString(R.string.ACCOUNT_TYPE));
         if (mAuthtokenType != null && mAuthtokenType.equals(getString(R.string.AUTHTOKEN_TYPE))) {
@@ -238,17 +238,17 @@ public class AuthenticateActivity extends SherlockFragmentActivity {
     /**
      * Called when the authentication process completes (see attemptLogin()).
      */
-    public void onAuthenticationResult(boolean result, String password) {
+    public void onAuthenticationResult(boolean result, String apikey) {
         
         if (result) {
-        	AppLog.logString("onAuthenticationResult(" + result + ")");
+        	Log.v(TAG, "onAuthenticationResult(" + result + ")");
             if (!mConfirmCredentials) {
-                finishLogin(password);
+                finishLogin(apikey);
             } else {
-                finishConfirmCredentials(true, password);
+                finishConfirmCredentials(true, apikey);
             }
         } else {
-            AppLog.logString("onAuthenticationResult: failed to authenticate");
+            Log.v(TAG, "onAuthenticationResult: failed to authenticate");
             if (mRequestNewAccount) {
                 // "Please enter a valid username/password.
                 mMessage.setText(getText(R.string.login_activity_loginfail_text_both));

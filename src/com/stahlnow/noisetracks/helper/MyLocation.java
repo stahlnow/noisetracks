@@ -40,8 +40,9 @@ public class MyLocation {
     }
     
     public void cancelTimer() {
-    	if (timer1 != null)
+    	if (timer1 != null) {
     		timer1.cancel();
+    	}
     	if (lm != null) {
     		lm.removeUpdates(locationListenerGps);
     		lm.removeUpdates(locationListenerNetwork);

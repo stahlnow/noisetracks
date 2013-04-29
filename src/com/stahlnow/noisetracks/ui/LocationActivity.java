@@ -19,7 +19,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.stahlnow.noisetracks.R;
-import com.stahlnow.noisetracks.authenticator.AuthenticateTask;
 import com.stahlnow.noisetracks.client.UploadTask;
 import com.stahlnow.noisetracks.helper.MyLocation;
 import com.stahlnow.noisetracks.helper.MyLocation.LocationResult;

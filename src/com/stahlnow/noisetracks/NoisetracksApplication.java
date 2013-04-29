@@ -2,16 +2,17 @@ package com.stahlnow.noisetracks;
 
 
 import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 import com.stahlnow.noisetracks.authenticator.AuthenticationService;
 import com.stahlnow.noisetracks.helper.httpimage.FileSystemPersistence;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
 import com.stahlnow.noisetracks.provider.NoisetracksProvider;
-
-import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.app.Application;
-import android.content.ContentResolver;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
 import android.util.Log;
 
@@ -30,12 +31,19 @@ public class NoisetracksApplication extends Application {
 	public static final Uri URI_UPLOAD = Uri.parse(DOMAIN + "/upload/");
 	
 	/**
+	 * Maximum recording duration in seconds
+	 */
+	public static final int MAX_RECORDING_DURATION_SECONDS = 5; // TODO 10
+	
+	/**
+	 * Default tracking interval in minutes
+	 */
+	public static final int DEFAULT_TRACKING_INTERVAL = 1;	 // TODO change to reasonable value
+	
+	/**
 	 *  The global SDF (simple date format) used everywhere: "yyyy-MM-dd'T'HH:mm:ss"
 	 */
-	public static SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-	
-	// Maximum recording duration in seconds
-	public static final int MAX_RECORDING_DURATION_SECONDS = 5; // TODO 10
+	public static SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.GERMAN);
 	
 	// The global SQL loader ids.
 	public static final int ENTRIES_SQL_LOADER_FEED = 0;
@@ -51,6 +59,7 @@ public class NoisetracksApplication extends Application {
 	public static final int PROFILE_REST_LOADER = 500;
 	public static final int SIGNUP_REST_LOADER = 600;
 	public static final int VOTE_LOADER = 700;
+	public static final int DELETE_LOADER = 800;
 	
 	// Provide an instance for static accessories
 	private static NoisetracksApplication mInstance = null;
@@ -64,18 +73,32 @@ public class NoisetracksApplication extends Application {
 	public void onCreate() {
 		super.onCreate();
 		
-		mFileSystemPersistence = new FileSystemPersistence(this.getCacheDir().toString()); // Create new cache
-		Log.v(TAG,"Cache dir is: " + getCacheDir().toString());
+		String cacheDir = getCacheDir().toString();
+		mFileSystemPersistence = new FileSystemPersistence(cacheDir); // Create new cache
+		Log.v(TAG,"Cache dir is: " + cacheDir);
+		
+		// register filter for 'account changed'.
+		registerReceiver(receiver, new IntentFilter("android.accounts.LOGIN_ACCOUNTS_CHANGED"));
 		
 		mInstance = this;
 	}
 	
+	BroadcastReceiver receiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (!AuthenticationService.accountExists(context)) {
+				Log.v(TAG, "Noisetracks Account has been removed.");
+				logout();
+			}
+		}
+	};
+	
 	public static void logout() {
 		Log.v(TAG, "Logging out...");
-		
 		// remove account from device
 		AuthenticationService.removeAccount(getInstance().getApplicationContext());
 		
+		Log.v(TAG, "Cleaning up...");
 		// delete database
 		getInstance().getApplicationContext().deleteDatabase(NoisetracksProvider.DATABASE_NAME);
 		

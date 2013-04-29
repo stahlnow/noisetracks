@@ -3,6 +3,7 @@
     android:id="@+id/entry"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/entry"
     android:orientation="horizontal"
     android:padding="0dp" >
 

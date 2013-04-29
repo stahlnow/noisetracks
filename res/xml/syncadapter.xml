@@ -2,7 +2,7 @@
 <!-- The attributes in this XML file provide configuration information -->
 <!-- for the SyncAdapter. -->
 <sync-adapter xmlns:android="http://schemas.android.com/apk/res/android"
-    android:contentAuthority="com.stahlnow.noisetracks.provider"
+    android:contentAuthority="@string/AUTHORITY_PROVIDER"
     android:accountType="com.stahlnow.noisetracks"
     android:isAlwaysSyncable="true"
     android:userVisible="true"

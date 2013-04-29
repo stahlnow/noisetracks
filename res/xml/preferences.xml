@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
 
+    <!-- 
     <CheckBoxPreference
         android:defaultValue="true"
         android:key="wifi_only_uploading"
         android:summary="Upload my data only when connected via wifi."
         android:title="WiFi ONLY" >
     </CheckBoxPreference>
-
+ 	-->
     <Preference
         android:key="cache"
         android:title="CLEAR CACHE" />

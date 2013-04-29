@@ -17,17 +17,19 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.util.Log;
 import android.widget.LinearLayout.LayoutParams;
 
 import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
-import com.stahlnow.noisetracks.utility.AppLog;
 import com.stahlnow.noisetracks.utility.AppSettings;
 
 /**
  * Provides utility methods for communicating with the server.
  */
 public class AuthenticateTask extends AsyncTask<String, Void, Boolean> {
+	
+	private static final String TAG = "AuthenticateTask";
 
 	private final Handler mHandler = new Handler();
 	private Context mContext;
@@ -80,7 +82,7 @@ public class AuthenticateTask extends AsyncTask<String, Void, Boolean> {
 			
 			if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
 			
-                AppLog.logString("Successful authentication: " + response.getStatusLine());
+                Log.v(TAG, "Successful authentication: " + response.getStatusLine());
 			
                 HttpEntity entity = response.getEntity();
                 
@@ -91,7 +93,7 @@ public class AuthenticateTask extends AsyncTask<String, Void, Boolean> {
 						JSONObject j = new JSONObject(json);
 						mKey = j.getString("key");
                 	} catch (JSONException e) {
-                		AppLog.logString("Error authenticating. Failed to parse JSON. " + e.toString());
+                		Log.e(TAG, "Error authenticating. Failed to parse JSON. " + e.toString());
 						return false;
 					} finally {
 						entity.consumeContent();
@@ -99,17 +101,17 @@ public class AuthenticateTask extends AsyncTask<String, Void, Boolean> {
                 }
                 return true; // success
 			} else {
-				AppLog.logString("Error authenticating: " + response.getStatusLine());
+				Log.e(TAG, "Error authenticating: " + response.getStatusLine());
                 return false;
 			}
             
 		} catch (final IOException e) {
-			AppLog.logString("IOException when getting authtoken" + e.toString());
+			Log.e(TAG, "IOException when getting authtoken" + e.toString());
 			return false;
 			
 		} finally {
 			httpclient.getConnectionManager().shutdown();
-			AppLog.logString("getAuthtoken completing");
+			Log.v(TAG, "getAuthtoken completing");
 		}
 	}
 

@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
-import java.util.Date;
-
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -42,13 +40,14 @@ import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.audio.Sampler;
 import com.stahlnow.noisetracks.audio.WaveForm;
+import com.stahlnow.noisetracks.audio.Sampler.SamplerListener;
 import com.stahlnow.noisetracks.helper.Helper;
 import com.stahlnow.noisetracks.helper.MyLocation;
 import com.stahlnow.noisetracks.helper.MyLocation.LocationResult;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.utility.AppSettings;
 
-public class RecordingActivity extends SherlockActivity implements 
+public class RecordingActivity extends SherlockActivity implements
 	OnPreparedListener, OnErrorListener, OnCompletionListener, OnSeekCompleteListener {
 	
 	public static final String EXTRA_URI = "uri";
@@ -94,6 +93,11 @@ public class RecordingActivity extends SherlockActivity implements
 		mBtnNext = (Button)findViewById(R.id.rec_next);
 		
 		mEntry = getIntent().getParcelableExtra(EXTRA_URI);
+	}
+	
+	@Override
+	public void onStart() {
+		super.onStart();
 		
 		if (mEntry == null)
 			startRecording();
@@ -120,13 +124,12 @@ public class RecordingActivity extends SherlockActivity implements
 	}
 	
 	/**
-	 * Button click handler for 'delete', deletes entry and .wav file.
+	 * Button click handler for 'delete', deletes entry (db provider takes care of wavfile)
 	 * @param view
 	 */
 	public void delete(View view) {
 		if (mEntry != null) {
 			getContentResolver().delete(mEntry, null, null);
-			// TODO: remove .wav file
 	    	finish();
 		}
 	}
@@ -146,8 +149,6 @@ public class RecordingActivity extends SherlockActivity implements
 	@Override
 	protected void onPause() {
 		super.onPause();
-		
-		Log.v(TAG, "onPause");
 		
 		if (mWaveForm != null) {
 			if (mWaveForm.getThread() != null)
@@ -308,16 +309,28 @@ public class RecordingActivity extends SherlockActivity implements
 		mBtnNext.setEnabled(false);
 		
 		try {
-			if (mSampler == null)
-				mSampler = new Sampler(this); // Start recording
+			if (mSampler == null) {
+				mSampler = new Sampler(this);
+				mSampler.setErrorListener(new SamplerListener() {
+					@Override
+					public void onError(String what) {
+						Log.e(TAG, "Recording stopped with errors: " + what);
+						mStopRecHandler.removeCallbacks(stopRecording);
+						mWaveForm.getThread().setRunning(false);
+						mBtnDelete.setVisibility(View.INVISIBLE);						
+					}
+				});
+				
+			}
 			if (mSampler != null) {
-				// Schedule handler to stop recording
-				mStopRecHandler.postDelayed(stopRecording, NoisetracksApplication.MAX_RECORDING_DURATION_SECONDS * 1000);
+				mSampler.startSampling();		// Start recording
+				mStopRecHandler.postDelayed(	// Schedule handler to stop recording
+						stopRecording,
+						NoisetracksApplication.MAX_RECORDING_DURATION_SECONDS * 1000);
 			}
 		} catch (NullPointerException e) {
 			Log.e(TAG, "NullPointer: " + e.getMessage());
-		}
-			
+		}	
 	}	
 	
 	private Runnable stopRecording = new Runnable() {
@@ -329,12 +342,7 @@ public class RecordingActivity extends SherlockActivity implements
 			// add entry to database
 			ContentValues values = new ContentValues();
 			values.put(Entries.COLUMN_NAME_FILENAME, mSampler.getFilename());
-			values.put(Entries.COLUMN_NAME_RECORDED, NoisetracksApplication.SDF.format(new Date()));
 			values.put(Entries.COLUMN_NAME_USERNAME, AppSettings.getUsername(mContext));
-			values.put(Entries.COLUMN_NAME_MUGSHOT, AppSettings.getMugshot(mContext));
-			values.put(Entries.COLUMN_NAME_LATITUDE, 0.0f);
-			values.put(Entries.COLUMN_NAME_LONGITUDE, 0.0f);
-			values.put(Entries.COLUMN_NAME_UUID, mSampler.getFilename()); // for uuid we just set the filename, so it's unique.
 			values.put(Entries.COLUMN_NAME_TYPE, Entries.TYPE.RECORDED.ordinal());
 			mEntry = mContext.getContentResolver().insert(Entries.CONTENT_URI, values);
 			showEntry();
@@ -382,20 +390,6 @@ public class RecordingActivity extends SherlockActivity implements
 	};
 
 	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
-		case android.R.id.home:
-			Intent parentActivityIntent = new Intent(this, Tabs.class);
-			parentActivityIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-			startActivity(parentActivityIntent);
-			finish();
-			return true;
-		}
-		return super.onOptionsItemSelected(item);
-	}
-
-	
-	@Override
 	public void onCompletion(MediaPlayer mp) {
 		mBtnPlay.setImageResource(R.drawable.av_play);
 		mPositionHandler.removeCallbacks(updatePositionRunnable);
@@ -413,6 +407,18 @@ public class RecordingActivity extends SherlockActivity implements
 		}
 	}
 	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case android.R.id.home:
+			Intent parentActivityIntent = new Intent(this, Tabs.class);
+			parentActivityIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+			startActivity(parentActivityIntent);
+			finish();
+			return true;
+		}
+		return super.onOptionsItemSelected(item);
+	}
 }
 
 

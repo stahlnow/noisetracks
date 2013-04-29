@@ -9,7 +9,6 @@ import com.stahlnow.noisetracks.helper.ImageHelper;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager;
 import com.stahlnow.noisetracks.helper.httpimage.HttpImageManager.BitmapFilter;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
-import com.stahlnow.noisetracks.utility.AppLog;
 
 import android.app.Activity;
 import android.content.Context;
@@ -150,7 +149,7 @@ public class EntryAdapter extends SimpleCursorAdapter implements BitmapFilter {
 					String rec_ago = DateUtils.getRelativeTimeSpanString(d.getTime(), System.currentTimeMillis(), 0L, DateUtils.FORMAT_ABBREV_ALL).toString();
 					holder.recorded_ago.setText(rec_ago);
 				} catch (ParseException e) {			
-					AppLog.logString("Failed to parse recorded date: " + e.toString());
+					Log.e(TAG, "Failed to parse recorded date: " + e.toString());
 				}
 			}
 			
@@ -198,7 +197,7 @@ public class EntryAdapter extends SimpleCursorAdapter implements BitmapFilter {
 					String rec_ago = DateUtils.getRelativeTimeSpanString(d.getTime(), System.currentTimeMillis(), 0L, DateUtils.FORMAT_ABBREV_ALL).toString();
 					holder.recorded_ago.setText(rec_ago);
 				} catch (ParseException e) {			
-					AppLog.logString("Failed to parse recorded date: " + e.toString());
+					Log.e(TAG, "Failed to parse recorded date: " + e.toString());
 				}
 			}
         	break;
@@ -222,7 +221,7 @@ public class EntryAdapter extends SimpleCursorAdapter implements BitmapFilter {
 					String rec_ago = DateUtils.getRelativeTimeSpanString(d.getTime(), System.currentTimeMillis(), 0L, DateUtils.FORMAT_ABBREV_ALL).toString();
 					holder.recorded_ago.setText(rec_ago);
 				} catch (ParseException e) {			
-					AppLog.logString("Failed to parse recorded date: " + e.toString());
+					Log.e(TAG, "Failed to parse recorded date: " + e.toString());
 				}
 			}
         	break;

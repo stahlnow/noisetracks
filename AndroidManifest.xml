@@ -35,9 +35,9 @@
         android:icon="@drawable/_launcher"
         android:theme="@style/Theme.Noise">
         <uses-library android:name="com.google.android.maps" />
-        <!-- The Noisetracks content provider represents a database for tracking data which is synced to the noisetracks cloud -->
+        <!-- The Noisetracks content provider represents a database with the entries and profiles -->
         <provider android:name=".provider.NoisetracksProvider"
-            android:authorities="com.stahlnow.noisetracks.provider"
+            android:authorities="@string/AUTHORITY_PROVIDER"
             android:syncable="true"
             android:exported="false">
             <grant-uri-permission android:pathPattern=".*" />
@@ -53,7 +53,7 @@
                 android:name="android.accounts.AccountAuthenticator"
                 android:resource="@xml/authenticator" />
         </service>
-        <!-- The sync service: upload data to the server -->
+        <!-- The sync service: get updates from server -->
         <service android:name=".syncadapter.SyncService"
             android:exported="false">
             <intent-filter>
@@ -64,11 +64,11 @@
                 android:resource="@xml/syncadapter" />
         </service>
         
-        <!-- The recording/tracking service -->
-        <service android:name=".service.NoisetracksService"/>
+        <!-- The tracking service -->
+        <service android:name=".service.TrackingService"/>
         
-        <!-- The recording receiver/alarm -->
-        <receiver android:name=".receivers.RecordingReceiver" />
+        <!-- The tracking receiver/alarm -->
+        <receiver android:name=".receivers.TrackingReceiver" />
         
         <!-- Launcher Activity -->
         <activity android:name=".ui.Noisetracks"
@@ -128,7 +128,7 @@
         <activity
             android:name=".utility.SettingsActivity">
         </activity>
-        <!-- The Authentication/Signin Activity -->
+        <!-- The Authentication/Sign-in Activity -->
         <activity
             android:name=".authenticator.AuthenticateActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
@@ -140,7 +140,7 @@
                 someone who explicitly knows the class name
             -->
         </activity>
-        <!-- The Signup Activity -->
+        <!-- The Sign-up Activity -->
         <activity
             android:name=".authenticator.SignupActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"

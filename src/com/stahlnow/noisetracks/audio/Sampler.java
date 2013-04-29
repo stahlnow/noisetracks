@@ -7,7 +7,14 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+
 import sa.dsp.Compressor;
 import sa.dsp.Gate;
 
@@ -16,8 +23,6 @@ import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Environment;
 import android.util.Log;
-import android.widget.Toast;
-
 import com.stahlnow.noisetracks.NoisetracksApplication;
 import com.stahlnow.noisetracks.ui.RecordingActivity;
 
@@ -35,7 +40,7 @@ public class Sampler {
 	private static final int BYTES_PER_SAMPLE = BIT_DEPTH / 8;
 	private static final String AUDIO_RECORDER_FILE_EXT_WAV = ".wav";
 	private static final String AUDIO_RECORDER_FOLDER = "Noisetracks/files";
-	private static final String AUDIO_RECORDER_TEMP_FILE = "record_temp.raw";
+	private static final String AUDIO_RECORDER_TEMP_FILE = "noisetracks.raw";
 	
 	/**
 	 * 16-bit sample buffer
@@ -45,7 +50,7 @@ public class Sampler {
 	/** 
 	 * Reference to user interface
 	 */
-	private RecordingActivity mRecordingActivity;
+	private RecordingActivity mRecordingActivity = null;
 	
 	/**
 	 * Size of the recording buffer
@@ -60,18 +65,30 @@ public class Sampler {
 	/**
 	 * The full path + filename of the recorded .wav file
 	 */
-	private String mFilename;
+	private String mFilename = null;
 	
 	private AudioRecord mAudioRecord;
 	private Thread mRecordingThread;
 	private boolean mIsRecording = false;
-
+	
+	private SamplerListener mSamplerListener;	
+	
+	public Sampler() {
+		this(null);
+	}
+	
 	public Sampler(RecordingActivity activity) {
 		mRecordingActivity = activity;
 		mSamplesRead = 0;
 					
 		mBufferSize = AudioRecord.getMinBufferSize(SAMPLERATE, CHANNEL_CONFIG, AUDIO_FORMAT);
-		Log.v(TAG, "Buffer size of 16-Bit shorts is " + mBufferSize);
+		
+		if (mBufferSize < 0) {
+			Log.e(TAG, "Error getting buffer size. State: " + mBufferSize + ".");
+		} else {
+			Log.v(TAG, "Buffer size of 16-Bit samples is " + mBufferSize + ".");
+		}
+		
 		mAudioRecord = new AudioRecord(
 				AUDIO_SOURCE,
 				SAMPLERATE,
@@ -79,18 +96,8 @@ public class Sampler {
 				AUDIO_FORMAT,
 				mBufferSize * BYTES_PER_SAMPLE
 		);
-		if (mAudioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
-			Toast.makeText(mRecordingActivity, "Could not initialize microphone", Toast.LENGTH_LONG).show();
-			return;
-		}
 		
 		buffer = new short[mBufferSize];
-		Log.v(TAG, "State initialized");
-		
-		mAudioRecord.startRecording();
-		mIsRecording = true;
-		
-		startSampling();
 
 	}
 
@@ -98,6 +105,24 @@ public class Sampler {
 	 * Collects audio data and sends it back to the recording activity
 	 */
 	public void startSampling() {
+		
+		try {
+			mAudioRecord.startRecording();
+		} catch (IllegalStateException e) {
+			if (mSamplerListener != null)
+				mSamplerListener.onError(e.toString() + ". State " + mAudioRecord.getState() + ".");
+			return;
+		}
+		
+		if (mAudioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
+			if (mSamplerListener != null)
+				mSamplerListener.onError("Could not initialize microphone. State " + mAudioRecord.getState() + ".");
+			return;
+		} else {
+			Log.v(TAG, "State initialized");
+		}
+		
+		mIsRecording = true;
 		
 		mRecordingThread = new Thread(new Runnable() {
 		
@@ -118,11 +143,12 @@ public class Sampler {
 		        Gate gate = new Gate();
 		        gate.setThresh(-36.0d);
 		        gate.initRuntime();
-				
+		        
 		        if (null != os) {
+		        
 					while (mIsRecording) {
 						
-						mSamplesRead = mAudioRecord.read(buffer, 0, mBufferSize);  // Read samples from device
+						mSamplesRead = mAudioRecord.read(Sampler.buffer, 0, mBufferSize);  // Read samples from device
 						
 						if (mSamplesRead > 0 && AudioRecord.ERROR_INVALID_OPERATION != mSamplesRead) {
 							
@@ -130,18 +156,26 @@ public class Sampler {
 							gate.process(mSamplesRead, Sampler.buffer);
 			                compressor.process(mSamplesRead, Sampler.buffer);
 			                
-						    // Write .wav compatible byte stream
+			                // Write .wav compatible byte stream
 							try {
 								byte bytebuffer[] = short2byte(Sampler.buffer);
 								os.write(bytebuffer, 0, mBufferSize * BYTES_PER_SAMPLE);
 							} catch (IOException e) {
 								Log.e(TAG, "Could not write to file.");
 							}
-			                
+
+							
 							// Send buffer to RecordingActivity for visualization
-							mRecordingActivity.setBuffer(Sampler.buffer);
+							if (mRecordingActivity != null)
+								mRecordingActivity.setBuffer(Sampler.buffer);
+						} else {
+							mAudioRecord.stop();
+							mIsRecording = false;
+							deleteTempFile();
+							if (mSamplerListener != null)
+								mSamplerListener.onError("Could not record, maybe microphone is in use.");
 						}
-					}
+					}		
 					
 					try {
 						os.close();
@@ -149,7 +183,6 @@ public class Sampler {
 						Log.e(TAG, e.toString());
 					}
 		        }
-				
 			}
 		}, "Sampler Recording Thread");;
 		
@@ -162,13 +195,21 @@ public class Sampler {
 		
 		if (null != mAudioRecord){
 			mAudioRecord.stop();
+			mAudioRecord.release();
+			mAudioRecord = null;
 		}
 		
-		mAudioRecord.release();
-		mAudioRecord = null;
+		createWavFile(getTempFilename(), getFilename()); 	// create .wav file
+		deleteTempFile();									// delete .raw file
 		
-		copyWaveFile(getTempFilename(), newFilename());
-		deleteTempFile();
+	}
+	
+	public interface SamplerListener {
+		public void onError(String what);
+	}
+
+	public void setErrorListener(SamplerListener listener) {
+		mSamplerListener = listener;
 	}
 	
 
@@ -177,9 +218,8 @@ public class Sampler {
 		byte[] bytes = new byte[size * 2];
 
 		for (int i = 0; i < size; i++) {
-			bytes[i * 2] = (byte) (buffer[i] & 0xff);
-			bytes[(i * 2) + 1] = (byte) (buffer[i] >> 8);
-			buffer[i] = 0;
+			bytes[i * 2] = (byte) (buffer[i] & 0x00ff);
+			bytes[(i * 2) + 1] = (byte) ((buffer[i] & 0xff00) >> 8);
 		}
 		return bytes;
 
@@ -194,7 +234,7 @@ public class Sampler {
 		file.delete();
 	}
 	
-	private String newFilename() {
+	private void setFilename() {
 		String filepath = Environment.getExternalStorageDirectory().getPath();
 		File file = new File(filepath, AUDIO_RECORDER_FOLDER);
 		
@@ -205,11 +245,11 @@ public class Sampler {
 		String filename = NoisetracksApplication.SDF.format(new Date());
 		
 		mFilename = file.getAbsolutePath() + "/" + filename + AUDIO_RECORDER_FILE_EXT_WAV;
-		
-		return mFilename;
 	}
 	
 	public String getFilename() {
+		if (mFilename == null)
+			setFilename();
 		return mFilename;
 	}
 	
@@ -230,7 +270,7 @@ public class Sampler {
 	}
 	
 	
-	private void copyWaveFile(String inFilename, String outFilename){
+	private void createWavFile(String inFilename, String outFilename){
 		FileInputStream in = null;
 		FileOutputStream out = null;
 		long totalAudioLen = 0;

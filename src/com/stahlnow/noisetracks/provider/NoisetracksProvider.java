@@ -6,6 +6,7 @@ import com.stahlnow.noisetracks.provider.NoisetracksContract;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Entries;
 import com.stahlnow.noisetracks.provider.NoisetracksContract.Profiles;
 import android.content.ContentProvider;
+import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -19,8 +20,11 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.UUID;
 
 /**
  * Provides access to a database of entries. Each entry has a title, the entry
@@ -457,6 +461,12 @@ public class NoisetracksProvider extends ContentProvider {
 
     	switch (sUriMatcher.match(uri)) {
     	case ENTRIES:
+    		if (values.containsKey(Entries.COLUMN_NAME_LATITUDE) == false) {
+            	values.put(Entries.COLUMN_NAME_LATITUDE, 0.0);
+            }
+            if (values.containsKey(Entries.COLUMN_NAME_LONGITUDE) == false) {
+            	values.put(Entries.COLUMN_NAME_LONGITUDE, 0.0);
+            }
             // If the values map doesn't contain entry recording date, sets the value to 'now'.
             if (values.containsKey(Entries.COLUMN_NAME_RECORDED) == false) {
                 values.put(Entries.COLUMN_NAME_RECORDED, NoisetracksApplication.SDF.format(new Date()));
@@ -473,7 +483,7 @@ public class NoisetracksProvider extends ContentProvider {
             	values.put(Entries.COLUMN_NAME_USERNAME, "");
             }
             if (values.containsKey(Entries.COLUMN_NAME_UUID) == false) {
-            	values.put(Entries.COLUMN_NAME_UUID, "");
+            	values.put(Entries.COLUMN_NAME_UUID, UUID.randomUUID().toString());
             }
             
             // Performs the insert and returns the ID of the new entry.
@@ -514,32 +524,6 @@ public class NoisetracksProvider extends ContentProvider {
     	default:
     		throw new IllegalArgumentException("Unknown URI " + uri);
     	}
-    	
-
-        /*
-        // put default value or null if key is missing
-        if (values.containsKey(Entries.COLUMN_NAME_FILENAME) == false) {
-        	values.putNull(Entries.COLUMN_NAME_FILENAME);
-        }
-        if (values.containsKey(Entries.COLUMN_NAME_CREATED) == false) {
-        	values.putNull(Entries.COLUMN_NAME_CREATED);
-        }
-        if (values.containsKey(Entries.COLUMN_NAME_LATITUDE) == false) {
-        	values.putNull(Entries.COLUMN_NAME_LATITUDE);
-        }
-        if (values.containsKey(Entries.COLUMN_NAME_LONGITUDE) == false) {
-        	values.putNull(Entries.COLUMN_NAME_LONGITUDE);
-        }
-        if (values.containsKey(Entries.COLUMN_NAME_MUGSHOT) == false) {
-        	values.putNull(Entries.COLUMN_NAME_MUGSHOT);
-        }
-        if (values.containsKey(Entries.COLUMN_NAME_RESOURCE_URI) == false) {
-        	values.putNull(Entries.COLUMN_NAME_RESOURCE_URI);
-        }
-        if (values.containsKey(Entries.COLUMN_NAME_SPECTROGRAM) == false) {
-        	values.putNull(Entries.COLUMN_NAME_SPECTROGRAM);
-        }
-        */
         
         // If the insert didn't succeed, then the rowID is <= 0. Throws an exception.
         throw new SQLException("Failed to insert row into " + uri);
@@ -561,6 +545,16 @@ public class NoisetracksProvider extends ContentProvider {
     @Override
     public int delete(Uri uri, String where, String[] whereArgs) {
 
+    	String filename = "";
+    	Cursor c = query(uri, null, null, null, null);
+		if (c != null) {
+			if (c.moveToFirst()) {
+				filename = c.getString(c.getColumnIndex(Entries.COLUMN_NAME_FILENAME));
+			}
+			c.close();
+		}
+    	
+    	
         // Opens the database object in "write" mode.
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         String finalWhere;
@@ -618,7 +612,16 @@ public class NoisetracksProvider extends ContentProvider {
          * that the incoming URI changed. The object passes this along to the resolver framework,
          * and observers that have registered themselves for the provider are notified.
          */
-        getContext().getContentResolver().notifyChange(uri, null, true);
+        getContext().getContentResolver().notifyChange(uri, null, false);
+        
+        File file = new File(filename);
+        if (file.exists()) {
+        	boolean d = file.delete();
+        	if (d) {
+        		Log.v(TAG, "Removed file " + file.getName());
+        	}
+        }
+        
 
         // Returns the number of rows deleted.
         return count;

@@ -1,14 +1,10 @@
 package com.stahlnow.noisetracks.ui;
 
-import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.app.Activity;
-import android.content.ContentResolver;
 import android.content.Intent;
 import android.os.Bundle;
 
 import com.actionbarsherlock.app.SherlockActivity;
-import com.stahlnow.noisetracks.R;
 import com.stahlnow.noisetracks.authenticator.AuthenticationService;
 import com.stahlnow.noisetracks.authenticator.AuthenticateActivity;
 
@@ -44,13 +40,6 @@ public class Noisetracks extends SherlockActivity {
 			return;
 		} else if (requestCode == LOGIN_REQUEST) {
 			if (resultCode == RESULT_OK) {
-				
-				// setup sync
-				AccountManager am = AccountManager.get(this);
-		        Account a[] = am.getAccountsByType(getString(R.string.ACCOUNT_TYPE));
-				ContentResolver.setSyncAutomatically(a[0], getString(R.string.AUTHORITY_PROVIDER), true);
-				
-				// start main view
 				Intent intent = this.getIntent();
 				intent = new Intent(Noisetracks.this, Tabs.class);
 				startActivity(intent);
