@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Noisetracks</string>
-    <string name="ACCOUNT_TYPE">com.stahlnow.noisetracks</string>
-    <string name="AUTHORITY_PROVIDER">com.stahlnow.noisetracks.provider</string>
-    <string name="AUTHTOKEN_TYPE">com.stahlnow.noisetracks</string>
+    <string name="ACCOUNT_TYPE">com.noisetracks.android</string>
+    <string name="AUTHORITY_PROVIDER">com.noisetracks.android.provider</string>
+    <string name="AUTHTOKEN_TYPE">com.noisetracks.android</string>
     
     <!-- menu -->
 	<string name="hello_world">Hello, Noise.</string>

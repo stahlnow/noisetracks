@@ -3,7 +3,7 @@
 <!-- for the SyncAdapter. -->
 <sync-adapter xmlns:android="http://schemas.android.com/apk/res/android"
     android:contentAuthority="@string/AUTHORITY_PROVIDER"
-    android:accountType="com.stahlnow.noisetracks"
+    android:accountType="com.noisetracks.android"
     android:isAlwaysSyncable="true"
     android:userVisible="true"
 />

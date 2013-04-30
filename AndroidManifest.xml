@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest package="com.stahlnow.noisetracks"
+<manifest package="com.noisetracks.android"
     android:versionCode="1"
     android:versionName="1.0" xmlns:android="http://schemas.android.com/apk/res/android">
 
@@ -21,9 +21,9 @@
     <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />  
     
     <permission
-        android:name="com.stahlnow.noisetracks.permission.MAPS_RECEIVE"
+        android:name="com.noisetracks.android.permission.MAPS_RECEIVE"
         android:protectionLevel="signature"/>
-    <uses-permission android:name="com.stahlnow.noisetracks.permission.MAPS_RECEIVE"/>
+    <uses-permission android:name="com.noisetracks.android.permission.MAPS_RECEIVE"/>
     
     <uses-feature
         android:glEsVersion="0x00020000"

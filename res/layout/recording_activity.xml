@@ -24,13 +24,13 @@
         android:secondaryProgress="0"
         android:thumb="@drawable/scroll_thumb" />
 <!--
-    <com.stahlnow.noisetracks.audio.Scope
+    <com.noisetracks.android.audio.Scope
         android:id="@+id/scope"
         android:layout_width="fill_parent"
         android:layout_height="180dp"
         android:soundEffectsEnabled="true" />
 -->    
-    <com.stahlnow.noisetracks.audio.WaveForm
+    <com.noisetracks.android.audio.WaveForm
         android:id="@+id/waveform"
         android:layout_width="fill_parent"
         android:layout_height="180dp"

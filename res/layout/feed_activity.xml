@@ -12,7 +12,7 @@
         android:orientation="vertical"
         android:visibility="gone" >
 
-        <com.stahlnow.noisetracks.helper.ProgressWheel
+        <com.noisetracks.android.helper.ProgressWheel
             xmlns:android="http://schemas.android.com/apk/res/android"
             xmlns:ProgressWheel="http://schemas.android.com/apk/res-auto"
             android:id="@+id/pw_spinner"
