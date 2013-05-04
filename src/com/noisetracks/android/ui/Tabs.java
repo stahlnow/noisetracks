@@ -4,20 +4,15 @@ import java.util.ArrayList;
 
 import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
-import android.app.AlarmManager;
-import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
@@ -30,8 +25,8 @@ import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 import com.actionbarsherlock.view.MenuInflater;
 
+import com.noisetracks.android.NoisetracksApplication;
 import com.noisetracks.android.R;
-import com.noisetracks.android.receivers.TrackingReceiver;
 import com.noisetracks.android.ui.FeedActivity.FeedListFragment;
 import com.noisetracks.android.ui.ProfileActivity.ProfileListFragment;
 import com.noisetracks.android.utility.AppSettings;
@@ -49,6 +44,11 @@ public class Tabs extends SherlockFragmentActivity implements OnTouchListener {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		if (getIntent().getBooleanExtra("EXIT", false)) {
+			finish();
+			return;
+		}
 		
 		// disable 'up' navigation in action bar for home screen
 		getSupportActionBar().setHomeButtonEnabled(false);
@@ -144,7 +144,7 @@ public class Tabs extends SherlockFragmentActivity implements OnTouchListener {
 			startActivity(record);
 			return true;
 		case R.id.menu_toggle_tracking:
-			toggleTracking(AppSettings.getServiceRunning(this), AppSettings.getTrackingInterval(this));
+			NoisetracksApplication.toggleTracking(AppSettings.getServiceRunning(this), AppSettings.getTrackingInterval(this));
 			//invalidateOptionsMenu();
 			return true;
 		case R.id.menu_settings:
@@ -152,34 +152,6 @@ public class Tabs extends SherlockFragmentActivity implements OnTouchListener {
 			return true;
 		default:
 			return super.onOptionsItemSelected(item);
-		}
-	}
-
-	private void toggleTracking(boolean isStart, float interval) {
-		
-		AlarmManager manager = (AlarmManager) getSystemService(Service.ALARM_SERVICE);
-		
-		PendingIntent tracking = PendingIntent.getBroadcast(
-				this,
-				0,
-				new Intent(this, TrackingReceiver.class),
-				0);
-
-		if (isStart) {
-			manager.cancel(tracking);
-			AppSettings.setServiceRunning(this, false);
-			Log.i(TAG, "Tracking service stopped.");
-			
-		} else {
-			// Schedule tracking
-			manager.setRepeating(
-					AlarmManager.ELAPSED_REALTIME_WAKEUP,
-					SystemClock.elapsedRealtime(),
-					(long) (interval * 60.0f * 1000.0f), // Tracking interval in milliseconds
-					tracking);
-
-			AppSettings.setServiceRunning(this, true);
-			Log.i(TAG, "Tracking service started with interval " + interval * 60.0f + " seconds.");
 		}
 	}
 

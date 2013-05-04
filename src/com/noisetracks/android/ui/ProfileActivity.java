@@ -19,6 +19,7 @@ import com.noisetracks.android.provider.NoisetracksContract.Entries;
 import com.noisetracks.android.utility.AppSettings;
 import android.support.v4.app.FragmentManager;
 import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -360,11 +361,20 @@ public class ProfileActivity extends SherlockFragmentActivity {
 					    }
 					}
 				}
+				String username = data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_USERNAME));
+				String name = data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_NAME));
+				if (name.equals("")) {
+					name = username;
+				}
+				String website = data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_WEBSITE));
+				
 				mProfileHeaderText.setText(Html.fromHtml(
-						"<b>" + data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_USERNAME)) + "</b>" +  "<br />" + 
-			            "<b>" + data.getInt(data.getColumnIndex(Profiles.COLUMN_NAME_TRACKS)) + "</b>" +
-						"<font color=\"#FF777777\"> TRACKS </font>" +
-						"<br />"));
+						"<b>" + name + "</b> @" + username +  "<br />" + 
+			            "<b>" + data.getInt(data.getColumnIndex(Profiles.COLUMN_NAME_TRACKS)) + "</b> TRACKS" + "<br />" +
+						data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_BIO)) + "<br />" +
+						"<a href="+website+">" + website + "</a>"
+						));
+				mProfileHeaderText.setMovementMethod(LinkMovementMethod.getInstance());
 			}
 			
 			catch (Exception e) {

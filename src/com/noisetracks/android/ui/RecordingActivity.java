@@ -230,44 +230,46 @@ public class RecordingActivity extends SherlockActivity implements
 				
 				try {
 					in = new FileInputStream(filename);
-				} catch (FileNotFoundException e) {
-					Log.e(TAG, "File not found.");
-				}
-				
-				try {
 					size = (int)in.getChannel().size()-44;
-				} catch (IOException e) {
-					Log.e(TAG, "Could not get file size.");
-				}
-					
-				byte[] bytes = new byte[size];
-				try {
+					byte[] bytes = new byte[size];
 					in.skip(44);
 					in.read(bytes, 0, size);
+					
+
+					ShortBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer();
+					
+					Log.v(TAG, "byte buffer is: " + bytes.length);
+					Log.v(TAG, "buffer length is: " + buffer.capacity());
+					
+					
+					if (mWaveForm.getThread() != null) {
+						mWaveForm.getThread().setRunning(false);					
+					} else {
+						Log.e(TAG, "mWaveForm DrawThread is null!");
+					}
+					
+					FileWaveForm fwf = new FileWaveForm(this, buffer);
+					fwf.setLayoutParams(new ViewGroup.LayoutParams(
+			        		ViewGroup.LayoutParams.MATCH_PARENT,
+			        		(int)(180 * getResources().getDisplayMetrics().density)));
+					ViewGroup parent = (ViewGroup) mWaveForm.getParent();
+					int i = parent.indexOfChild(mWaveForm);
+					parent.removeView(mWaveForm);
+					parent.addView(fwf, i);
+					
+				} catch (FileNotFoundException e) {
+					Log.e(TAG, "File not found.");
+					c.close();
+					delete(null);
 				} catch (IOException e) {
-					Log.e(TAG, "Could not read from buffer");
+					Log.e(TAG, "Could not get file size.");
+					c.close();
+					delete(null);
+				} catch (NullPointerException e) {
+					Log.e(TAG, "showEntry() Nullpointer.");
+					c.close();
+					delete(null);
 				}
-				
-				ShortBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer();
-				
-				Log.v(TAG, "byte buffer is: " + bytes.length);
-				Log.v(TAG, "buffer length is: " + buffer.capacity());
-				
-				
-				if (mWaveForm.getThread() != null) {
-					mWaveForm.getThread().setRunning(false);					
-				} else {
-					Log.e(TAG, "mWaveForm DrawThread is null!");
-				}
-				
-				FileWaveForm fwf = new FileWaveForm(this, buffer);
-				fwf.setLayoutParams(new ViewGroup.LayoutParams(
-		        		ViewGroup.LayoutParams.MATCH_PARENT,
-		        		(int)(180 * getResources().getDisplayMetrics().density)));
-				ViewGroup parent = (ViewGroup) mWaveForm.getParent();
-				int i = parent.indexOfChild(mWaveForm);
-				parent.removeView(mWaveForm);
-				parent.addView(fwf, i);
 				
 				// Create media player
 				mPlayer = new MediaPlayer();
@@ -317,7 +319,7 @@ public class RecordingActivity extends SherlockActivity implements
 						Log.e(TAG, "Recording stopped with errors: " + what);
 						mStopRecHandler.removeCallbacks(stopRecording);
 						mWaveForm.getThread().setRunning(false);
-						//mBtnDelete.setVisibility(View.INVISIBLE);	// TODO add 'retry' button					
+						//mBtnDelete.setVisibility(View.INVISIBLE);	// TODO replace 'delete' button with 'retry' button / functionality					
 					}
 				});
 				

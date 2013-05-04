@@ -18,6 +18,7 @@
         android:layout_marginLeft="@dimen/input_margin_left_right"
         android:layout_marginRight="@dimen/input_margin_left_right"
         android:textColor="#777"
+        android:textIsSelectable="false"
         android:textAppearance="?android:attr/textAppearanceSmall" />
 
     <EditText
@@ -30,7 +31,6 @@
         android:inputType="textEmailAddress"
         android:scrollHorizontally="true"
         android:singleLine="false"
-        android:text="hans"
         android:textColor="#777"
         android:textColorHint="#aaa"
         android:typeface="sans" />
@@ -45,7 +45,6 @@
         android:inputType="textEmailAddress"
         android:scrollHorizontally="true"
         android:singleLine="false"
-        android:text="hans@hans.com"
         android:textColor="#777"
         android:textColorHint="#aaa"
         android:typeface="sans" />
@@ -62,7 +61,6 @@
         android:inputType="textPassword"
         android:scrollHorizontally="true"
         android:singleLine="true"
-        android:text="123"
         android:textColor="#777"
         android:textColorHint="#aaa"
         android:typeface="sans" />
@@ -79,7 +77,6 @@
         android:inputType="textPassword"
         android:scrollHorizontally="true"
         android:singleLine="true"
-        android:text="123"
         android:textColor="#777"
         android:textColorHint="#aaa"
         android:typeface="sans" />

@@ -7,21 +7,30 @@ import java.util.Locale;
 import com.noisetracks.android.authenticator.AuthenticationService;
 import com.noisetracks.android.helper.httpimage.FileSystemPersistence;
 import com.noisetracks.android.helper.httpimage.HttpImageManager;
+import com.noisetracks.android.provider.NoisetracksContract;
 import com.noisetracks.android.provider.NoisetracksProvider;
+import com.noisetracks.android.receivers.TrackingReceiver;
+import com.noisetracks.android.ui.Tabs;
+import com.noisetracks.android.utility.AppSettings;
+
+import android.app.AlarmManager;
 import android.app.Application;
+import android.app.PendingIntent;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
+import android.os.SystemClock;
 import android.util.Log;
 
 public class NoisetracksApplication extends Application {
 
 	private static final String TAG = "NoisetracksApplication"; 
 	
-	public static final String HOST = "192.168.1.217";
-	public static final int HTTP_PORT = 8000;
+	public static final String HOST = "noisetracks.com";
+	public static final int HTTP_PORT = 80;
 	public static final int HTTPS_PORT = 443;
 	public static final String DOMAIN = "http://" + HOST + ":" + HTTP_PORT;
 	public static final Uri URI_ENTRIES = Uri.parse(DOMAIN + "/api/v1/entry/");
@@ -38,7 +47,7 @@ public class NoisetracksApplication extends Application {
 	/**
 	 * Default tracking interval in minutes
 	 */
-	public static final int DEFAULT_TRACKING_INTERVAL = 1;	 // TODO change to reasonable value
+	public static final int DEFAULT_TRACKING_INTERVAL = 30;	 // TODO change to reasonable value
 	
 	/**
 	 *  The global SDF (simple date format) used everywhere: "yyyy-MM-dd'T'HH:mm:ss"
@@ -95,20 +104,48 @@ public class NoisetracksApplication extends Application {
 	
 	public static void logout() {
 		Log.v(TAG, "Logging out...");
-		// remove account from device
-		AuthenticationService.removeAccount(getInstance().getApplicationContext());
+		// delete cache directory
+		if (mFileSystemPersistence != null) {
+			mFileSystemPersistence.clear();
+		}
 		
-		Log.v(TAG, "Cleaning up...");
+		// stop tracking
+		if (AppSettings.getServiceRunning(getInstance()))
+			toggleTracking(true, NoisetracksApplication.DEFAULT_TRACKING_INTERVAL);
+		
 		// delete database
 		getInstance().getApplicationContext().deleteDatabase(NoisetracksProvider.DATABASE_NAME);
+				
+		// remove account from device
+		AuthenticationService.removeAccount(getInstance().getApplicationContext());
+	}
+	
+	public static void toggleTracking(boolean isStart, float interval) {
 		
-		// delete cache directory
-		if (mFileSystemPersistence != null)
-			mFileSystemPersistence.clear();
+		AlarmManager manager = (AlarmManager)getInstance().getSystemService(Service.ALARM_SERVICE);
 		
-		// collect garbage, exit
-		System.gc();
-		System.exit(0);
+		PendingIntent tracking = PendingIntent.getBroadcast(
+				getInstance(),
+				0,
+				new Intent(getInstance(), TrackingReceiver.class),
+				0);
+
+		if (isStart) {
+			manager.cancel(tracking);
+			AppSettings.setServiceRunning(getInstance(), false);
+			Log.i(TAG, "Tracking service stopped.");
+			
+		} else {
+			// Schedule tracking
+			manager.setRepeating(
+					AlarmManager.ELAPSED_REALTIME_WAKEUP,
+					SystemClock.elapsedRealtime(),
+					(long) (interval * 60.0f * 1000.0f), // Tracking interval in milliseconds
+					tracking);
+
+			AppSettings.setServiceRunning(getInstance(), true);
+			Log.i(TAG, "Tracking service started with interval " + interval * 60.0f + " seconds.");
+		}
 	}
 
 	/**

@@ -38,6 +38,10 @@ public class SettingsActivity extends SherlockPreferenceActivity {
 			Intent i = null;
 			if (preference.getKey().equals("logout")) {
 				NoisetracksApplication.logout();
+				Intent intent = new Intent(getApplicationContext(), Tabs.class);
+				intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+				intent.putExtra("EXIT", true);
+				startActivity(intent);
 				return true;
 			}
 			

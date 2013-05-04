@@ -1,5 +1,8 @@
 package com.noisetracks.android.client;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -153,7 +156,12 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 				values.put(Entries.COLUMN_NAME_CREATED, entry.getString(Entries.COLUMN_NAME_CREATED).substring(0,19));					
 				values.put(Entries.COLUMN_NAME_RECORDED, entry.getString(Entries.COLUMN_NAME_RECORDED).substring(0,19));
 				values.put(Entries.COLUMN_NAME_RESOURCE_URI, entry.getString(Entries.COLUMN_NAME_RESOURCE_URI));
-				values.put(Entries.COLUMN_NAME_MUGSHOT, user.getString(Entries.COLUMN_NAME_MUGSHOT));
+				// check if mugshot is gravatar (full url) or from server
+				boolean gravatar = isValidUrl(user.getString(Entries.COLUMN_NAME_MUGSHOT));
+				if (gravatar)
+					values.put(Entries.COLUMN_NAME_MUGSHOT, user.getString(Entries.COLUMN_NAME_MUGSHOT));
+				else
+					values.put(Entries.COLUMN_NAME_MUGSHOT, NoisetracksApplication.DOMAIN + user.getString(Entries.COLUMN_NAME_MUGSHOT));
 				values.put(Entries.COLUMN_NAME_USERNAME, user.getString(Entries.COLUMN_NAME_USERNAME));
 				values.put(Entries.COLUMN_NAME_UUID, entry.getString(Entries.COLUMN_NAME_UUID));
 				values.put(Entries.COLUMN_NAME_SCORE, entry.getInt(Entries.COLUMN_NAME_SCORE));
@@ -210,8 +218,14 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 				catch (JSONException e) {
 			         // email is only visible to logged in user
 			    }
-					
-				values.put(Profiles.COLUMN_NAME_MUGSHOT, user.getString("mugshot"));
+				
+				// check if mugshot is gravatar (full url) or from server
+				boolean gravatar = isValidUrl(user.getString(Profiles.COLUMN_NAME_MUGSHOT));
+				if (gravatar)
+					values.put(Profiles.COLUMN_NAME_MUGSHOT, user.getString(Profiles.COLUMN_NAME_MUGSHOT));
+				else
+					values.put(Profiles.COLUMN_NAME_MUGSHOT, NoisetracksApplication.DOMAIN + user.getString(Profiles.COLUMN_NAME_MUGSHOT));
+				
 				values.put(Profiles.COLUMN_NAME_BIO, profile.getString(Profiles.COLUMN_NAME_BIO));
 				values.put(Profiles.COLUMN_NAME_NAME, profile.getString(Profiles.COLUMN_NAME_NAME));
 				values.put(Profiles.COLUMN_NAME_TRACKS, profile.getInt(Profiles.COLUMN_NAME_TRACKS));
@@ -227,5 +241,13 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
         }
     }
     
+    private static boolean isValidUrl(String url) {
+    	try {
+    		URL u = new URL(url);
+    	} catch(MalformedURLException e) {
+    		return false;
+    	}
+    	return true;
+    }
 
 }

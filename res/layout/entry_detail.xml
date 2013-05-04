@@ -228,11 +228,11 @@
                 android:layout_toRightOf="@id/entry_favourite"
                 android:layout_marginLeft="20dp"
                 android:layout_marginRight="@dimen/entry_margin_left_right"
-                android:alpha="0.25"
+                android:alpha="0.1"
                 android:background="@null"
                 android:contentDescription="delete"
-                android:visibility="visible"
-                android:src="@drawable/ic_action__down_outlined"
+                android:visibility="invisible"
+                android:src="@drawable/ic_action_delete"
                 tools:ignore="HardcodedText" />
 
             <ImageButton

@@ -153,8 +153,8 @@ public class Sampler {
 						if (mSamplesRead > 0 && AudioRecord.ERROR_INVALID_OPERATION != mSamplesRead) {
 							
 							// Process audio
-							gate.process(mSamplesRead, Sampler.buffer);
-			                compressor.process(mSamplesRead, Sampler.buffer);
+							//gate.process(mSamplesRead, Sampler.buffer);
+			                //compressor.process(mSamplesRead, Sampler.buffer);
 			                
 			                // Write .wav compatible byte stream
 							try {

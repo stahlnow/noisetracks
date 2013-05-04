@@ -111,7 +111,6 @@ public class NoisetracksProvider extends ContentProvider {
     // Handle to a new DatabaseHelper.
     private DatabaseHelper mOpenHelper;
 
-
     /**
      * A block that instantiates and sets static objects
      */
@@ -258,7 +257,7 @@ public class NoisetracksProvider extends ContentProvider {
        // Creates a new helper object. Note that the database itself isn't opened until
        // something tries to access it, and it's only created if it doesn't already exist.
        mOpenHelper = new DatabaseHelper(getContext());
-
+       
        // Assumes that any failures will be reported by a thrown exception.
        return true;
    }
