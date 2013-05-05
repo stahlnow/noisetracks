@@ -43,4 +43,7 @@
     <!-- Message shown in dialog to prompt the user for their password -->
     <string name="login_activity_loginfail_text_pwmissing">Type the password for this account.</string>
     
+    <!-- LocationActivity -->
+    <string name="set_location">Tap the map to set the location.</string>
+        
 </resources>

@@ -164,7 +164,7 @@ public class RecordingActivity extends SherlockActivity implements
 		}
 		
 		if (mMyLocation != null) {
-			mMyLocation.cancelTimer();
+			mMyLocation.stop();
 		}
 		
 		finish();

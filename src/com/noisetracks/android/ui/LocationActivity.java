@@ -10,21 +10,26 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.view.MenuItem;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.GoogleMap.OnMapClickListener;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.noisetracks.android.R;
 import com.noisetracks.android.client.UploadTask;
 import com.noisetracks.android.helper.MyLocation;
 import com.noisetracks.android.helper.MyLocation.LocationResult;
 import com.noisetracks.android.provider.NoisetracksContract.Entries;
 
-public class LocationActivity extends SherlockFragmentActivity implements LocationListener {
+public class LocationActivity extends SherlockFragmentActivity implements LocationListener, OnMapClickListener {
 
 	private static final String TAG = "LocationActivity";
 	
@@ -32,6 +37,7 @@ public class LocationActivity extends SherlockFragmentActivity implements Locati
 	private GoogleMap mMap;
 	private Uri mEntry; 											// uri to entry
 	private MyLocation mMyLocation = new MyLocation();
+	private Marker mMarker;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -58,12 +64,21 @@ public class LocationActivity extends SherlockFragmentActivity implements Locati
 				float lng = c.getFloat(c.getColumnIndex(Entries.COLUMN_NAME_LONGITUDE));
 				if (lat == 0.0 && lng == 0.0) {
 					// Start looking for location fix
-					mMyLocation.getLocation(this, locationResult);
+					if (!mMyLocation.getLocation(this, locationResult)) {
+						Toast.makeText(mContext, "Could not get location", Toast.LENGTH_SHORT).show();
+					}
 				} else {
 					Location l = new Location("");
 					l.setLatitude(lat);
 					l.setLongitude(lng);
-					onLocationChanged(l); // center map on location
+					if (mMap != null) {
+						if (mMarker == null) {
+							mMarker = mMap.addMarker(new MarkerOptions()
+					        .position(new LatLng(lat, lng))
+					        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+						}
+					}
+					onLocationChanged(l); // center map on location and add marker
 				}
 				c.close();
 			}
@@ -81,7 +96,7 @@ public class LocationActivity extends SherlockFragmentActivity implements Locati
 		super.onPause();
 		
 		if (mMyLocation != null) {
-			mMyLocation.cancelTimer();
+			mMyLocation.stop();
 		}
 	}
 	
@@ -91,19 +106,30 @@ public class LocationActivity extends SherlockFragmentActivity implements Locati
 	 */
 	public void post(View view) {
 		
-		Cursor c = mContext.getContentResolver().query(mEntry, null, null, null, null);
-		if (c != null) {
-			if (c.moveToFirst()) {
-		        ContentValues cv = new ContentValues();
-		        cv.put(Entries.COLUMN_NAME_TYPE, Entries.TYPE.UPLOADING.ordinal());
-		        mContext.getContentResolver().update(mEntry, cv, null, null);
-		        
-		        c.close();
+		if (mMarker != null) { 
+			if (mMarker.getPosition().latitude == 0.0 && mMarker.getPosition().longitude == 0.0) {
+				Toast.makeText(mContext, getString(R.string.set_location), Toast.LENGTH_SHORT).show();
 			}
+			
+			else {
+				Cursor c = mContext.getContentResolver().query(mEntry, null, null, null, null);
+				if (c != null) {
+					if (c.moveToFirst()) {
+				        ContentValues cv = new ContentValues();
+				        cv.put(Entries.COLUMN_NAME_LATITUDE, mMarker.getPosition().latitude);
+				        cv.put(Entries.COLUMN_NAME_LONGITUDE, mMarker.getPosition().longitude);
+				        cv.put(Entries.COLUMN_NAME_TYPE, Entries.TYPE.UPLOADING.ordinal());
+				        mContext.getContentResolver().update(mEntry, cv, null, null);
+				        
+				        c.close();
+					}
+				}
+				new UploadTask(this).execute(mEntry);
+				finish();
+			}
+		} else {
+			Toast.makeText(mContext, getString(R.string.set_location), Toast.LENGTH_SHORT).show();
 		}
-		
-		new UploadTask(this).execute(mEntry);
-		finish();
 	}
 	
 	/**
@@ -122,18 +148,6 @@ public class LocationActivity extends SherlockFragmentActivity implements Locati
 	private LocationResult locationResult = new LocationResult() {
 	    @Override
 	    public void gotLocation(Location location) {
-	    	Cursor c = mContext.getContentResolver().query(mEntry, null, null, null, null);
-			if (c != null) {
-				if (c.moveToFirst()) {
-			        ContentValues cv = new ContentValues();
-			        cv.put(Entries.COLUMN_NAME_LATITUDE, location.getLatitude());
-			        cv.put(Entries.COLUMN_NAME_LONGITUDE, location.getLongitude());
-			        int r = mContext.getContentResolver().update(mEntry, cv, null, null);
-			        if (r != 0) {
-			        	Log.v(TAG, "Entry updated with location");
-			        }
-				}
-			}
 			onLocationChanged(location);
 	    }
 	};
@@ -154,6 +168,7 @@ public class LocationActivity extends SherlockFragmentActivity implements Locati
 	private void setUpMap() {
 		// Enable MyLocation overlay
 		mMap.setMyLocationEnabled(true);
+		mMap.setOnMapClickListener(this);
 	}
 	
 	@Override
@@ -161,9 +176,36 @@ public class LocationActivity extends SherlockFragmentActivity implements Locati
 		Log.v(TAG, "New location fix at " + location.toString());
 		double lat = location.getLatitude();
 		double lng = location.getLongitude();
-		CameraUpdate center = CameraUpdateFactory.newLatLng(new LatLng(lat,lng));
+		LatLng l = new LatLng(lat, lng);
+		
+		CameraUpdate center = CameraUpdateFactory.newLatLng(l);
 		mMap.moveCamera(center);
 		mMap.animateCamera(CameraUpdateFactory.zoomTo(18.0f));
+	}
+	
+	@Override
+    public void onMapClick(LatLng point) {
+		
+		if (mMarker == null) {
+			mMarker = mMap.addMarker(new MarkerOptions()
+		       .position(point)
+		       .title(Double.toString(point.latitude) + ", " + Double.toString(point.longitude))
+		       .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+		} else {
+	        mMarker.setPosition(point);
+	        mMarker.setTitle(Double.toString(point.latitude) + ", " + Double.toString(point.longitude));
+		}
+		
+        Cursor c = mContext.getContentResolver().query(mEntry, null, null, null, null);
+		if (c != null) {
+			if (c.moveToFirst()) {
+		        ContentValues cv = new ContentValues();
+		        cv.put(Entries.COLUMN_NAME_LATITUDE, point.latitude);
+		        cv.put(Entries.COLUMN_NAME_LONGITUDE, point.longitude);
+		        mContext.getContentResolver().update(mEntry, cv, null, null);
+		        c.close();
+			}
+		}
 	}
 
 	@Override

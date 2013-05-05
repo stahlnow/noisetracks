@@ -51,14 +51,22 @@ public class TrackingService extends Service {
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.i(TAG, "Started tracking.");
-		// Start looking for location		
-		mMyLocation.getLocation(mContext, onLocationResult);
+		startTracking();
 		return Service.START_STICKY;
+	}
+	
+	private void startTracking() {
+		// Start looking for location		
+		if (!mMyLocation.getLocation(mContext, onLocationResult))
+			stopTrackingService();	// if no location provider was found, stop the service
 	}
 
 	private LocationResult onLocationResult = new LocationResult() {
 	    @Override
 	    public void gotLocation(final Location location) {	
+	    	
+	    	mMyLocation.stop(); // stop looking for location
+	    	
 	    	// Create new entry
 			ContentValues values = new ContentValues();
 			values.put(Entries.COLUMN_NAME_LATITUDE, location.getLatitude());
@@ -123,6 +131,7 @@ public class TrackingService extends Service {
 	};
 	
 	private void stopTrackingService() {
+		mMyLocation.stop(); // stop looking for location
 		stopSelf();
 		Log.i(TAG, "Stopped tracking.");
 	}

@@ -12,7 +12,7 @@
         android:id="@+id/location_map"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="0.20"
+        android:layout_weight="0.13"
         class="com.google.android.gms.maps.SupportMapFragment" />
 
     <RelativeLayout
@@ -45,6 +45,15 @@
             android:background="@drawable/btn_default_grey_holo_light"
             android:onClick="post"
             android:text="Post" />
+
+        <TextView
+            android:id="@+id/textView1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/rec_back"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="16dp"
+            android:text="@string/set_location" />
 
     </RelativeLayout>
 
