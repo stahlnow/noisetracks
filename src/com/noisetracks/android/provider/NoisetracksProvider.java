@@ -543,16 +543,6 @@ public class NoisetracksProvider extends ContentProvider {
      */
     @Override
     public int delete(Uri uri, String where, String[] whereArgs) {
-
-    	String filename = "";
-    	Cursor c = query(uri, null, null, null, null);
-		if (c != null) {
-			if (c.moveToFirst()) {
-				filename = c.getString(c.getColumnIndex(Entries.COLUMN_NAME_FILENAME));
-			}
-			c.close();
-		}
-    	
     	
         // Opens the database object in "write" mode.
         SQLiteDatabase db = mOpenHelper.getWritableDatabase();
@@ -577,6 +567,17 @@ public class NoisetracksProvider extends ContentProvider {
                 // incoming data, but modifies the where clause to restrict it to the
                 // particular entry ID.
             case ENTRY_ID:
+            	
+            	// preserve the filename, so we can delete eventual local wav file
+            	String filename = "";
+            	Cursor c = query(uri, null, null, null, null);
+        		if (c != null) {
+        			if (c.moveToFirst()) {
+        				filename = c.getString(c.getColumnIndex(Entries.COLUMN_NAME_FILENAME));
+        			}
+        			c.close();
+        		}
+        		
                 /*
                  * Starts a final WHERE clause by restricting it to the
                  * desired entry ID.
@@ -600,6 +601,17 @@ public class NoisetracksProvider extends ContentProvider {
                     finalWhere,                // The final WHERE clause
                     whereArgs                  // The incoming where clause values.
                 );
+                
+                if (count > 0) {
+            		File file = new File(filename);
+                    if (file.exists()) {
+                    	boolean d = file.delete();
+                    	if (d) {
+                    		Log.v(TAG, "Removed file " + file.getName());
+                    	}
+                    }
+                }
+                
                 break;
 
             // If the incoming pattern is invalid, throws an exception.
@@ -612,15 +624,6 @@ public class NoisetracksProvider extends ContentProvider {
          * and observers that have registered themselves for the provider are notified.
          */
         getContext().getContentResolver().notifyChange(uri, null, false);
-        
-        File file = new File(filename);
-        if (file.exists()) {
-        	boolean d = file.delete();
-        	if (d) {
-        		Log.v(TAG, "Removed file " + file.getName());
-        	}
-        }
-        
 
         // Returns the number of rows deleted.
         return count;
@@ -736,7 +739,7 @@ public class NoisetracksProvider extends ContentProvider {
          * that the incoming URI changed. The object passes this along to the resolver framework,
          * and observers that have registered themselves for the provider are notified.
          */
-        getContext().getContentResolver().notifyChange(uri, null, true);
+        getContext().getContentResolver().notifyChange(uri, null, false);
 
         // Returns the number of rows updated.
         return count;

@@ -202,6 +202,7 @@
                 android:layout_marginLeft="@dimen/entry_margin_left_right"
                 android:alpha="0.25"
                 android:background="@null"
+                android:visibility="invisible"
                 android:contentDescription="download"
                 android:orientation="vertical"
                 android:src="@drawable/ic_action_download"
@@ -217,6 +218,7 @@
                 android:focusable="false"
                 android:focusableInTouchMode="false"
                 android:orientation="vertical"
+                android:visibility="invisible"
                 android:textOff=""
                 android:textOn=""
                 tools:ignore="HardcodedText" />
@@ -243,6 +245,7 @@
                 android:layout_marginRight="@dimen/entry_margin_left_right"
                 android:alpha="0.25"
                 android:background="@null"
+                android:visibility="invisible"
                 android:contentDescription="share"
                 android:src="@drawable/ic_action_share"
                 tools:ignore="HardcodedText" />

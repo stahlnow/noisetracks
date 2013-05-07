@@ -111,14 +111,18 @@ public class RecordingActivity extends SherlockActivity implements
 	 */
 	public void play(View view) {
 		
-		if (mPlayer.isPlaying()) {
-			mPositionHandler.removeCallbacks(updatePositionRunnable);
-			mPlayer.pause();
-			mBtnPlay.setImageResource(R.drawable.av_play);
-		} else {
-			mPlayer.start();
-			mBtnPlay.setImageResource(R.drawable.av_pause);
-			updatePosition();
+		try {
+			if (mPlayer.isPlaying()) {
+				mPositionHandler.removeCallbacks(updatePositionRunnable);
+				mPlayer.pause();
+				mBtnPlay.setImageResource(R.drawable.av_play);
+			} else {
+				mPlayer.start();
+				mBtnPlay.setImageResource(R.drawable.av_pause);
+				updatePosition();
+			}
+		} catch (IllegalStateException e) {
+			Log.e(TAG, "play: " + e.toString());
 		}
 		
 	}
@@ -282,24 +286,21 @@ public class RecordingActivity extends SherlockActivity implements
 				// Set media url
 				try {
 					mPlayer.setDataSource(filename);
+					// Prepare buffer and start playback
+					mPlayer.prepareAsync();
+					
 				} catch (IllegalArgumentException e) {
-					Toast.makeText(this, R.string.player_error + "Stream not found.",
-							Toast.LENGTH_SHORT).show();
+					Log.e(TAG, "after setDataSource: " + e.toString());
 				} catch (SecurityException e) {
-					Toast.makeText(this, R.string.player_error + "Stream not found.",
-							Toast.LENGTH_SHORT).show();
+					Log.e(TAG, "after setDataSource: " + e.toString());
 				} catch (IllegalStateException e) {
-					Toast.makeText(this, R.string.player_error + "Stream not found.",
-							Toast.LENGTH_SHORT).show();
+					Log.e(TAG, "after setDataSource: " + e.toString());
 				} catch (IOException e) {
-					Toast.makeText(this, R.string.player_error + "Stream not found.",
-							Toast.LENGTH_SHORT).show();
+					Log.e(TAG, "after setDataSource: " + e.toString());
 				}
-				// Prepare buffer and start playback
-				mPlayer.prepareAsync();
 				
+				c.close();
 			}
-			c.close();
 		}
 	}
 
@@ -362,16 +363,20 @@ public class RecordingActivity extends SherlockActivity implements
 		mBtnDelete.setEnabled(true);
 		mBtnNext.setEnabled(true);
 		
-		if (!player.isPlaying()) {
-			player.start();
-			mBtnPlay.setImageResource(R.drawable.av_pause);
-			try {
-				mSeekBarTop.setMax(player.getDuration());
-				mSeekBarBottom.setMax(player.getDuration());
-				updatePosition();
-			} catch (NullPointerException e) {
-
+		try {
+			if (!player.isPlaying()) {
+				player.start();
+				mBtnPlay.setImageResource(R.drawable.av_pause);
+				try {
+					mSeekBarTop.setMax(player.getDuration());
+					mSeekBarBottom.setMax(player.getDuration());
+					updatePosition();
+				} catch (NullPointerException e) {
+	
+				}
 			}
+		} catch (IllegalStateException e) {
+			Log.e(TAG, "onPrepared: " + e.toString());
 		}
 	}
 
@@ -399,14 +404,25 @@ public class RecordingActivity extends SherlockActivity implements
 
 	@Override
 	public boolean onError(MediaPlayer mp, int what, int extra) {
+		Log.e(TAG, "onError: " + what + "/" + extra);
+		if (what == -38) {	 // -38 seems not to be documented anywhere
+			mPositionHandler.removeCallbacks(updatePositionRunnable);
+			mPlayer.reset();
+			Toast.makeText(this, "Tower to Houston: we lost your file.", Toast.LENGTH_SHORT).show();
+		}
 		return false;
 	}
 
 	@Override
 	public void onSeekComplete(MediaPlayer mp) {
-		if (!mPlayer.isPlaying()) {
-			mPlayer.start();
+		try {
+			if (!mPlayer.isPlaying()) {
+				mPlayer.start();
+			}
+		} catch (IllegalStateException e) {
+			Log.e(TAG, "onSeekComplete: " + e.toString());
 		}
+		
 	}
 	
 	@Override

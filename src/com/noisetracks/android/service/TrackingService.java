@@ -56,9 +56,19 @@ public class TrackingService extends Service {
 	}
 	
 	private void startTracking() {
+		
+		
+		/*
+		 * DISABLED FOR NOW (TODO)
+		 */
+		stopTrackingService();
+		
+		
+		/*
 		// Start looking for location		
 		if (!mMyLocation.getLocation(mContext, onLocationResult))
 			stopTrackingService();	// if no location provider was found, stop the service
+		*/	
 	}
 
 	private LocationResult onLocationResult = new LocationResult() {

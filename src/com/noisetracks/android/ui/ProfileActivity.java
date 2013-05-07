@@ -1,5 +1,6 @@
 package com.noisetracks.android.ui;
 
+import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.app.SherlockListFragment;
 import com.actionbarsherlock.view.MenuItem;
@@ -48,7 +49,9 @@ public class ProfileActivity extends SherlockFragmentActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+		
+		ActionBar actionBar = getSupportActionBar();
+	    actionBar.setDisplayHomeAsUpEnabled(true);
 		
 		FragmentManager fm = getSupportFragmentManager();
 
@@ -197,11 +200,13 @@ public class ProfileActivity extends SherlockFragmentActivity {
                     false  // mugshot is not clickable
                     );
             setListAdapter(mEntryAdapter);
+           
+            String username = getArguments().getString("username");
             
             // Prepare and initialize the sql loader for user entries
             Bundle argsEntriesSQL = new Bundle();
             argsEntriesSQL.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_ENTRY_PROJECTION);
-            String username = getArguments().getString("username");
+           
             if (AppSettings.getUsername(getActivity()).equals(username)) {  // if it's the users own entries, load also 'recorded' entries
             	argsEntriesSQL.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.EntriesUser(true, username));
             } else {
@@ -211,7 +216,6 @@ public class ProfileActivity extends SherlockFragmentActivity {
             SQLLoaderCallbacks sqlentries = new SQLLoaderCallbacks(getActivity(), this);
             getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_SQL_LOADER_PROFILE, argsEntriesSQL, sqlentries);
             
-            
             // Prepare and initialize the sql loader for user profile data
             Bundle argsProfileSQL = new Bundle();
             argsProfileSQL.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_PROFILE_PROJECTION);
@@ -220,6 +224,18 @@ public class ProfileActivity extends SherlockFragmentActivity {
             getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.PROFILE_SQL_LOADER, argsProfileSQL, sqlprofile);	
             
             
+            // Prepare and initialize REST loader for profile, if not user profile
+            if (!AppSettings.getUsername(getActivity()).equals(username)) {
+	            Bundle paramsProfile = new Bundle();
+	            paramsProfile.putString("format", "json");				// we need json format
+	            paramsProfile.putString("user__username", getArguments().getString("username"));	// get profile for specific user
+	        	Bundle argsProfileREST = new Bundle();
+	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_PROFILES);
+	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, paramsProfile);
+	        	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.PROFILE_REST_LOADER, argsProfileREST, r);
+            }
+        	
+            /*
             // Prepare and initialize REST loader for entries
             Bundle params = new Bundle();
 	        params.putString("format", "json");				// we need json format
@@ -230,7 +246,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
         	argsEntriesREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
         	argsEntriesREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
     		getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntriesREST, r);
-    		
+    		*/
             
 	        // Set a listener to be invoked when the list should be refreshed.
 	        mPullToRefreshView.setOnRefreshListener(new OnRefreshListener<ListView>() {
@@ -245,6 +261,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, paramsProfile);
 		        	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.PROFILE_REST_LOADER, argsProfileREST, r);
 	            	
+		        	/*
 	            	// Call api
 	            	if (!mEntryAdapter.isEmpty()) { // if list not empty
 	            		Cursor cursor = (Cursor) getListAdapter().getItem(0); // get latest entry
@@ -260,6 +277,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_NEWER_REST_LOADER, argsEntriesNewer, r);
 	            	} else {
+	            	*/
 	            		Bundle params = new Bundle();
 		    	        params.putString("format", "json");				// we need json format
 		    	        params.putString("order_by", "-created");		// newest first
@@ -268,8 +286,8 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		            	Bundle argsEntries = new Bundle();
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
-	            	}
+		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_USER_REST_LOADER, argsEntries, r);
+	            	//}
 	            }
 	        });
 	        

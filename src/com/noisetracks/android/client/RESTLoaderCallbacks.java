@@ -16,6 +16,8 @@ import com.noisetracks.android.ui.EntryActivity;
 import com.noisetracks.android.ui.EntryActivity.EntryDetailFragment;
 import com.noisetracks.android.ui.FeedActivity.FeedListFragment;
 import com.noisetracks.android.ui.ProfileActivity.ProfileListFragment;
+import com.noisetracks.android.utility.AppSettings;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.net.Uri;
@@ -73,11 +75,25 @@ public final class RESTLoaderCallbacks implements LoaderCallbacks<RESTLoader.RES
 	        
 	        if (code == 200 && !json.equals("")) { // OK
 	            switch (loader.getId()) {
+	            case NoisetracksApplication.ENTRIES_USER_REST_LOADER:
+	            case NoisetracksApplication.ENTRIES_USER_NEWER_REST_LOADER:
+	            	NoisetracksApplication.getInstance().getContentResolver().delete(
+	        				Entries.CONTENT_URI,
+	        				Entries.COLUMN_NAME_TYPE + " = ? AND " + Entries.COLUMN_NAME_USERNAME + " = ?",
+	        				new String[] {Integer.toString(Entries.TYPE.DOWNLOADED.ordinal()), AppSettings.getUsername(mContext)});
+	            	addEntriesFromJSON(json);	// add entries to db
+	            	break;	            	
 	            case NoisetracksApplication.ENTRIES_REST_LOADER:
-	            case NoisetracksApplication.ENTRIES_OLDER_REST_LOADER:
 	            case NoisetracksApplication.ENTRIES_NEWER_REST_LOADER:
-	            	addEntriesFromJSON(json);	// fill list with entries
+	            	
+	            	NoisetracksApplication.getInstance().getContentResolver().delete(
+	        				Entries.CONTENT_URI,
+	        				Entries.COLUMN_NAME_TYPE + " = ?",
+	        				new String[] {Integer.toString(Entries.TYPE.DOWNLOADED.ordinal())});
+	            	addEntriesFromJSON(json);	// add entries to db
 	            	break;
+	            case NoisetracksApplication.ENTRIES_OLDER_REST_LOADER:
+	            	addEntriesFromJSON(json); // add entries, keep existing entries
 	            case NoisetracksApplication.PROFILE_REST_LOADER:
 	            	addProfilesFromJSON(json);
 	            	break;

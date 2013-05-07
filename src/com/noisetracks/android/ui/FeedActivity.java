@@ -1,5 +1,8 @@
 package com.noisetracks.android.ui;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
+import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
@@ -138,8 +141,9 @@ public class FeedActivity extends SherlockFragmentActivity {
             args.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_ENTRY_PROJECTION);
             args.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.EntriesFeed(true));
             SQLLoaderCallbacks sql = new SQLLoaderCallbacks(getActivity(), this);
-            getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_SQL_LOADER_FEED, args, sql);
+            getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_SQL_LOADER_FEED, args, sql);            
             
+            /*
             // Prepare and initialize REST loader
             Bundle params = new Bundle();
 	        params.putString("format", "json");				// we need json format
@@ -149,13 +153,14 @@ public class FeedActivity extends SherlockFragmentActivity {
         	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
         	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
         	getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
-
+        	*/
 	        
 	        // Set a listener to be invoked when the list should be refreshed.
 	        mPullToRefreshView.setOnRefreshListener(new OnRefreshListener<ListView>() {
 	            @Override
 	            public void onRefresh(PullToRefreshBase<ListView> refreshView) {
 	            	
+	            	/*
 	            	// Call api
 	            	if (!mEntryAdapter.isEmpty()) { // if list not empty
 	            		Cursor cursor = (Cursor) getListAdapter().getItem(0); // get latest entry
@@ -170,6 +175,7 @@ public class FeedActivity extends SherlockFragmentActivity {
 		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_NEWER_REST_LOADER, argsEntriesNewer, r);
 	            	} else {
+	            	*/
 	            		Bundle params = new Bundle();
 		    	        params.putString("format", "json");				// we need json format
 		    	        params.putString("order_by", "-created");		// newest first
@@ -178,7 +184,7 @@ public class FeedActivity extends SherlockFragmentActivity {
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
 		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
-	            	}
+	            	//}
 	            }
 	        });
 	        

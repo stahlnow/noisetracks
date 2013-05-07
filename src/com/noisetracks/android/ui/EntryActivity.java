@@ -52,6 +52,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.view.MenuItem;
 import com.handmark.pulltorefresh.extras.viewpager.PullToRefreshViewPager;
@@ -77,7 +78,10 @@ public class EntryActivity extends SherlockFragmentActivity implements
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+		
+		ActionBar actionBar = getSupportActionBar();
+	    actionBar.setDisplayHomeAsUpEnabled(true);
+		
 		setContentView(R.layout.entry_activity);
 
 		mPlayBtn = (ImageButton) findViewById(R.id.entry_play_pause);
@@ -156,20 +160,23 @@ public class EntryActivity extends SherlockFragmentActivity implements
 	}
 
 	@Override
-	protected void onDestroy() {
-		super.onDestroy();
+	protected void onPause() {
+		super.onPause();
 		
 		// Stop the seekbar handler from sending updates to UI
 		handler.removeCallbacks(updatePositionRunnable);
 
 		if (player != null) {
+			
 			if (player.isPlaying()) {
-				player.stop();
+				player.pause();
+			
+				if (isFinishing()) {
+					player.stop();
+					player.release();
+					Log.d(TAG, "released player.");
+				}
 			}
-			player.reset();
-			player.release();
-	
-			player = null;
 		}
 	}
 
@@ -180,12 +187,16 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		try {
 			if (player.isPlaying()) {
 				handler.removeCallbacks(updatePositionRunnable);
-				player.pause();
-				mPlayBtn.setImageResource(R.drawable.av_play);
+				try {
+					player.pause();
+					mPlayBtn.setImageResource(R.drawable.av_play);
+				} catch (IllegalStateException e) {}
 			} else {
-				player.start();
-				mPlayBtn.setImageResource(R.drawable.av_pause);
-				updatePosition();
+				try {
+					player.start();
+					mPlayBtn.setImageResource(R.drawable.av_pause);
+					updatePosition();
+				} catch (IllegalStateException e) {}
 			}
 		} catch (NullPointerException e) {
 			// oops, player is null..
@@ -227,17 +238,13 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		try {
 			player.setDataSource(mAdapter.getCursor().getString(mAdapter.getCursor().getColumnIndex(Entries.COLUMN_NAME_FILENAME)));
 		} catch (IllegalArgumentException e) {
-			Toast.makeText(this, R.string.player_error + "Stream not found.",
-					Toast.LENGTH_SHORT).show();
+			Log.w(TAG, e.toString());
 		} catch (SecurityException e) {
-			Toast.makeText(this, R.string.player_error + "Stream not found.",
-					Toast.LENGTH_SHORT).show();
+			Log.w(TAG, e.toString());
 		} catch (IllegalStateException e) {
-			Toast.makeText(this, R.string.player_error + "Stream not found.",
-					Toast.LENGTH_SHORT).show();
+			Log.w(TAG, e.toString());
 		} catch (IOException e) {
-			Toast.makeText(this, R.string.player_error + "Stream not found.",
-					Toast.LENGTH_SHORT).show();
+			Log.w(TAG, e.toString());
 		}
 
 		try {
@@ -285,6 +292,8 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			updatePosition();
 		}
 	};
+	
+	
 
 	@Override
 	public void onRefresh(PullToRefreshBase<ViewPager> refreshView) {
@@ -319,7 +328,14 @@ public class EntryActivity extends SherlockFragmentActivity implements
 	}
 
 	@Override
+	// TODO use VLC instead of poor android media player
 	public boolean onError(MediaPlayer mp, int what, int extra) {
+		Log.e(TAG, "onError: " + what + "/" + extra);
+		if (what == -38) {	 // -38 seems not to be documented anywhere
+			handler.removeCallbacks(updatePositionRunnable);
+			player.reset();
+			Toast.makeText(this, "Tower to Houston: media player is making trouble.", Toast.LENGTH_SHORT).show();
+		}
 		return false;
 	}
 

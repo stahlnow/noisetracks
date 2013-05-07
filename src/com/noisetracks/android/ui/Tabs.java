@@ -128,12 +128,14 @@ public class Tabs extends SherlockFragmentActivity implements OnTouchListener {
 		return super.onCreateOptionsMenu(menu);
 	}
 
+	/*
 	@Override
 	public boolean onPrepareOptionsMenu(Menu menu) {		
-		//menu.findItem(R.id.menu_toggle_tracking).setIcon(AppSettings.getServiceRunning(this)? R.drawable._record : R.drawable.av_stop);
 		menu.findItem(R.id.menu_toggle_tracking).setTitle(AppSettings.getServiceRunning(this)? R.string.menu_stop_tracking : R.string.menu_start_tracking);
 		return super.onPrepareOptionsMenu(menu);
 	}
+	*/
+	
 
 	
 	@Override
@@ -143,10 +145,12 @@ public class Tabs extends SherlockFragmentActivity implements OnTouchListener {
 			Intent record = new Intent(this, RecordingActivity.class);
 			startActivity(record);
 			return true;
+		/*
 		case R.id.menu_toggle_tracking:
 			NoisetracksApplication.toggleTracking(AppSettings.getServiceRunning(this), AppSettings.getTrackingInterval(this));
 			//invalidateOptionsMenu();
 			return true;
+		*/
 		case R.id.menu_settings:
 			startActivity (new Intent(this, SettingsActivity.class));
 			return true;

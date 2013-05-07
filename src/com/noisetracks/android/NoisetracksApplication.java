@@ -62,7 +62,9 @@ public class NoisetracksApplication extends Application {
 	
 	// The global REST loader ids.
 	public static final int ENTRIES_REST_LOADER = 100;
+	public static final int ENTRIES_USER_REST_LOADER = 150;
 	public static final int ENTRIES_NEWER_REST_LOADER = 200;
+	public static final int ENTRIES_USER_NEWER_REST_LOADER = 250;
 	public static final int ENTRIES_OLDER_REST_LOADER = 300;
 	public static final int PROFILE_LIST_REST_LOADER = 400;
 	public static final int PROFILE_REST_LOADER = 500;

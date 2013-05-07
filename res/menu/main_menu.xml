@@ -5,9 +5,13 @@
         android:title="@string/menu_record"
         android:checkable="true"
         android:showAsAction="always"/>
+    
+    <!-- 
     <item android:id="@+id/menu_toggle_tracking"
         android:title="@string/menu_start_tracking"
         android:showAsAction="never"/>
+     -->
+     
     <item android:id="@+id/menu_settings"
         android:title="@string/menu_settings"
         android:showAsAction="never"/>
