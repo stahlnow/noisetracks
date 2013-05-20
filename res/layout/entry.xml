@@ -36,6 +36,7 @@
             android:id="@+id/entry_mugshot"
             android:layout_width="48dip"
             android:layout_height="48dip"
+            android:visibility="invisible"
             android:contentDescription="@null" />
     </LinearLayout>
 
@@ -45,6 +46,7 @@
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/entry_mugshot_layout"
         android:layout_toRightOf="@+id/entry_mugshot_layout"
+        android:visibility="invisible"
         android:textIsSelectable="false"
         android:textSize="12sp"
         android:textStyle="bold" />

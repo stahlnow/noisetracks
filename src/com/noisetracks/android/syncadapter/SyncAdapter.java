@@ -10,19 +10,15 @@ import android.content.Context;
 import android.content.SyncResult;
 import android.os.Bundle;
 import android.util.Log;
-
 import com.noisetracks.android.NoisetracksApplication;
 import com.noisetracks.android.R;
-import com.noisetracks.android.client.RESTLoader;
-import com.noisetracks.android.client.RESTLoaderCallbacks;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
+import com.noisetracks.android.client.NoisetracksRequest;
+import com.whiterabbit.postman.ServerInteractionHelper;
+import com.whiterabbit.postman.exceptions.SendingCommandException;
+
 import org.apache.http.ParseException;
-import org.apache.http.StatusLine;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
+import org.scribe.model.Verb;
+
 import java.io.IOException;
 
 public class SyncAdapter extends AbstractThreadedSyncAdapter {
@@ -31,11 +27,14 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
     private final AccountManager mAccountManager;
     private final Context mContext;
+    
+    ServerInteractionHelper mServerHelper;
 
     public SyncAdapter(Context context, boolean autoInitialize) {
         super(context, autoInitialize);
         mContext = context;
         mAccountManager = AccountManager.get(context);
+        mServerHelper = ServerInteractionHelper.getInstance(context);
     }
 
     @Override
@@ -45,60 +44,40 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 		
 		try {
 			
+			String username;
 			String apikey;
 			
 			// use the account manager to request the credentials
 			apikey = mAccountManager.blockingGetAuthToken(
 					account, mContext.getString(R.string.AUTHTOKEN_TYPE), true); // true -> notifyAuthFailure
+			
+			username = account.name;
 
 			if (apikey != null)
 			{
-				DefaultHttpClient httpclient = new DefaultHttpClient();
-				HttpResponse response;
-				HttpEntity responseEntity;
-				StatusLine responseStatus;
-				int statusCode;
-				
-	            // Get entries from REST api.
-		    	HttpGet entries = new HttpGet();
-		    	entries.setHeader("Authorization", "ApiKey " + account.name + ":" + apikey);
-	            Bundle entriesURLParams = new Bundle();
-	            entriesURLParams.putString("format", "json");				// we need json format
-	            entriesURLParams.putString("order_by", "-created");			// newest first
-	            entriesURLParams.putString("audiofile__status", "1");		// only get entries with status = Done
-	        	RESTLoader.attachUriWithQuery(entries, NoisetracksApplication.URI_ENTRIES, entriesURLParams);
-	        	response = httpclient.execute(entries);
-	        	
-	        	responseEntity = response.getEntity();
-	        	responseStatus= response.getStatusLine();
-	        	statusCode = responseStatus != null ? responseStatus.getStatusCode() : 0;
-                
-                if (statusCode == HttpStatus.SC_OK) {
-                	String json = (responseEntity != null ? EntityUtils.toString(responseEntity) : null);
-                	if (json != null)
-                		RESTLoaderCallbacks.addEntriesFromJSON(json);
+				// get entries
+				Bundle params = new Bundle();
+    	        params.putString("format", "json");				// we need json format
+    	        params.putString("order_by", "-created");		// newest first
+    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
+            	
+    	        NoisetracksRequest request = new NoisetracksRequest(Verb.GET, NoisetracksApplication.URI_ENTRIES, params);
+                try {
+                    mServerHelper.sendRestAction(mContext, "SyncAdapter Entries", request);
+                } catch (SendingCommandException e) {
+                    Log.e(TAG, e.toString());
                 }
                 
-                
-                // Get profile from REST api.
-		    	HttpGet profile = new HttpGet();
-		    	profile.setHeader("Authorization", "ApiKey " + account.name + ":" + apikey);
-	            Bundle profileURLParams = new Bundle();
-	            entriesURLParams.putString("format", "json");					// we need json format
-	            entriesURLParams.putString("user__username", account.name);		// username
-	        	RESTLoader.attachUriWithQuery(profile, NoisetracksApplication.URI_PROFILES, profileURLParams);
-	        	response = httpclient.execute(profile);
-	        	
-	        	responseEntity = response.getEntity();
-                responseStatus = response.getStatusLine();
-                statusCode     = responseStatus != null ? responseStatus.getStatusCode() : 0;
-                
-                if (statusCode == HttpStatus.SC_OK) {
-                	String json = (responseEntity != null ? EntityUtils.toString(responseEntity) : null);
-                	if (json != null)
-                		RESTLoaderCallbacks.addProfilesFromJSON(json);
+                // get profile
+	            Bundle paramsProfile = new Bundle();
+	            params.putString("format", "json");				// we need json format
+	            params.putString("user__username", username);	// get profile for user
+	            NoisetracksRequest requestProfile = new NoisetracksRequest(Verb.GET, NoisetracksApplication.URI_PROFILES, paramsProfile);
+                try {
+                    mServerHelper.sendRestAction(mContext, "SyncAdapter Profile", requestProfile);
+                } catch (SendingCommandException se) {
+                    Log.e(TAG, se.toString());
                 }
-	        	
 			}
 				
 

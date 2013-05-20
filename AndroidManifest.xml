@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest package="com.noisetracks.android"
     android:versionCode="1"
-    android:versionName="1.1" xmlns:android="http://schemas.android.com/apk/res/android">
+    android:versionName="1.2" xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-sdk android:minSdkVersion="8" android:targetSdkVersion="17"/>
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -42,6 +42,7 @@
             android:exported="false">
             <grant-uri-permission android:pathPattern=".*" />
         </provider>
+         
         <!-- The authenticator service: manage Noisetracks accounts -->
         <service android:name=".authenticator.AuthenticationService"
             android:exported="false">
@@ -69,6 +70,16 @@
         
         <!-- The tracking receiver/alarm -->
         <receiver android:name=".receivers.TrackingReceiver" />
+        
+        <!-- Postman services -->
+        <service android:name="com.whiterabbit.postman.InteractionService"
+            android:enabled="true" />
+        <service android:name="com.whiterabbit.postman.InteractionService1"
+            android:enabled="true" />
+        <service android:name="com.whiterabbit.postman.InteractionService2"
+            android:enabled="true" />
+        <service android:name="com.whiterabbit.postman.InteractionService3"
+            android:enabled="true" />
         
         <!-- Launcher Activity -->
         <activity

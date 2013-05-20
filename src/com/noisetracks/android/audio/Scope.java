@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.EmbossMaskFilter;
-import android.graphics.MaskFilter;
 import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -63,6 +62,7 @@ public class Scope extends SurfaceView implements SurfaceHolder.Callback {
 
 	public class DrawThread extends Thread {
 
+		@SuppressWarnings("unused")
 		private String TAG = "Scope DrawThread";
 		
 		private SurfaceHolder mSurfaceHolder;
@@ -73,12 +73,7 @@ public class Scope extends SurfaceView implements SurfaceHolder.Callback {
 		
 		private short[] mBuffer;
 		
-		private int mCanvasWidth = 1;
-		private int mCanvasHeight = 1;
-		
 		private Paint mLinePaint;
-		private MaskFilter mEmboss;
-		
 		public DrawThread(SurfaceHolder holder, Context context) {
 			mSurfaceHolder = holder;
 			//mSurfaceHolder.setFormat(PixelFormat.TRANSPARENT);
@@ -97,8 +92,7 @@ public class Scope extends SurfaceView implements SurfaceHolder.Callback {
 			mBackPaint.setARGB(255, 238, 238, 238);
 			mBuffer = new short[2048];
 			
-			mEmboss = new EmbossMaskFilter(new float[] { 1, 1, 1 }, 0.4f, 6, 3.5f);
-			//mLinePaint.setMaskFilter(mEmboss);
+			new EmbossMaskFilter(new float[] { 1, 1, 1 }, 0.4f, 6, 3.5f);
 			
 			mBackgroundImage = Bitmap.createBitmap(
 					1,
@@ -184,8 +178,6 @@ public class Scope extends SurfaceView implements SurfaceHolder.Callback {
 
 		public void setSurfaceSize(int width, int height) {
 			synchronized (mSurfaceHolder) {
-				mCanvasWidth = width;
-				mCanvasHeight = height;
 				mBackgroundImage = Bitmap.createScaledBitmap(mBackgroundImage, width, height, true);
 				return;
 			}

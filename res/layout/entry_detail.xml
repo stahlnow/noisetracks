@@ -50,6 +50,7 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:contentDescription="mugshot"
+                android:visibility="gone"
                 android:src="@drawable/_mugshot_dummy"
                 tools:ignore="HardcodedText" />
         </LinearLayout>
@@ -60,10 +61,11 @@
             android:layout_height="wrap_content"
             android:layout_alignTop="@+id/entry_mugshot_layout"
             android:layout_toRightOf="@+id/entry_mugshot_layout"
+            android:visibility="gone"
             android:lines="3"
             android:maxLines="3"
             android:text="Username"
-            android:textSize="12dp"
+            android:textSize="12sp"
             tools:ignore="HardcodedText" />
     </RelativeLayout>
 

@@ -2,7 +2,6 @@ package com.noisetracks.android.ui;
 
 import java.util.ArrayList;
 
-import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -34,6 +33,7 @@ import com.noisetracks.android.utility.SettingsActivity;
 
 public class Tabs extends SherlockFragmentActivity implements OnTouchListener {
 
+	@SuppressWarnings("unused")
 	private static final String TAG = "Tabs";
 	
 	TabHost mTabHost;
@@ -62,12 +62,20 @@ public class Tabs extends SherlockFragmentActivity implements OnTouchListener {
 		mTabsAdapter = new TabsAdapter(this, mTabHost, mViewPager);
 		// add explore tab
 		mTabsAdapter.addTab(mTabHost.newTabSpec("explore").setIndicator("Explore"), FeedActivity.FeedListFragment.class, null);
-		// add profile tab (Me)
-		String username = AccountManager.get(this).getAccountsByType(getString(R.string.ACCOUNT_TYPE))[0].name;
-		AppSettings.setUsername(this, username); // TODO: move somewhere else (ie after login)
-		Bundle profile_args = new Bundle();
-		profile_args.putString("username", username);
-		mTabsAdapter.addTab(mTabHost.newTabSpec("profile").setIndicator("Me"), ProfileActivity.ProfileListFragment.class, profile_args);
+		// add profile tab (Me), make sure username is set (if user deletes app data manually, this can fail and we need to logout)
+		if (AppSettings.getUsername(this) != null) {
+			Bundle profile_args = new Bundle();
+			profile_args.putString("username", AppSettings.getUsername(this));
+			mTabsAdapter.addTab(mTabHost.newTabSpec("profile").setIndicator("Me"), ProfileActivity.ProfileListFragment.class, profile_args);
+		} else {
+			NoisetracksApplication.logout();
+			
+			Intent intent = new Intent(getApplicationContext(), Noisetracks.class);
+			intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			startActivity(intent);
+			finish();
+			return;
+		}
 
 		// ridiculously complicated method to set tab indicator and tab text colors.
 		// set on touch listener

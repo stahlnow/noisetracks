@@ -3,13 +3,15 @@ package com.noisetracks.android.ui;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-
 import com.actionbarsherlock.app.SherlockActivity;
 import com.noisetracks.android.authenticator.AuthenticationService;
 import com.noisetracks.android.authenticator.AuthenticateActivity;
 
 
 public class Noisetracks extends SherlockActivity {
+	
+	@SuppressWarnings("unused")
+	private static final String TAG = "Noisetracks";
 
 	static final int LOGIN_REQUEST = 0;
 	
@@ -28,8 +30,7 @@ public class Noisetracks extends SherlockActivity {
 		}
 		
 		intent = new Intent(Noisetracks.this, AuthenticateActivity.class);
-		startActivityForResult(intent, LOGIN_REQUEST);	
-		
+		startActivityForResult(intent, LOGIN_REQUEST);
 		
     }
    
@@ -53,6 +54,5 @@ public class Noisetracks extends SherlockActivity {
 	public void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 	}
-    
     
 }

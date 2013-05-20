@@ -1,6 +1,5 @@
 package com.noisetracks.android.audio;
 
-import com.noisetracks.android.NoisetracksApplication;
 import com.noisetracks.android.helper.Helper;
 
 import android.content.Context;
@@ -64,6 +63,7 @@ public class WaveForm extends SurfaceView implements SurfaceHolder.Callback {
 
 	public class DrawThread extends Thread {
 
+		@SuppressWarnings("unused")
 		private String TAG = "WaveForm DrawThread";
 		
 		private SurfaceHolder mSurfaceHolder;

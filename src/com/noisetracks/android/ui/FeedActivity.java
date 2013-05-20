@@ -1,12 +1,9 @@
 package com.noisetracks.android.ui;
 
-import android.accounts.Account;
-import android.accounts.AccountManager;
-import android.content.ContentResolver;
-import android.content.ContentUris;
+import org.scribe.model.Verb;
+
 import android.content.Intent;
 import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
 
 import android.support.v4.app.FragmentManager;
@@ -14,17 +11,19 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AnimationUtils;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import com.noisetracks.android.NoisetracksApplication;
 import com.noisetracks.android.R;
-import com.noisetracks.android.client.RESTLoaderCallbacks;
+import com.noisetracks.android.client.NoisetracksRequest;
 import com.noisetracks.android.client.SQLLoaderCallbacks;
 import com.noisetracks.android.helper.ProgressWheel;
 import com.noisetracks.android.provider.NoisetracksContract.Entries;
 import com.noisetracks.android.provider.NoisetracksProvider;
+import com.whiterabbit.postman.ServerInteractionHelper;
+import com.whiterabbit.postman.ServerInteractionResponseInterface;
+import com.whiterabbit.postman.exceptions.SendingCommandException;
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.app.SherlockListFragment;
 import com.handmark.pulltorefresh.library.PullToRefreshBase;
@@ -35,6 +34,7 @@ import com.handmark.pulltorefresh.library.PullToRefreshListView;
 
 public class FeedActivity extends SherlockFragmentActivity {
 	
+	@SuppressWarnings("unused")
 	private static final String TAG = "FeedActivity";
 	
     @Override
@@ -51,21 +51,22 @@ public class FeedActivity extends SherlockFragmentActivity {
         
     }
 
-    public static class FeedListFragment extends SherlockListFragment 
+    public static class FeedListFragment extends SherlockListFragment implements ServerInteractionResponseInterface 
     {
     	private static final String TAG = "FeedListFragment";
-    	private RESTLoaderCallbacks r;
+    	
+    	private static final int MAX_NUMBER_OF_ENTRIES_SHOWN = 500;
+    	
+    	ServerInteractionHelper mServerHelper;
     	
         private EntryAdapter mEntryAdapter;
-        private PullToRefreshListView mPullToRefreshView;
-        private boolean mListShown;
+        private static PullToRefreshListView mPullToRefreshView;
         private TextView mEmpty;
-        private View mProgressContainer;
-        private ProgressWheel mProgressWheel;
-        private View mListContainer;
         private View mHeader;
         private View mFooter;
         private TextView mPadding;
+        private static ProgressWheel mProgressWheelLoadingOlderEntries;
+        private TextView mNoMoreEntries;
         
 		@Override
 		public void onDestroy() {
@@ -75,26 +76,42 @@ public class FeedActivity extends SherlockFragmentActivity {
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 			
+			//Log.d(TAG, "onCreateView");
+			
 		    View root = inflater.inflate(R.layout.feed_activity, container, false);
 		    
-		    mProgressContainer = root.findViewById(R.id.entries_progressContainer);
-		    mProgressWheel = (ProgressWheel) root.findViewById(R.id.pw_spinner);
-		    mProgressWheel.spin();
-		    
-		    mListContainer =  root.findViewById(R.id.entries_listContainer);
 		    mPullToRefreshView = (PullToRefreshListView) root.findViewById(R.id.entries_list);
 		    mEmpty = (TextView)root.findViewById(R.id.entries_empty);
+		    mProgressWheelLoadingOlderEntries = (ProgressWheel)root.findViewById(R.id.loading_older_entries_progress_bar);
+		    mNoMoreEntries = (TextView)root.findViewById(R.id.no_more_entries_to_load);
 		    
-		    mListShown = true;
+		    mServerHelper = ServerInteractionHelper.getInstance(getActivity());
 		    
 		    return root;
 		}
 		
 		@Override
+		public void onResume() {
+			//Log.d(TAG, "onResume");
+			mServerHelper.registerEventListener(this, getActivity());
+			super.onResume();
+			
+			mProgressWheelLoadingOlderEntries.setVisibility(View.GONE);
+		}
+		
+		@Override
+		public void onPause() {
+			//Log.d(TAG, "onPause");
+			mServerHelper.unregisterEventListener(this, getActivity());
+			super.onPause();
+		}
+		
+		@Override
 		public void onActivityCreated(Bundle savedInstanceState) {
+			
+			//Log.d(TAG, "onActivityCreated");
+			
 		    super.onActivityCreated(savedInstanceState);
-		    
-		    r = new RESTLoaderCallbacks(getActivity(), this);
 		    
 		    // add header padding
 		    mPadding = new TextView(this.getActivity());
@@ -133,67 +150,48 @@ public class FeedActivity extends SherlockFragmentActivity {
                     ); 
             setListAdapter(mEntryAdapter);
             
-            // Start out with a progress indicator.
-            setListShown(false);
-
-            // Prepare the loader.  Either re-connect with an existing one, or start a new one.
+            // Load entries
             Bundle args = new Bundle();
             args.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_ENTRY_PROJECTION);
             args.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.EntriesFeed(true));
             SQLLoaderCallbacks sql = new SQLLoaderCallbacks(getActivity(), this);
-            getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_SQL_LOADER_FEED, args, sql);            
+            getActivity().getSupportLoaderManager().initLoader(SQLLoaderCallbacks.ENTRIES_SQL_LOADER_FEED, args, sql);
             
-            /*
-            // Prepare and initialize REST loader
-            Bundle params = new Bundle();
-	        params.putString("format", "json");				// we need json format
-	        params.putString("order_by", "-created");		// newest first
-	        params.putString("audiofile__status", "1");		// only get entries with status = Done
-        	Bundle argsEntries = new Bundle();
-        	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
-        	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-        	getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
-        	*/
-	        
+            mServerHelper.registerEventListener(this, getActivity());
+           
 	        // Set a listener to be invoked when the list should be refreshed.
 	        mPullToRefreshView.setOnRefreshListener(new OnRefreshListener<ListView>() {
 	            @Override
 	            public void onRefresh(PullToRefreshBase<ListView> refreshView) {
+	                
+	            	Bundle params = new Bundle();
+	    	        params.putString("format", "json");				// we need json format
+	    	        params.putString("order_by", "-created");		// newest first
+	    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
 	            	
-	            	/*
-	            	// Call api
-	            	if (!mEntryAdapter.isEmpty()) { // if list not empty
-	            		Cursor cursor = (Cursor) getListAdapter().getItem(0); // get latest entry
-		    	        String created = cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_CREATED));
-		            	Bundle params = new Bundle();
-		    	        params.putString("format", "json");				// we need json format
-		    	        params.putString("order_by", "-created");		// newest first
-		    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
+	            	// get only newer entries, if list is not empty
+	            	if (!mEntryAdapter.isEmpty()) {
+	            		Cursor c = (Cursor) getListAdapter().getItem(0); // get latest entry
+		    	        String created = c.getString(c.getColumnIndex(Entries.COLUMN_NAME_CREATED));
 		    	        params.putString("created__gt", created);		// only entries newer than first (latest) entry in list
-		            	Bundle argsEntriesNewer = new Bundle();
-		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
-		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_NEWER_REST_LOADER, argsEntriesNewer, r);
-	            	} else {
-	            	*/
-	            		Bundle params = new Bundle();
-		    	        params.putString("format", "json");				// we need json format
-		    	        params.putString("order_by", "-created");		// newest first
-		    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
-		            	Bundle argsEntries = new Bundle();
-		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
-		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntries, r);
-	            	//}
+	            	}
+	            	
+	    	        NoisetracksRequest request = new NoisetracksRequest(Verb.GET, NoisetracksApplication.URI_ENTRIES, params);
+	                try {
+	                    mServerHelper.sendRestAction(getActivity(), "Feed Entries onRefresh()", request);
+	                } catch (SendingCommandException e) {
+	                    Log.e(TAG, e.toString());
+	                }
+	            	
 	            }
 	        });
 	        
 	        
+	        // If last item is reached AND list is not empty AND less than MAX_NUMBER_OF_ENTRIES_SHOWN entries
 	        mPullToRefreshView.setOnLastItemVisibleListener(new OnLastItemVisibleListener() {
 				@Override
 				public void onLastItemVisible() {
-					
-					if (!mEntryAdapter.isEmpty()) { // if list not empty
+					if (!mEntryAdapter.isEmpty() && mEntryAdapter.getCount() <= MAX_NUMBER_OF_ENTRIES_SHOWN) { 
 						Cursor cursor = (Cursor) getListAdapter().getItem(getListAdapter().getCount()-1); // get last entry
 		    	        String created = cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_CREATED));
 		            	Bundle params = new Bundle();
@@ -201,20 +199,39 @@ public class FeedActivity extends SherlockFragmentActivity {
 		    	        params.putString("order_by", "-created");		// newest first
 		    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
 		    	        params.putString("created__lt", created);		// older entries only
-		    	        Bundle argsEntriesOlder = new Bundle();
-		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
-		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntriesOlder, r);
+		    	        NoisetracksRequest request = new NoisetracksRequest(Verb.GET, NoisetracksApplication.URI_ENTRIES, params);
+		                try {
+		                    mServerHelper.sendRestAction(getActivity(), "Feed Entries onLastItemVisible()", request);
+		                    mProgressWheelLoadingOlderEntries.stopSpinning();
+		                    mProgressWheelLoadingOlderEntries.spin();
+			            	mProgressWheelLoadingOlderEntries.setVisibility(View.VISIBLE);
+		                } catch (SendingCommandException e) {
+		                	mProgressWheelLoadingOlderEntries.stopSpinning();
+		                	mProgressWheelLoadingOlderEntries.setVisibility(View.GONE);
+		                    Log.e(TAG, e.toString());
+		                }
+	            	} else if (mEntryAdapter.getCount() >= MAX_NUMBER_OF_ENTRIES_SHOWN) {
+	            		Log.v(TAG, "Limit reached.");
+	            		mNoMoreEntries.setVisibility(View.VISIBLE);
 	            	}
-					
 				}
 			});
-			
 		}
+		
+		
     	
 		@Override
 		public void onListItemClick (ListView l, View v, int position, long id) {
 			super.onListItemClick(l, v, position, id);
+			
+			Log.v(TAG, "selected id: " + id);
+			Intent i = new Intent(getActivity().getApplicationContext(), EntryActivity.class);
+			i.putExtra(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.EntriesFeed(false));
+			i.putExtra(EntryActivity.ID, id);
+			startActivity(i);
+			
+			
+			/*
 			
 			Cursor c = (Cursor)getListView().getItemAtPosition(position);
 			
@@ -224,8 +241,6 @@ public class FeedActivity extends SherlockFragmentActivity {
 					// remove 'load more' entry
 	            	Uri lm = ContentUris.withAppendedId(Entries.CONTENT_ID_URI_BASE, id);
 	            	getActivity().getContentResolver().delete(lm, null, null);
-	            	//getActivity().getContentResolver().notifyAll();
-	            	
 	            	// load items
 					Bundle params = new Bundle(); // no params
 					Bundle argsEntries= new Bundle();
@@ -236,113 +251,85 @@ public class FeedActivity extends SherlockFragmentActivity {
 	            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntries, r);
 	            	
 				}
+				
 				// start entry activity
 				else {
+				
+				
 					Log.v(TAG, "selected id: " + id);
 					Intent i = new Intent(getActivity().getApplicationContext(), EntryActivity.class);
 					i.putExtra(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.EntriesFeed(false));
 					i.putExtra(EntryActivity.ID, id);
 					startActivity(i);
-				}
-			}
+				
+				//}
+			}*/
 		}
 		
 		
 		public void onReselectedTab () {
-			getListView().setSelection(0);
+			getListView().setSelection(0); // take me to the top
 		}
 		
 		
 		public void onLoadFinished(Cursor data) {
+			
 			mEntryAdapter.swapCursor(data);
         	
         	if (mEntryAdapter.isEmpty()) {
+        		
         		mPadding.setVisibility(View.INVISIBLE);
             	mHeader.setVisibility(View.INVISIBLE);
             	mFooter.setVisibility(View.INVISIBLE);
-        		mEmpty.setText("Pull to refresh");
+            	mEmpty.setText("loading");
+            	
+            	// try getting data from server
+            	Bundle params = new Bundle();
+    	        params.putString("format", "json");				// we need json format
+    	        params.putString("order_by", "-created");		// newest first
+    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
+                NoisetracksRequest request = new NoisetracksRequest(Verb.GET, NoisetracksApplication.URI_ENTRIES, params);
+                try {
+                    mServerHelper.sendRestAction(getActivity(), "Feed Entries onLoadFinished()", request);
+                } catch (SendingCommandException e) {
+                    Log.e(TAG, e.toString());
+                }
+                
+        		
         	} else {
+        		
         		mPadding.setVisibility(View.VISIBLE);
             	mHeader.setVisibility(View.VISIBLE);
             	mFooter.setVisibility(View.VISIBLE);
         		mEmpty.setText("");
         	}
-        	
-            if (isResumed()) {
-            	setListShown(true);
-            } else {
-            	setListShownNoAnimation(true);
-            }
 		}
 		
-		public void onRefreshComplete() {
-			// Reset pull refresh view
-	    	mPullToRefreshView.onRefreshComplete();
-	    	// Set updated text	    	
-	    	//mPullToRefreshView.setLastUpdatedLabel("Last updated: " + DateUtils.formatDateTime(getActivity(), System.currentTimeMillis(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_ABBREV_TIME));
-
-	    	if (mEntryAdapter != null) {
-		    	if (mEntryAdapter.isEmpty()) {
-		    		mPadding.setVisibility(View.INVISIBLE);
-		        	mHeader.setVisibility(View.INVISIBLE);
-		        	mFooter.setVisibility(View.INVISIBLE);
-		    		mEmpty.setText("Pull to refresh.");
-		    	} else {
-		    		mPadding.setVisibility(View.VISIBLE);
-		        	mHeader.setVisibility(View.VISIBLE);
-		        	mFooter.setVisibility(View.VISIBLE);
-		    		mEmpty.setText("");
-		    	}
-	    	}
+		public static void hack() {
+			mPullToRefreshView.onRefreshComplete();
+			mProgressWheelLoadingOlderEntries.stopSpinning();
+        	mProgressWheelLoadingOlderEntries.setVisibility(View.GONE);
 		}
-    	
-    	   
-	    public void setListShown(boolean shown, boolean animate){
-	    	
-	        if (mListShown == shown) {
-	            return;
-	        }
-	        mListShown = shown;
-	        if (shown) {
-	        	
-	        	mProgressWheel.stopSpinning(); // stop spinning
-	            
-	        	if (animate) {
-	            	try {
-	            		
-	            		mProgressContainer.startAnimation(AnimationUtils.loadAnimation(
-		                        getActivity(), android.R.anim.fade_out));
-		                mListContainer.startAnimation(AnimationUtils.loadAnimation(
-		                        getActivity(), android.R.anim.fade_in));
-	            	}
-	            	catch (java.lang.NullPointerException e) {
-	            		// prevent from crashing, when orientation has changed
-	            	}
-	                
-	            }
-	            mProgressContainer.setVisibility(View.GONE);
-	            mListContainer.setVisibility(View.VISIBLE);
-	        } else {
-	            if (animate) {
-	            	try {
-	                mProgressContainer.startAnimation(AnimationUtils.loadAnimation(
-	                        getActivity(), android.R.anim.fade_in));
-	                mListContainer.startAnimation(AnimationUtils.loadAnimation(
-	                        getActivity(), android.R.anim.fade_out));
-	            	}
-	            	catch (java.lang.NullPointerException e) {
-	            		// prevent from crashing, when orientation has changed
-	            	}
-	            }
-	            mProgressContainer.setVisibility(View.VISIBLE);
-	            mListContainer.setVisibility(View.INVISIBLE);
-	        }
-	    }
-	    public void setListShown(boolean shown){
-	        setListShown(shown, true);
-	    }
-	    public void setListShownNoAnimation(boolean shown) {
-	        setListShown(shown, false);
-	    }
+		
+		@Override
+		public void onServerResult(String result, String requestId) {
+			Log.v(TAG, "onServerResult: " + result + " from " + requestId);
+			mPullToRefreshView.onRefreshComplete();
+			mProgressWheelLoadingOlderEntries.stopSpinning();
+        	mProgressWheelLoadingOlderEntries.setVisibility(View.GONE);
+		}
+
+		@Override
+		public void onServerError(String result, String requestId) {
+			Log.w(TAG, "Server responded: " + result + " from " + requestId);
+			
+			mPullToRefreshView.onRefreshComplete();
+			mProgressWheelLoadingOlderEntries.stopSpinning();
+        	mProgressWheelLoadingOlderEntries.setVisibility(View.GONE);
+			
+			if (mEntryAdapter.isEmpty())
+				mEmpty.setText("Could not connect to Noisetracks.");
+		}
+		
 	}
 }

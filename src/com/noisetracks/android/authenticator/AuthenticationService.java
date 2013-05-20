@@ -16,8 +16,6 @@
 
 package com.noisetracks.android.authenticator;
 
-import com.noisetracks.android.NoisetracksApplication;
-
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;

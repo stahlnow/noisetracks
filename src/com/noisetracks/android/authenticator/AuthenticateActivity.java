@@ -193,6 +193,8 @@ public class AuthenticateActivity extends SherlockFragmentActivity {
      */
 	protected void finishConfirmCredentials(boolean result, String apikey) {
 		Log.v(TAG, "finishConfirmCredentials()");
+		AppSettings.setUsername(this, mUsername);
+        AppSettings.setApiKey(this, apikey);
         final Account account = new Account(mUsername, getString(R.string.ACCOUNT_TYPE));
         mAccountManager.setPassword(account, apikey);
         final Intent intent = new Intent();
@@ -215,6 +217,7 @@ public class AuthenticateActivity extends SherlockFragmentActivity {
     protected void finishLogin(String apikey) {
         Log.v(TAG, "finishLogin()");
         final Account account = new Account(mUsername, getString(R.string.ACCOUNT_TYPE));
+        AppSettings.setUsername(this, mUsername);
         AppSettings.setApiKey(this, apikey);
         if (mRequestNewAccount) {
             mAccountManager.addAccountExplicitly(account, apikey, null);
@@ -223,6 +226,7 @@ public class AuthenticateActivity extends SherlockFragmentActivity {
         } else {
             mAccountManager.setPassword(account, apikey);
         }
+        
         final Intent intent = new Intent();
         mAuthtoken = apikey;
         intent.putExtra(AccountManager.KEY_ACCOUNT_NAME, mUsername);

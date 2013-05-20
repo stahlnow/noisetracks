@@ -63,13 +63,13 @@ public class AppSettings {
 	}
 	
 	/**
-	 * Get username of logged in user or "AnonymousUser"
+	 * Get username of logged in user
 	 * @param context
-	 * @return Username of logged in user
+	 * @return Username of logged in user or null
 	 */
 	public static String getUsername(Context context) {
 		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
-		return pref.getString(SETTING_USERNAME, "AnonymousUser");
+		return pref.getString(SETTING_USERNAME, null);
 	}
 	
 	/**
@@ -85,19 +85,19 @@ public class AppSettings {
 	}
 	
 	/**
-	 * Get username of logged in user or "AnonymousUser"
+	 * Get api key of logged in user
 	 * @param context
-	 * @return Username of logged in user
+	 * @return api key of logged in user or null
 	 */
 	public static String getApiKey(Context context) {
 		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);
-		return pref.getString(SETTING_APIKEY, "AnonymousUser");
+		return pref.getString(SETTING_APIKEY, null);
 	}
 	
 	/**
-	 * Set user name
+	 * Set api key
 	 * @param context
-	 * @param username Username of logged in user
+	 * @param apikey api key of logged in user
 	 */
 	public static void setApiKey(Context context, String apikey) {
 		SharedPreferences pref = context.getSharedPreferences(NOISETRACKS_PREF_NAME, 0);

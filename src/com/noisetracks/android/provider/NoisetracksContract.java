@@ -8,6 +8,11 @@ public final class NoisetracksContract {
 	// this must match the provider authority defined in the Manifest.
 	public static final String AUTHORITY = "com.noisetracks.android.provider";
 	
+	/**
+     * Query parameter keys
+     */
+    public static final String QUERY_PARAMETER_LIMIT = "limit";
+    
     // This class cannot be instantiated
     private NoisetracksContract() {
     }
@@ -98,6 +103,7 @@ public final class NoisetracksContract {
          * The default sort order for this table
          */
         public static final String DEFAULT_SORT_ORDER = "created DESC";
+        
 
         /*
          * Column definitions
@@ -262,6 +268,7 @@ public final class NoisetracksContract {
          * The default sort order for this table
          */
         public static final String DEFAULT_SORT_ORDER = "username DESC";
+        
 
         /*
          * Column definitions

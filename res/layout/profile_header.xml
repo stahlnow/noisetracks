@@ -4,22 +4,19 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    tools:ignore="UseCompoundDrawables" >
-
+    tools:ignore="UseCompoundDrawables">
     <ImageView
         android:id="@+id/profile_mugshot"
         android:layout_width="80dip"
         android:layout_height="80dip"
+        android:src="@drawable/_mugshot_dummy"
         android:contentDescription="@null"
         android:paddingTop="10dp" />
-
     <LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical" >
-
+        
         <TextView
             android:id="@+id/profile_header_text"
             android:layout_width="wrap_content"
@@ -27,7 +24,8 @@
             android:paddingBottom="10dp"
             android:paddingTop="10dp"
             android:textColorLink="@color/indicator"
-            android:textSize="14dp" />
+            android:textIsSelectable="false"
+            android:textSize="14sp" />
 
     </LinearLayout>
 

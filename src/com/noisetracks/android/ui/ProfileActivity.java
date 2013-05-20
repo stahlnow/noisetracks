@@ -1,5 +1,7 @@
 package com.noisetracks.android.ui;
 
+import org.scribe.model.Verb;
+
 import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.app.SherlockListFragment;
@@ -10,14 +12,19 @@ import com.handmark.pulltorefresh.library.PullToRefreshBase.OnLastItemVisibleLis
 import com.handmark.pulltorefresh.library.PullToRefreshBase.OnRefreshListener;
 import com.noisetracks.android.NoisetracksApplication;
 import com.noisetracks.android.R;
-import com.noisetracks.android.client.RESTLoaderCallbacks;
+import com.noisetracks.android.client.NoisetracksRequest;
 import com.noisetracks.android.client.SQLLoaderCallbacks;
 import com.noisetracks.android.helper.ProgressWheel;
 import com.noisetracks.android.helper.httpimage.HttpImageManager;
 import com.noisetracks.android.provider.NoisetracksContract.Profiles;
 import com.noisetracks.android.provider.NoisetracksProvider;
 import com.noisetracks.android.provider.NoisetracksContract.Entries;
+import com.noisetracks.android.ui.FeedActivity.FeedListFragment;
 import com.noisetracks.android.utility.AppSettings;
+import com.whiterabbit.postman.ServerInteractionHelper;
+import com.whiterabbit.postman.ServerInteractionResponseInterface;
+import com.whiterabbit.postman.exceptions.SendingCommandException;
+
 import android.support.v4.app.FragmentManager;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
@@ -36,7 +43,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -77,6 +83,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 			AccountManager am = AccountManager.get(ctx);
 	        Account a = am.getAccountsByType(ctx.getString(R.string.ACCOUNT_TYPE))[0];
 			ContentResolver.requestSync(a, ctx.getString(R.string.AUTHORITY_PROVIDER), extras);
+			
 		} else {
 			// Failed to post file, set type to 'recorded' for retry
 			Cursor c = ctx.getContentResolver().query(uri, null, null, null, null);
@@ -105,11 +112,13 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		}
 	}
 
-	public static class ProfileListFragment extends SherlockListFragment {
+	public static class ProfileListFragment extends SherlockListFragment implements ServerInteractionResponseInterface {
 		
 		private static final String TAG = "ProfileListFragment";
 		
-		private RESTLoaderCallbacks r;
+		private static final int MAX_NUMBER_OF_ENTRIES_SHOWN = 500;
+		
+		ServerInteractionHelper mServerHelper;
 		
 		/**
 		 * Header Views
@@ -122,39 +131,46 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		 * List Views
 		 */
 		private PullToRefreshListView mPullToRefreshView; 	// pull to refresh view
-		private EntryAdapter mEntryAdapter;						// cursor adapter for db
-		private boolean mListShown;		
+		private EntryAdapter mEntryAdapter;					// cursor adapter for db
         private TextView mEmpty;							// shown if list is empty
-        private View mProgressContainer; 					// progress wheel container
-        private ProgressWheel mProgressWheel; 				// progress wheel
-        private View mListContainer;						// list container
         private View mHeader;								// list header (with rounded corners)
         private View mFooter;								// list footer (with rounded corners)
         private TextView mPadding;							// top padding for list header
+        private ProgressWheel mProgressWheelLoadingOlderEntries;
+        private TextView mNoMoreEntries;
 		
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 			
 		    View root = inflater.inflate(R.layout.profile_activity, container, false);
 		    
-		    mProgressContainer = root.findViewById(R.id.entries_progressContainer);
-		    mProgressWheel = (ProgressWheel) root.findViewById(R.id.pw_spinner);
-		    mProgressWheel.spin();
-		    
-		    mListContainer =  root.findViewById(R.id.entries_listContainer);
 		    mPullToRefreshView = (PullToRefreshListView) root.findViewById(R.id.entries_list);
 		    mEmpty = (TextView)root.findViewById(R.id.entries_empty);
+		    mProgressWheelLoadingOlderEntries = (ProgressWheel)root.findViewById(R.id.loading_older_entries_progress_bar);
+		    mNoMoreEntries = (TextView)root.findViewById(R.id.no_more_entries_to_load);
 		    
-		    mListShown = true;
+		    mServerHelper = ServerInteractionHelper.getInstance(getActivity());
 		    
 		    return root;
 		}
 
 		@Override
+		public void onResume() {
+			mServerHelper.registerEventListener(this, getActivity());
+			super.onResume();
+			
+			mProgressWheelLoadingOlderEntries.setVisibility(View.GONE);
+		}
+		
+		@Override
+		public void onPause() {
+			mServerHelper.unregisterEventListener(this, getActivity());
+			super.onPause();
+		}
+		
+		@Override
 		public void onActivityCreated(Bundle savedInstanceState) {
             super.onActivityCreated(savedInstanceState);
-                    
-            r = new RESTLoaderCallbacks(getActivity(), this);
 		    
             // add profile header
 		    mProfileHeader = getLayoutInflater(savedInstanceState).inflate(R.layout.profile_header, null, false);
@@ -177,9 +193,6 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		    this.getListView().addFooterView(mFooter);
 		    // add footer padding
 		    this.getListView().addFooterView(mPadding);
-		    
-		    // Start out with a progress indicator.
-            setListShown(false);
          
             // Create an empty adapter we will use to display the loaded data.
             mEntryAdapter = new EntryAdapter(
@@ -203,7 +216,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
            
             String username = getArguments().getString("username");
             
-            // Prepare and initialize the sql loader for user entries
+            // Prepare and initialize the sql loader for entries
             Bundle argsEntriesSQL = new Bundle();
             argsEntriesSQL.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_ENTRY_PROJECTION);
            
@@ -214,88 +227,77 @@ public class ProfileActivity extends SherlockFragmentActivity {
             }
             
             SQLLoaderCallbacks sqlentries = new SQLLoaderCallbacks(getActivity(), this);
-            getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_SQL_LOADER_PROFILE, argsEntriesSQL, sqlentries);
+            getActivity().getSupportLoaderManager().initLoader(SQLLoaderCallbacks.ENTRIES_SQL_LOADER_PROFILE, argsEntriesSQL, sqlentries);
             
-            // Prepare and initialize the sql loader for user profile data
+            // Prepare and initialize the sql loader for user profile
             Bundle argsProfileSQL = new Bundle();
             argsProfileSQL.putStringArray(SQLLoaderCallbacks.PROJECTION, NoisetracksProvider.READ_PROFILE_PROJECTION);
             argsProfileSQL.putString(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.selectProfileForUser(getArguments().getString("username")));
             SQLLoaderCallbacks sqlprofile = new SQLLoaderCallbacks(getActivity(), this);
-            getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.PROFILE_SQL_LOADER, argsProfileSQL, sqlprofile);	
+            getActivity().getSupportLoaderManager().initLoader(SQLLoaderCallbacks.PROFILE_SQL_LOADER, argsProfileSQL, sqlprofile);	
             
+            mServerHelper.registerEventListener(this, getActivity());
             
-            // Prepare and initialize REST loader for profile, if not user profile
+            // If it's not the user's own profile, get the current profile from server
             if (!AppSettings.getUsername(getActivity()).equals(username)) {
-	            Bundle paramsProfile = new Bundle();
-	            paramsProfile.putString("format", "json");				// we need json format
-	            paramsProfile.putString("user__username", getArguments().getString("username"));	// get profile for specific user
-	        	Bundle argsProfileREST = new Bundle();
-	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_PROFILES);
-	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, paramsProfile);
-	        	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.PROFILE_REST_LOADER, argsProfileREST, r);
+	            Bundle params = new Bundle();
+	            params.putString("format", "json");											// we need json format
+	            params.putString("user__username", getArguments().getString("username"));	// get profile for specific user
+	            NoisetracksRequest request = new NoisetracksRequest(Verb.GET, NoisetracksApplication.URI_PROFILES, params);
+                try {
+                    mServerHelper.sendRestAction(getActivity(), "ProfileActivity onActivityCreated()", request);
+                } catch (SendingCommandException se) {
+                    Log.e(TAG, se.toString());
+                }
             }
-        	
-            /*
-            // Prepare and initialize REST loader for entries
-            Bundle params = new Bundle();
-	        params.putString("format", "json");				// we need json format
-	        params.putString("order_by", "-created");		// newest first
-	        params.putString("audiofile__status", "1");		// only get entries with status = Done
-	        params.putString("user__username", getArguments().getString("username"));	// only entries from specific user
-        	Bundle argsEntriesREST = new Bundle();
-        	argsEntriesREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
-        	argsEntriesREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-    		getActivity().getSupportLoaderManager().initLoader(NoisetracksApplication.ENTRIES_REST_LOADER, argsEntriesREST, r);
-    		*/
             
+        	
 	        // Set a listener to be invoked when the list should be refreshed.
 	        mPullToRefreshView.setOnRefreshListener(new OnRefreshListener<ListView>() {
 	            @Override
 	            public void onRefresh(PullToRefreshBase<ListView> refreshView) {
-	            	// Prepare and initialize REST loader for profile
+	            	
+	            	// get profile
 		            Bundle paramsProfile = new Bundle();
 		            paramsProfile.putString("format", "json");				// we need json format
 		            paramsProfile.putString("user__username", getArguments().getString("username"));	// get profile for specific user
-		        	Bundle argsProfileREST = new Bundle();
-		        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_PROFILES);
-		        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, paramsProfile);
-		        	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.PROFILE_REST_LOADER, argsProfileREST, r);
+		            NoisetracksRequest profile = new NoisetracksRequest(Verb.GET, NoisetracksApplication.URI_PROFILES, paramsProfile);
+	                try {
+	                    mServerHelper.sendRestAction(getActivity(), "ProfileActivity onRefresh() Profiles", profile);
+	                } catch (SendingCommandException e) {
+	                    Log.e(TAG, e.toString());
+	                }
 	            	
-		        	/*
-	            	// Call api
+	            	// get user entries
+	                Bundle params = new Bundle();
+	    	        params.putString("format", "json");				// we need json format
+	    	        params.putString("order_by", "-created");		// newest first
+	    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
+	    	        params.putString("user__username", getArguments().getString("username"));	// only entries from specific user
+	            	
 	            	if (!mEntryAdapter.isEmpty()) { // if list not empty
 	            		Cursor cursor = (Cursor) getListAdapter().getItem(0); // get latest entry
 		    	        String created = cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_CREATED));
-		            	Bundle params = new Bundle();
-		    	        params.putString("format", "json");				// we need json format
-		    	        params.putString("order_by", "-created");		// newest first
-		    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
 		    	        params.putString("created__gt", created);		// only entries newer than first (latest) entry in list
-		    	        params.putString("user__username", getArguments().getString("username"));	// only entries from specific user
-		            	Bundle argsEntriesNewer = new Bundle();
-		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
-		            	argsEntriesNewer.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_NEWER_REST_LOADER, argsEntriesNewer, r);
-	            	} else {
-	            	*/
-	            		Bundle params = new Bundle();
-		    	        params.putString("format", "json");				// we need json format
-		    	        params.putString("order_by", "-created");		// newest first
-		    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
-		    	        params.putString("user__username", getArguments().getString("username"));	// only entries from specific user
-		            	Bundle argsEntries = new Bundle();
-		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
-		            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_USER_REST_LOADER, argsEntries, r);
-	            	//}
+	            	}
+	            	
+	            	NoisetracksRequest entries = new NoisetracksRequest(Verb.GET, NoisetracksApplication.URI_ENTRIES, params);
+	                try {
+	                    mServerHelper.sendRestAction(getActivity(), "ProfileActivity onRefresh() Entries", entries);
+	                } catch (SendingCommandException e) {
+	                    Log.e(TAG, e.toString());
+	                }
+	            	
 	            }
+	            
 	        });
+	        
 	        
 	        mPullToRefreshView.setOnLastItemVisibleListener(new OnLastItemVisibleListener() {
 				@Override
 				public void onLastItemVisible() {
 					
-					if (!mEntryAdapter.isEmpty()) { // if list not empty
+					if (!mEntryAdapter.isEmpty() && mEntryAdapter.getCount() <= MAX_NUMBER_OF_ENTRIES_SHOWN) { 
 						Cursor cursor = (Cursor) getListAdapter().getItem(getListAdapter().getCount()-1); // get last entry
 		    	        String created = cursor.getString(cursor.getColumnIndex(Entries.COLUMN_NAME_CREATED));
 		            	Bundle params = new Bundle();
@@ -304,15 +306,25 @@ public class ProfileActivity extends SherlockFragmentActivity {
 		    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
 		    	        params.putString("created__lt", created);		// older entries only
 		    	        params.putString("user__username", getArguments().getString("username"));	// only entries from specific user
-		    	        Bundle argsEntriesOlder = new Bundle();
-		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_ENTRIES);
-		            	argsEntriesOlder.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-		            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntriesOlder, r);
+		    	        NoisetracksRequest entries = new NoisetracksRequest(Verb.GET, NoisetracksApplication.URI_ENTRIES, params);
+		                try {
+		                    mServerHelper.sendRestAction(getActivity(), "ProfileActivity onLastItemVisible()", entries);
+		                    mProgressWheelLoadingOlderEntries.stopSpinning();
+		                    mProgressWheelLoadingOlderEntries.spin();
+			            	mProgressWheelLoadingOlderEntries.setVisibility(View.VISIBLE);
+		                } catch (SendingCommandException e) {
+		                    Log.e(TAG, e.toString());
+		                    mProgressWheelLoadingOlderEntries.stopSpinning();
+		                	mProgressWheelLoadingOlderEntries.setVisibility(View.GONE);
+		                }
+	            	}
+					else if (mEntryAdapter.getCount() >= MAX_NUMBER_OF_ENTRIES_SHOWN) {
+	            		Log.v(TAG, "Limit reached.");
+	            		mNoMoreEntries.setVisibility(View.VISIBLE);
 	            	}
 					
 				}
 			});
-            
         }
 		
 		
@@ -325,11 +337,10 @@ public class ProfileActivity extends SherlockFragmentActivity {
 			if (c != null) {
 				
 				if (c.getInt(c.getColumnIndex(Entries.COLUMN_NAME_TYPE)) == Entries.TYPE.LOAD_MORE.ordinal()) { // user clicked on 'load more'
+					/*	
 					// remove 'load more' entry
 	            	Uri lm = ContentUris.withAppendedId(Entries.CONTENT_ID_URI_BASE, id);
 	            	getActivity().getContentResolver().delete(lm, null, null);
-	            	//getActivity().getContentResolver().notifyAll();
-	            	
 	            	// load items
 					Bundle params = new Bundle(); // no params
 					Bundle argsEntries= new Bundle();
@@ -338,8 +349,9 @@ public class ProfileActivity extends SherlockFragmentActivity {
 	            			Uri.parse(NoisetracksApplication.DOMAIN + c.getString(c.getColumnIndex(Entries.COLUMN_NAME_RESOURCE_URI)))); // resource uri contains 'next' from last api call
 	            	argsEntries.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
 	            	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.ENTRIES_OLDER_REST_LOADER, argsEntries, r);
-	            	
+	            	*/
 				}
+				
 				// start entry activity
 				else if (c.getInt(c.getColumnIndex(Entries.COLUMN_NAME_TYPE)) == Entries.TYPE.DOWNLOADED.ordinal()) {
 					Intent i = new Intent(getActivity().getApplicationContext(), EntryActivity.class);
@@ -347,6 +359,7 @@ public class ProfileActivity extends SherlockFragmentActivity {
 					i.putExtra(SQLLoaderCallbacks.SELECT, SQLLoaderCallbacks.EntriesUser(false, getArguments().getString("username")));
 					i.putExtra(EntryActivity.ID, id);
 					startActivity(i);
+				
 				// start recording activity (to complete upload)
 				} else if (c.getInt(c.getColumnIndex(Entries.COLUMN_NAME_TYPE)) == Entries.TYPE.RECORDED.ordinal()) {
 					Intent i = new Intent(getActivity().getApplicationContext(), RecordingActivity.class);
@@ -355,20 +368,19 @@ public class ProfileActivity extends SherlockFragmentActivity {
 					startActivity(i);
 				}
 				
-				//c.close();
 			}
+			
 		}
 		
 		public void onReselectedTab () {
-			getListView().setSelection(0);
+			getListView().setSelection(0); // take me to the top
 		}
 		
 		
-		public void setProfileHeader(Cursor data) {
+		public void onLoadFinishedProfiles(Cursor data) {
 			try  {
 				data.moveToFirst();
 				// Set mugshot image
-				//mMugshot.setImageResource(R.drawable.default_image); // TODO set default image
 				String mugshot = data.getString(data.getColumnIndex(Profiles.COLUMN_NAME_MUGSHOT));
 				if (mugshot != null) {
 					Uri mugshotUri = Uri.parse(mugshot);
@@ -396,116 +408,77 @@ public class ProfileActivity extends SherlockFragmentActivity {
 			}
 			
 			catch (Exception e) {
-				
-				Log.v(TAG, "Could not load from db, will try loading with REST client...");
-				
-				// Prepare and initialize REST loader for profile
-	            Bundle paramsProfile = new Bundle();
-	            paramsProfile.putString("format", "json");				// we need json format
-	            paramsProfile.putString("user__username", getArguments().getString("username"));	// get profile for specific user
-	        	Bundle argsProfileREST = new Bundle();
-	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_PROFILES);
-	        	argsProfileREST.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, paramsProfile);
-	        	getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.PROFILE_REST_LOADER, argsProfileREST, r);
+				// if the own profile was not found, load it form server (this is the case, when the user logged in for the first time)
+				if (AppSettings.getUsername(getActivity()).equals(getArguments().getString("username"))) {
+					// request profile
+		            Bundle params = new Bundle();
+		            params.putString("format", "json");				// we need json format
+		            params.putString("user__username", getArguments().getString("username"));	// get profile for specific user
+		            NoisetracksRequest request = new NoisetracksRequest(Verb.GET, NoisetracksApplication.URI_PROFILES, params);
+	                try {
+	                    mServerHelper.sendRestAction(getActivity(), "ProfileActivity onLoadFinishedProfiles()", request);
+	                } catch (SendingCommandException se) {
+	                    Log.e(TAG, se.toString());
+	                }
+				}
 	    		
 			}
 		}
 		
-		public void onLoadFinished(Cursor data) {
+		public void onLoadFinishedEntries(Cursor data) {
+			
 			mEntryAdapter.swapCursor(data);
         	
         	if (mEntryAdapter.isEmpty()) {
         		mPadding.setVisibility(View.INVISIBLE);
             	mHeader.setVisibility(View.INVISIBLE);
             	mFooter.setVisibility(View.INVISIBLE);
-        		mEmpty.setText("Pull to refresh");
+        		
+            	// get user entries
+                Bundle params = new Bundle();
+    	        params.putString("format", "json");				// we need json format
+    	        params.putString("order_by", "-created");		// newest first
+    	        params.putString("audiofile__status", "1");		// only get entries with status = Done
+    	        params.putString("user__username", getArguments().getString("username"));	// only entries from specific user
+            	NoisetracksRequest entries = new NoisetracksRequest(Verb.GET, NoisetracksApplication.URI_ENTRIES, params);
+                try {
+                    mServerHelper.sendRestAction(getActivity(), "ProfileActivity onLoadFinishedEntries()", entries);
+                } catch (SendingCommandException e) {
+                    Log.e(TAG, e.toString());
+                }
+                
         	} else {
         		mPadding.setVisibility(View.VISIBLE);
             	mHeader.setVisibility(View.VISIBLE);
             	mFooter.setVisibility(View.VISIBLE);
-        		mEmpty.setText("");
-        	}
+            	mEmpty.setText("");
+        	}        	
+		}
+		
+		@Override
+		public void onServerResult(String result, String requestId) {
+			Log.v(TAG, "onServerResult: " + result + " from " + requestId);
+			mPullToRefreshView.onRefreshComplete();
+			mProgressWheelLoadingOlderEntries.stopSpinning();
+        	mProgressWheelLoadingOlderEntries.setVisibility(View.GONE);
         	
-            if (isResumed()) {
-            	setListShown(true);
-            } else {
-            	setListShownNoAnimation(true);
-            }
+        	FeedListFragment.hack();
+		}
+
+		@Override
+		public void onServerError(String result, String requestId) {
+			Log.w(TAG, "Server responded: " + result + " from " + requestId);
+			
+			mPullToRefreshView.onRefreshComplete();
+			mProgressWheelLoadingOlderEntries.stopSpinning();
+        	mProgressWheelLoadingOlderEntries.setVisibility(View.GONE);
+        	
+        	FeedListFragment.hack();
+			
+			if (mEntryAdapter.isEmpty())
+				mEmpty.setText("Could not connect to Noisetracks.");
 		}
 		
-		public void onRefreshComplete() {
-			// Reset pull refresh view
-	    	mPullToRefreshView.onRefreshComplete();
-	    	// Set updated text
-	    	//mPullToRefreshView.setLastUpdatedLabel("Last updated: " + DateUtils.formatDateTime(getActivity(), System.currentTimeMillis(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_ABBREV_TIME));
-
-	    	if (mEntryAdapter != null) {
-		    	if (mEntryAdapter.isEmpty()) {
-		    		mPadding.setVisibility(View.INVISIBLE);
-		        	mHeader.setVisibility(View.INVISIBLE);
-		        	mFooter.setVisibility(View.INVISIBLE);
-		    		mEmpty.setText("Pull to refresh.");
-		    	} else {
-		    		mPadding.setVisibility(View.VISIBLE);
-		        	mHeader.setVisibility(View.VISIBLE);
-		        	mFooter.setVisibility(View.VISIBLE);
-		    		mEmpty.setText("");
-		    	}
-	    	}
-		}
-		
-		
-		public void setListShown(boolean shown, boolean animate) {
-	    				
-	        if (mListShown == shown) {
-	            return;
-	        }
-	        
-	        mListShown = shown;
-	        if (shown) {
-	        	
-	        	mProgressWheel.stopSpinning(); // stop spinning
-	            
-	        	if (animate) {
-	            	try {
-	            		
-	            		mProgressContainer.startAnimation(AnimationUtils.loadAnimation(
-		                        getActivity(), android.R.anim.fade_out));
-		                mListContainer.startAnimation(AnimationUtils.loadAnimation(
-		                        getActivity(), android.R.anim.fade_in));
-	            	}
-	            	catch (java.lang.NullPointerException e) {
-	            		// prevent from crashing, when orientation has changed
-	            	}
-	                
-	            }
-	            mProgressContainer.setVisibility(View.GONE);
-	            mListContainer.setVisibility(View.VISIBLE);
-	        } else {
-	            if (animate) {
-	            	try {
-	                mProgressContainer.startAnimation(AnimationUtils.loadAnimation(
-	                        getActivity(), android.R.anim.fade_in));
-	                mListContainer.startAnimation(AnimationUtils.loadAnimation(
-	                        getActivity(), android.R.anim.fade_out));
-	            	}
-	            	catch (java.lang.NullPointerException e) {
-	            		// prevent from crashing, when orientation has changed
-	            	}
-	            }
-	            mProgressContainer.setVisibility(View.VISIBLE);
-	            mListContainer.setVisibility(View.INVISIBLE);
-	        }
-	    }
-		
-	    public void setListShown(boolean shown) {
-	        setListShown(shown, true);
-	    }
-		
-	    public void setListShownNoAnimation(boolean shown) {
-	        setListShown(shown, false);
-	    }
-
 	}
 
 	

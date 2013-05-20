@@ -1,33 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/feed_activity"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical">
-
-    <LinearLayout
-        android:id="@+id/entries_progressContainer"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:visibility="gone" >
-
-        <com.noisetracks.android.helper.ProgressWheel
-            xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:ProgressWheel="http://schemas.android.com/apk/res-auto"
-            android:id="@+id/pw_spinner"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:layout_gravity="center"
-            ProgressWheel:barLength="60dp"
-            ProgressWheel:barWidth="5dp"
-            ProgressWheel:rimWidth="2dp"
-            ProgressWheel:radius="2dp"
-            ProgressWheel:text="Loading\u2026"
-            ProgressWheel:textSize="14sp"
-            ProgressWheel:textColor="#ffcccccc" />
-        
-    </LinearLayout>
+    android:orientation="vertical" >
 
     <FrameLayout
         android:id="@+id/entries_listContainer"
@@ -48,8 +25,7 @@
             android:paddingRight="3dp"
             android:scrollbars="none"
             android:soundEffectsEnabled="false"
-            ptr:ptrHeaderTextColor="@color/medium_grey"
-        />
+            ptr:ptrHeaderTextColor="@color/medium_grey" />
         <!--
     	android:scrollbarStyle="outsideInset"
     	android:translationX="5dp"
@@ -61,8 +37,36 @@
             android:id="@+id/entries_empty"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
-            android:textIsSelectable="false"
-            android:gravity="center" />
+            android:gravity="center"
+            android:textIsSelectable="false" />
     </FrameLayout>
+
+    <TextView
+        android:id="@+id/no_more_entries_to_load"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginBottom="10sp"
+        android:text="\u00B7"
+        android:visibility="gone"
+        tools:ignore="HardcodedText" />
+
+    <com.noisetracks.android.helper.ProgressWheel
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:ProgressWheel="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/loading_older_entries_progress_bar"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_margin="5sp"
+        android:layout_marginTop="20sp"
+        ProgressWheel:barLength="60dp"
+        ProgressWheel:barWidth="3dp"
+        ProgressWheel:radius="1dp"
+        ProgressWheel:rimWidth="1dp"
+        ProgressWheel:text=""
+        ProgressWheel:textColor="#ffcccccc"
+        ProgressWheel:textSize="12sp"
+        android:visibility="gone" />
 
 </FrameLayout>

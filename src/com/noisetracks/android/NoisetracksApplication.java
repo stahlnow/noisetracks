@@ -7,10 +7,8 @@ import java.util.Locale;
 import com.noisetracks.android.authenticator.AuthenticationService;
 import com.noisetracks.android.helper.httpimage.FileSystemPersistence;
 import com.noisetracks.android.helper.httpimage.HttpImageManager;
-import com.noisetracks.android.provider.NoisetracksContract;
 import com.noisetracks.android.provider.NoisetracksProvider;
 import com.noisetracks.android.receivers.TrackingReceiver;
-import com.noisetracks.android.ui.Tabs;
 import com.noisetracks.android.utility.AppSettings;
 
 import android.app.AlarmManager;
@@ -28,9 +26,11 @@ import android.util.Log;
 public class NoisetracksApplication extends Application {
 
 	private static final String TAG = "NoisetracksApplication"; 
-	
-	public static final String HOST = "noisetracks.com";
-	public static final int HTTP_PORT = 80;
+
+	public static final String HOST = "192.168.1.217";
+	public static final int HTTP_PORT = 8000;
+	//public static final String HOST = "noisetracks.com";
+	//public static final int HTTP_PORT = 80;
 	public static final int HTTPS_PORT = 443;
 	public static final String DOMAIN = "http://" + HOST + ":" + HTTP_PORT;
 	public static final Uri URI_ENTRIES = Uri.parse(DOMAIN + "/api/v1/entry/");
@@ -42,35 +42,17 @@ public class NoisetracksApplication extends Application {
 	/**
 	 * Maximum recording duration in seconds
 	 */
-	public static final int MAX_RECORDING_DURATION_SECONDS = 5; // TODO 10
+	public static final int MAX_RECORDING_DURATION_SECONDS = 5;
 	
 	/**
 	 * Default tracking interval in minutes
 	 */
-	public static final int DEFAULT_TRACKING_INTERVAL = 30;	 // TODO change to reasonable value
+	public static final int DEFAULT_TRACKING_INTERVAL = 30;
 	
 	/**
 	 *  The global SDF (simple date format) used everywhere: "yyyy-MM-dd'T'HH:mm:ss"
 	 */
 	public static SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.GERMAN);
-	
-	// The global SQL loader ids.
-	public static final int ENTRIES_SQL_LOADER_FEED = 0;
-	public static final int ENTRIES_SQL_LOADER_PROFILE = 2;
-	public static final int PROFILE_LIST_SQL_LOADER = 3;
-	public static final int PROFILE_SQL_LOADER = 3;
-	
-	// The global REST loader ids.
-	public static final int ENTRIES_REST_LOADER = 100;
-	public static final int ENTRIES_USER_REST_LOADER = 150;
-	public static final int ENTRIES_NEWER_REST_LOADER = 200;
-	public static final int ENTRIES_USER_NEWER_REST_LOADER = 250;
-	public static final int ENTRIES_OLDER_REST_LOADER = 300;
-	public static final int PROFILE_LIST_REST_LOADER = 400;
-	public static final int PROFILE_REST_LOADER = 500;
-	public static final int SIGNUP_REST_LOADER = 600;
-	public static final int VOTE_LOADER = 700;
-	public static final int DELETE_LOADER = 800;
 	
 	// Provide an instance for static accessories
 	private static NoisetracksApplication mInstance = null;

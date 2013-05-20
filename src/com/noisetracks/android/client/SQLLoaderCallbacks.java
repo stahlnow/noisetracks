@@ -2,14 +2,14 @@ package com.noisetracks.android.client;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.util.Log;
 
-import com.noisetracks.android.NoisetracksApplication;
+import com.noisetracks.android.provider.NoisetracksContract;
 import com.noisetracks.android.provider.NoisetracksContract.Entries;
 import com.noisetracks.android.provider.NoisetracksContract.Profiles;
 import com.noisetracks.android.ui.FeedActivity.FeedListFragment;
@@ -17,10 +17,22 @@ import com.noisetracks.android.ui.ProfileActivity.ProfileListFragment;
 
 public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 	
+	@SuppressWarnings("unused")
 	private static final String TAG = "SQLLoaderCallbacks";
 	
+	// loader ids
+	public static final int ENTRIES_SQL_LOADER_FEED = 0;
+	public static final int ENTRIES_SQL_LOADER_PROFILE = 1;
+	public static final int PROFILE_SQL_LOADER = 2;
+	
+	// projection
+	public static final String PROJECTION = "projection";
+		
 	// selection args
 	public static final String SELECT = "select"; 
+	
+	// limit query param
+	public static final String LIMIT = "limit";
 	
 	/**
 	 * Select all entries
@@ -52,7 +64,7 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 	private static String Entries(boolean loadmore, boolean recorded, String username) {
 		
 		// if username is empty, load entries from any user, ignore recorded parameter
-		if (username == "") {
+		if (username.equals("")) {
 			if (loadmore) {
 				return "(" + 
 						"(" + Entries.COLUMN_NAME_TYPE + " NOTNULL)" +
@@ -96,9 +108,6 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 		return "((" + Profiles.COLUMN_NAME_USERNAME + " NOTNULL) AND (" + Profiles.COLUMN_NAME_USERNAME + " == '" + username + "' ))";
 	}
 	
-	// projection
-	public static final String PROJECTION = "projection";
-	
 	private Context mContext;
 	private Fragment mFragment;
 	
@@ -109,24 +118,21 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
 	}
     
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+		//Log.d(TAG, "onCreateLoader");
 		switch(id) {
-		case NoisetracksApplication.ENTRIES_SQL_LOADER_FEED:
+		case ENTRIES_SQL_LOADER_FEED:
+		case ENTRIES_SQL_LOADER_PROFILE:
+			Uri uri = Entries.CONTENT_URI;
+			if (args.getInt(LIMIT) != 0)
+				uri = uri.buildUpon().appendQueryParameter(NoisetracksContract.QUERY_PARAMETER_LIMIT, Integer.toString(args.getInt(LIMIT))).build();
 			return new CursorLoader(
 	        		mContext,						// context
-	        		Entries.CONTENT_URI,			// content uri
+	        		uri,							// content uri
 	                args.getStringArray(PROJECTION),// projection
 	                args.getString(SELECT),			// selection criteria
 	                null,							// selection args
 	                Entries.DEFAULT_SORT_ORDER);	// sorting
-		case NoisetracksApplication.ENTRIES_SQL_LOADER_PROFILE:
-			return new CursorLoader(
-	        		mContext,						// context
-	        		Entries.CONTENT_URI,			// content uri
-	                args.getStringArray(PROJECTION),// projection
-	                args.getString(SELECT),			// selection criteria
-	                null,							// selection args
-	                Entries.DEFAULT_SORT_ORDER);	// sorting
-		case NoisetracksApplication.PROFILE_SQL_LOADER:
+		case PROFILE_SQL_LOADER:
 			return new CursorLoader(
 	        		mContext,						// context
 	        		Profiles.CONTENT_URI,			// content uri
@@ -142,19 +148,19 @@ public class SQLLoaderCallbacks implements LoaderCallbacks<Cursor> {
     }
 
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-    	
+    	//Log.d(TAG, "onLoadFinished: " + loader.getId());
     	switch(loader.getId()) {
-    	case NoisetracksApplication.ENTRIES_SQL_LOADER_FEED: 	// entries for feed
+    	case ENTRIES_SQL_LOADER_FEED: 	// entries for feed
     		FeedListFragment f = (FeedListFragment)mFragment;
     		f.onLoadFinished(data);
     		break;
-    	case NoisetracksApplication.ENTRIES_SQL_LOADER_PROFILE: // entries for profile
+    	case ENTRIES_SQL_LOADER_PROFILE: // entries for profile
     		ProfileListFragment p = (ProfileListFragment)mFragment;
-    		p.onLoadFinished(data);
+    		p.onLoadFinishedEntries(data);
     		break;
-    	case NoisetracksApplication.PROFILE_SQL_LOADER: // single profile
+    	case PROFILE_SQL_LOADER: // single profile
     		ProfileListFragment p2 = (ProfileListFragment)mFragment;
-    		p2.setProfileHeader(data);
+    		p2.onLoadFinishedProfiles(data);
     		break;
     	default:
     		break;

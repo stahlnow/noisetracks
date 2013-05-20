@@ -22,7 +22,6 @@ import android.widget.LinearLayout.LayoutParams;
 
 import com.noisetracks.android.NoisetracksApplication;
 import com.noisetracks.android.R;
-import com.noisetracks.android.utility.AppSettings;
 
 /**
  * Provides utility methods for communicating with the server.

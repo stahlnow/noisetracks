@@ -6,15 +6,20 @@ import java.text.ParseException;
 import java.util.Date;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.scribe.model.Verb;
+
 import com.noisetracks.android.NoisetracksApplication;
 import com.noisetracks.android.R;
-import com.noisetracks.android.client.RESTLoaderCallbacks;
+import com.noisetracks.android.client.NoisetracksRequest;
 import com.noisetracks.android.client.SQLLoaderCallbacks;
 import com.noisetracks.android.helper.FixedSpeedScroller;
 import com.noisetracks.android.helper.httpimage.HttpImageManager;
 import com.noisetracks.android.provider.NoisetracksProvider;
 import com.noisetracks.android.provider.NoisetracksContract.Entries;
 import com.noisetracks.android.utility.AppSettings;
+import com.whiterabbit.postman.ServerInteractionHelper;
+import com.whiterabbit.postman.ServerInteractionResponseInterface;
+import com.whiterabbit.postman.exceptions.SendingCommandException;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -63,10 +68,12 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		OnRefreshListener<ViewPager>, OnPageChangeListener, OnPreparedListener,
 		OnErrorListener, OnCompletionListener, OnSeekCompleteListener {
 
-	private static final String TAG = "EntryActivity";
 	public static final String ID = "id";
+	
+	private static final String TAG = "EntryActivity";
 	private static final int UPDATE_FREQUENCY = 1;
 	
+	private Cursor mCursor;
 	private final Handler handler = new Handler();
 	private static MediaPlayer player;
 	private String mSelect;
@@ -85,14 +92,13 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		setContentView(R.layout.entry_activity);
 
 		mPlayBtn = (ImageButton) findViewById(R.id.entry_play_pause);
-
 		mPullToRefreshViewPager = (PullToRefreshViewPager) findViewById(R.id.entry_activity_pull_refresh_view_pager);
 		mPullToRefreshViewPager.setOnRefreshListener(this);
 		mPager = mPullToRefreshViewPager.getRefreshableView();
 
 		mSelect = getIntent().getExtras().getString(SQLLoaderCallbacks.SELECT);
 		
-		Cursor c = getContentResolver().query(
+		mCursor = getContentResolver().query(
 				Entries.CONTENT_URI,
 				NoisetracksProvider.READ_ENTRY_PROJECTION,
 				mSelect,
@@ -103,11 +109,11 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		long id = getIntent().getLongExtra(ID, -1);						// sql _id of the selected entry
 		int position = -1;												// position in view pager used later
 		
-		if (c != null) {
-			c.moveToPosition(-1);
-			while (c.moveToNext()) {
+		if (mCursor != null) {
+			mCursor.moveToPosition(position);
+			while (mCursor.moveToNext()) {
 				position++;
-				if (c.getLong(c.getColumnIndex(Entries._ID)) == id) {
+				if (mCursor.getLong(mCursor.getColumnIndex(Entries._ID)) == id) {
 					// we got the right one ... cursor is at correct position and 'position' can be used for pager
 					break;
 				}
@@ -118,7 +124,7 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		}
 
 		// Set adapter
-		mAdapter = new EntryPagerAdapter(this, getSupportFragmentManager(), c) {
+		mAdapter = new EntryPagerAdapter(this, getSupportFragmentManager(), mCursor) {
 			@Override
 			public Fragment getItem(Context context, Cursor cursor) {
 				
@@ -156,11 +162,15 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		// Listen to page changes and select current page based on position calculated above
 		mPager.setOnPageChangeListener(this);
 		mPager.setCurrentItem(position, false);
-		onPageSelected(mPager.getCurrentItem());
+		if (position == 0) 
+			onPageSelected(mPager.getCurrentItem()); // explicitly select page 0 to properly initialize player
 	}
 
 	@Override
 	protected void onPause() {
+		
+		Log.d(TAG, "onPause");
+		
 		super.onPause();
 		
 		// Stop the seekbar handler from sending updates to UI
@@ -174,9 +184,12 @@ public class EntryActivity extends SherlockFragmentActivity implements
 				if (isFinishing()) {
 					player.stop();
 					player.release();
-					Log.d(TAG, "released player.");
 				}
 			}
+		}
+		
+		if (mCursor!= null && !mCursor.isClosed()) {
+			mCursor.close();
 		}
 	}
 
@@ -245,13 +258,6 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			Log.w(TAG, e.toString());
 		} catch (IOException e) {
 			Log.w(TAG, e.toString());
-		}
-
-		try {
-			EntryDetailFragment f = (EntryDetailFragment)mAdapter.getFragmentAtPosition(mPager.getCurrentItem());
-			f.mSeekBar.setProgress(0);
-		} catch (NullPointerException e) {
-			Log.w(TAG, "onPageSelected: could not get fragment: " + e.toString());
 		}
 
 		// buffer and start media playback
@@ -334,7 +340,7 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		if (what == -38) {	 // -38 seems not to be documented anywhere
 			handler.removeCallbacks(updatePositionRunnable);
 			player.reset();
-			Toast.makeText(this, "Tower to Houston: media player is making trouble.", Toast.LENGTH_SHORT).show();
+			Toast.makeText(this, "Ground Control to Major Tom: \"Code " + what + ".\"", Toast.LENGTH_SHORT).show();
 		}
 		return false;
 	}
@@ -346,10 +352,7 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		}
 	}
 	
-	public void deleteEntry(String resourceUri, String uuid) {
-		// delete entry from local db
-		getContentResolver().delete(Entries.CONTENT_URI, Entries.COLUMN_NAME_UUID + " = '" + uuid + "'", null);
-		
+	public void requery() {
 		// requery
 		Cursor newCursor = getContentResolver().query(
 				Entries.CONTENT_URI,
@@ -360,17 +363,11 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		
 		// update cursor
 		mAdapter.changeCursor(newCursor);
-
-		// delete entry from server
-		RESTLoaderCallbacks r = new RESTLoaderCallbacks(this, this);
-    	Bundle args = new Bundle();
-    	args.putParcelable(RESTLoaderCallbacks.ARGS_URI, Uri.parse(NoisetracksApplication.DOMAIN + resourceUri));
-    	args.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, new Bundle());
-    	getSupportLoaderManager().restartLoader(NoisetracksApplication.DELETE_LOADER, args, r);	
-		
 	}
-
-	public void onDeleteEntry(String uuid) {
+	
+	public void onDeleteEntry() {
+		Log.v(TAG, "onDeleteEntry");
+		requery();
 		if (mAdapter.getCount() > 0)
 			onPageSelected(mPager.getCurrentItem()); 	// reset player
 		else 
@@ -381,11 +378,12 @@ public class EntryActivity extends SherlockFragmentActivity implements
 	/**
 	 *  EntryDetailFragment defines the view of EntryActivity
 	 */
-	public static class EntryDetailFragment extends Fragment implements OnCheckedChangeListener {
+	public static class EntryDetailFragment extends Fragment implements OnCheckedChangeListener, ServerInteractionResponseInterface {
+		ServerInteractionHelper mServerHelper;
+		
 		private SeekBar mSeekBar;
 		private TextView mTVScore;
 		private HttpImageManager mHttpImageManager;
-		private RESTLoaderCallbacks mRESTLoaderCallbackVote;
 
 		private ToggleButton mToggleButtonVoteUp = null;
 		private ToggleButton mToggleButtonVoteDown = null;
@@ -444,8 +442,6 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		public void onCreate(Bundle savedInstanceState) {
 			super.onCreate(savedInstanceState);
 			this.mHttpImageManager = NoisetracksApplication.getHttpImageManager();
-			this.mRESTLoaderCallbackVote = new RESTLoaderCallbacks(getActivity(), this);
-			
 			
 			mFilname = getArguments() != null ? getArguments().getString(Entries.COLUMN_NAME_FILENAME) : null;
 			mResourceUri = getArguments() != null ? getArguments().getString(Entries.COLUMN_NAME_RESOURCE_URI) : null;
@@ -471,6 +467,8 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container,
 				Bundle savedInstanceState) {
+			
+			mServerHelper = ServerInteractionHelper.getInstance(getActivity());
 
 			View v = inflater.inflate(R.layout.entry_detail, container, false);
 			ImageView mugshot = (ImageView) v.findViewById(R.id.entry_mugshot);
@@ -574,7 +572,7 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			if (mRecorded != null) {
 				try {
 					Date d = NoisetracksApplication.SDF.parse(mRecorded);
-					String time = DateUtils.formatDateTime(getActivity(), d.getTime(), DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_12HOUR | DateUtils.FORMAT_CAP_AMPM);
+					String time = DateUtils.formatDateTime(getActivity(), d.getTime(), DateUtils.FORMAT_SHOW_TIME);
 					String date = DateUtils.formatDateTime(getActivity(), d.getTime(), DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_ABBREV_ALL);
 					recordedAgo.setText(time + Html.fromHtml("&nbsp;\u00B7&nbsp;") + date);
 				} catch (ParseException e) {
@@ -594,7 +592,16 @@ public class EntryActivity extends SherlockFragmentActivity implements
 						del.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 							@Override
 							public void onClick(DialogInterface dialog, int which) {
-								((EntryActivity)getActivity()).deleteEntry(mResourceUri, mUuid);
+								// delete entry from server
+								NoisetracksRequest r = new NoisetracksRequest(
+										Verb.DELETE,
+										Uri.parse(NoisetracksApplication.DOMAIN + mResourceUri),
+										new Bundle());
+				                try {
+				                    mServerHelper.sendRestAction(getActivity(), "DELETE", r);
+				                } catch (SendingCommandException e) {
+				                    Log.e(TAG, e.toString());
+				                }
 							}
 						});								
 						del.setNegativeButton("No", new DialogInterface.OnClickListener() {
@@ -616,6 +623,7 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		@Override
 		public void onActivityCreated(Bundle savedInstanceState) {
 			super.onActivityCreated(savedInstanceState);
+			 mServerHelper.registerEventListener(this, getActivity());
 		}
 
 		@Override
@@ -623,24 +631,42 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			super.onDestroy();
 		}
 		
-		public void onVoteComplete(String json) {
-			/*
-			int vote = 0;
-			try {
-				JSONObject resp = (JSONObject) new JSONTokener(json).nextValue();
-				vote = Integer.parseInt(resp.getString("vote"));
-			} catch (JSONException e) {
-				return;
-			}
-			*/
-			
-			mScore += mScoreDiff; // add the new score difference
-			mTVScore.setText("Score: " + mScore); // update score text view
+		@Override
+		public void onResume() {
+			mServerHelper.registerEventListener(this, getActivity());
+			super.onResume();
 		}
 		
+		@Override
+		public void onPause() {
+			mServerHelper.unregisterEventListener(this, getActivity());
+			super.onPause();
+		}
+		
+		@Override
+		public void onServerResult(String result, String requestId) {
+			
+			if (requestId.equals("VOTE")) {
+			
+				Log.d(TAG, "Update vote.");
+				
+				
+			} else if (requestId.equals("DELETE")) {
+				
+				((EntryActivity)getActivity()).onDeleteEntry();
+			}
+		}
+
+		@Override
+		public void onServerError(String result, String requestId) {
+			Log.w(TAG, "Could not complete request for " + requestId + ". " + result);
+			Toast.makeText(getActivity(), "Error: " + result, Toast.LENGTH_SHORT).show();
+		}
 
 		@Override
 		public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+			
+			mScoreDiff = 0;
 			
 			if (mCurrentLikes != null) {
 				if (mCurrentLikes == true && buttonView == mToggleButtonVoteDown) {
@@ -650,28 +676,25 @@ public class EntryActivity extends SherlockFragmentActivity implements
 					mCurrentLikes = false; // dislike
 					vote(-1); // vote down
 					mScoreDiff = -2;
-					return;
-				}
-				if (mCurrentLikes == true && buttonView == mToggleButtonVoteUp) {
+					
+				} else if (mCurrentLikes == true && buttonView == mToggleButtonVoteUp) {
 					mCurrentLikes = null; // user is neutral again
 					vote(0);
 					mScoreDiff = -1;
-					return;
-				}
-				if (mCurrentLikes == false && buttonView == mToggleButtonVoteDown) {
+					
+				} else if (mCurrentLikes == false && buttonView == mToggleButtonVoteDown) {
 					mCurrentLikes = null; // user is neutral again
 					vote(0);
 					mScoreDiff = +1;
-					return;
-				}
-				if (mCurrentLikes == false && buttonView == mToggleButtonVoteUp) {
+					
+				} else if (mCurrentLikes == false && buttonView == mToggleButtonVoteUp) {
 					mToggleButtonVoteDown.setOnCheckedChangeListener(null);
 					mToggleButtonVoteDown.setChecked(!isChecked); // flip toggle
 					mToggleButtonVoteDown.setOnCheckedChangeListener(this);
 					mCurrentLikes = true; // user likes
 					vote(1);
 					mScoreDiff = +2;
-					return;
+					
 				}
 			}
 			else {
@@ -679,17 +702,25 @@ public class EntryActivity extends SherlockFragmentActivity implements
 					mCurrentLikes = false; // user dislikes
 					vote(-1);
 					mScoreDiff = -1;
-					return;
-				}
-				if (mCurrentLikes == null && buttonView == mToggleButtonVoteUp) {
+					
+				} else if (mCurrentLikes == null && buttonView == mToggleButtonVoteUp) {
 					mCurrentLikes = true; // user likes
 					vote(1);
 					mScoreDiff = +1;
-					return;
+					
 				}
 			}
+			
+			mScore += mScoreDiff; // add the new score difference
+			mTVScore.setText("Score: " + mScore); // update score text view
 		}
 		
+		/**
+		 * Posts vote to the server and then gets entry from server with updated values and stores it in the db.
+		 * The current cursor is not updated (would cause flashing of view, which is ugly).
+		 * This means: The score is reflecting only current user actions and not synced with the db immediately.
+		 * @param vote The vote, can be +1, -1 or 0.
+		 */
 		private void vote(int vote) {
 			JSONObject json = new JSONObject();
 			try {
@@ -701,12 +732,17 @@ public class EntryActivity extends SherlockFragmentActivity implements
 
 			Bundle params = new Bundle();
 			params.putString("json", json.toString());
-			Bundle args = new Bundle();
-			args.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_VOTE);
-			args.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-
-			getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.VOTE_LOADER, args, mRESTLoaderCallbackVote);
+			
+			NoisetracksRequest r = new NoisetracksRequest(Verb.POST, NoisetracksApplication.URI_VOTE, params);
+            try {
+                mServerHelper.sendRestAction(getActivity(), "VOTE", r);
+            } catch (SendingCommandException e) {
+                Log.e(TAG, e.toString());
+            }
+			
 		}
+
+		
 
 	}
 

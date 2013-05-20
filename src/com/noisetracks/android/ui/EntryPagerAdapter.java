@@ -7,7 +7,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.FragmentTransaction;
-import android.util.Log;
 import android.view.ViewGroup;
 
 import java.util.HashMap;
@@ -15,6 +14,7 @@ import java.util.Map;
 
 public abstract class EntryPagerAdapter extends FragmentStatePagerAdapter {
 	
+	@SuppressWarnings("unused")
 	private static final String TAG = "EntryPagerAdapter";
 
     protected boolean mDataValid;
@@ -79,7 +79,7 @@ public abstract class EntryPagerAdapter extends FragmentStatePagerAdapter {
         Object obj = super.instantiateItem(container, position);
         mPageReferenceMap.put(position, (Fragment)obj); // put it in a map, so we have a reference!
         
-        Log.v(TAG, "instantiateItem " + position);
+        //Log.v(TAG, "instantiateItem " + position);
         
         return obj;
     }
@@ -97,7 +97,7 @@ public abstract class EntryPagerAdapter extends FragmentStatePagerAdapter {
         
         mPageReferenceMap.remove(Integer.valueOf(position));
         
-        Log.v(TAG, "destroyItem " + position);
+        //Log.v(TAG, "destroyItem " + position);
     }
 
     @Override

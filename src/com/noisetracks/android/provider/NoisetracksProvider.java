@@ -6,7 +6,6 @@ import com.noisetracks.android.provider.NoisetracksContract;
 import com.noisetracks.android.provider.NoisetracksContract.Entries;
 import com.noisetracks.android.provider.NoisetracksContract.Profiles;
 import android.content.ContentProvider;
-import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -21,7 +20,6 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
@@ -277,6 +275,8 @@ public class NoisetracksProvider extends ContentProvider {
 
        // Constructs a new query builder and sets its table name
        SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
+       
+       String limit = uri.getQueryParameter(NoisetracksContract.QUERY_PARAMETER_LIMIT);
 
        /**
         * Choose the projection and adjust the "where" clause based on URI pattern-matching.
@@ -352,7 +352,8 @@ public class NoisetracksProvider extends ContentProvider {
            selectionArgs, // The values for the where clause
            null,          // don't group the rows
            null,          // don't filter by row groups
-           orderBy        // The sort order
+           orderBy,       // the sort order
+           limit		  // limit
        );
 
        // Tells the Cursor what URI to watch, so it knows when its source data changes

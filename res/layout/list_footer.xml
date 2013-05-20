@@ -1,20 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="fill_parent"
-    android:translationY="-1dp"
+    android:layout_height="wrap_content"
     android:background="@drawable/entry_footer"
-    android:orientation="vertical" >
+    android:orientation="vertical"
+    android:translationY="-1dp"
+    tools:ignore="HardcodedText" >
 
-    <LinearLayout
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical" >
-
-        <TextView
+    <!-- hackish text view to fix rounded corners -->
+    <TextView
             android:layout_width="fill_parent"
             android:layout_height="10dp"
-            android:height="10dp"
+            android:height="10sp"
             android:text="" />
-    </LinearLayout>
 
 </LinearLayout>

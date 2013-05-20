@@ -3,12 +3,16 @@ package com.noisetracks.android.authenticator;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+import org.scribe.model.Verb;
 
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.view.Window;
 import com.noisetracks.android.NoisetracksApplication;
 import com.noisetracks.android.R;
-import com.noisetracks.android.client.RESTLoaderCallbacks;
+import com.noisetracks.android.client.NoisetracksRequest;
+import com.whiterabbit.postman.ServerInteractionHelper;
+import com.whiterabbit.postman.ServerInteractionResponseInterface;
+import com.whiterabbit.postman.exceptions.SendingCommandException;
 
 import android.content.Intent;
 import android.graphics.Typeface;
@@ -47,7 +51,9 @@ public class SignupActivity extends SherlockFragmentActivity {
 
 	}
 
-	public static class SignupFragment extends Fragment {
+	public static class SignupFragment extends Fragment implements ServerInteractionResponseInterface {
+		
+		ServerInteractionHelper mServerHelper;
 
 		private TextView mMessage;
 		private EditText mUsernameEdit;
@@ -70,7 +76,22 @@ public class SignupActivity extends SherlockFragmentActivity {
 			mPasswordEdit = (EditText) root.findViewById(R.id.password_edit);
 			mPassword2Edit = (EditText) root.findViewById(R.id.password2_edit);
 			mSignup = (Button) root.findViewById(R.id.handle_sign_up_button);
-		    return root;
+			
+			mServerHelper = ServerInteractionHelper.getInstance(getActivity());
+		    
+			return root;
+		}
+		
+		@Override
+		public void onResume() {
+			mServerHelper.registerEventListener(this, getActivity());
+			super.onResume();
+		}
+		
+		@Override
+		public void onPause() {
+			mServerHelper.unregisterEventListener(this, getActivity());
+			super.onPause();
 		}
 
 		@Override
@@ -88,6 +109,8 @@ public class SignupActivity extends SherlockFragmentActivity {
 					handleSignup();
 				}
 			});
+			
+			mServerHelper.registerEventListener(this, getActivity());
 		}
 
 		/**
@@ -111,18 +134,19 @@ public class SignupActivity extends SherlockFragmentActivity {
 				Log.e(TAG, e.toString());
 			}
 		    
-		    // create loader
+		    // post sign up
 			Bundle params = new Bundle();
 			params.putString("json", json.toString());
-			Bundle args = new Bundle();
-			args.putParcelable(RESTLoaderCallbacks.ARGS_URI, NoisetracksApplication.URI_SIGNUP);
-			args.putParcelable(RESTLoaderCallbacks.ARGS_PARAMS, params);
-
-			RESTLoaderCallbacks r = new RESTLoaderCallbacks(getActivity(), this);
-			getActivity().getSupportLoaderManager().restartLoader(NoisetracksApplication.SIGNUP_REST_LOADER, args, r);
+			NoisetracksRequest request = new NoisetracksRequest(Verb.POST, NoisetracksApplication.URI_SIGNUP, params);
+            try {
+                mServerHelper.sendRestAction(getActivity(), NoisetracksApplication.URI_SIGNUP.toString(), request);
+            } catch (SendingCommandException e) {
+                Log.e(TAG, e.toString());
+            }
 		}
 		
-		public void onSignupComplete() {
+		@Override
+		public void onServerResult(String result, String requestId) {
 			Log.v(TAG, "onSignupComplete");
 			final Intent intent = new Intent();
 			intent.putExtra("username", mUsername);
@@ -130,14 +154,14 @@ public class SignupActivity extends SherlockFragmentActivity {
 			getActivity().setResult(RESULT_OK, intent);
 			getActivity().finish();
 		}
-		
-		public void onErrorSigningUp(String json) {
-			
+
+		@Override
+		public void onServerError(String result, String requestId) {
 			mMessage.setText("");
 			
 			JSONObject wrapper;
 			try {
-				wrapper = (JSONObject) new JSONTokener(json).nextValue();
+				wrapper = (JSONObject) new JSONTokener(result).nextValue();
 				JSONObject signup = wrapper.getJSONObject("signup");
 				
 				try {
@@ -161,8 +185,9 @@ public class SignupActivity extends SherlockFragmentActivity {
 			} catch (JSONException e) {
 				Log.e(TAG, "Failed to parse JSON. " + e.toString());
 			}
-            
+			
 		}
+		
 
 	}
 
