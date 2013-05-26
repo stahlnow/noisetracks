@@ -1,5 +1,12 @@
 package com.noisetracks.android.client;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -7,8 +14,11 @@ import java.util.List;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Parcel;
 import android.util.Log;
 
@@ -67,11 +77,53 @@ public class NoisetracksRequest implements RestServerRequest {
     	
     	String path = mAction.getPath();
     	
-    	if (path.matches("^.*/entry/")) {					// entries
+    	if (path.matches("^.*/audio/.*")) {
+    		Log.i(TAG, "Audio file");
+	        
+    		String base = Environment.getExternalStorageDirectory().getPath() + "/Noisetracks";
+    		
+    		String filename = new File(path).getName();
+    		String dirpath =  new File(path).getParent();
+    		dirpath = base + dirpath;
+    		
+    		File dir = new File(dirpath);
+ 	        if (!dir.exists()) {
+ 	        	Log.v(TAG, "mkdirs()");
+     			dir.mkdirs();
+     		}
+    		
+	        File file = new File(dirpath, filename);
+	        	        
+	        try {
+				final BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(file));
+				
+				try {
+			        try {
+			            final byte[] buffer = new byte[1024];
+			            int read;
+
+			            while ((read = result.getStream().read(buffer)) != -1)
+			                output.write(buffer, 0, read);
+
+			            output.flush();
+			        } finally {
+			            output.close();
+			        }
+			    } catch (Exception e) {
+			        Log.e(TAG, "Error reading audio: " + e.toString());
+			    }
+				
+			} catch (FileNotFoundException e) {
+				Log.e(TAG, "File not found: " + e.toString());
+			}
+	        
+    	}
+    	
+    	else if (path.matches("^.*/entry/")) {					// entries
     		Log.i(TAG, "Entries");
     		switch (statusCode) {
     		case HttpStatus.SC_OK:
-    			addEntriesFromJSON(result.getBody(), context);
+    			addEntriesFromJSON(result.getBody(), executor, context);
                 break;
             default:
               	Log.w(TAG, result.getBody());
@@ -242,7 +294,7 @@ public class NoisetracksRequest implements RestServerRequest {
     
  
    
-	private void addEntriesFromJSON(String json, Context context) {
+	private void addEntriesFromJSON(String json, RequestExecutor executor, Context context) {
 
 		try {
 
@@ -258,49 +310,39 @@ public class NoisetracksRequest implements RestServerRequest {
 						.getJSONArray("coordinates");
 
 				ContentValues values = new ContentValues();
-				values.put(
-						Entries.COLUMN_NAME_FILENAME,
-						NoisetracksApplication.DOMAIN
-								+ entry.getJSONObject("audiofile").getString(
-										"file"));
+				values.put(Entries.COLUMN_NAME_FILENAME, entry.getJSONObject("audiofile").getString("file"));
+				
 				values.put(
 						Entries.COLUMN_NAME_SPECTROGRAM,
-						NoisetracksApplication.DOMAIN
-								+ entry.getJSONObject("audiofile").getString(
-										Entries.COLUMN_NAME_SPECTROGRAM));
+						NoisetracksApplication.DOMAIN + entry.getJSONObject("audiofile").getString(Entries.COLUMN_NAME_SPECTROGRAM));
+				
 				values.put(Entries.COLUMN_NAME_LATITUDE, location.getDouble(1));
 				values.put(Entries.COLUMN_NAME_LONGITUDE, location.getDouble(0));
-				values.put(
-						Entries.COLUMN_NAME_CREATED,
-						entry.getString(Entries.COLUMN_NAME_CREATED).substring(
-								0, 19));
-				values.put(Entries.COLUMN_NAME_RECORDED,
-						entry.getString(Entries.COLUMN_NAME_RECORDED)
-								.substring(0, 19));
-				values.put(Entries.COLUMN_NAME_RESOURCE_URI,
-						entry.getString(Entries.COLUMN_NAME_RESOURCE_URI));
+				values.put(Entries.COLUMN_NAME_CREATED,	entry.getString(Entries.COLUMN_NAME_CREATED).substring(0, 19));
+				values.put(Entries.COLUMN_NAME_RECORDED, entry.getString(Entries.COLUMN_NAME_RECORDED).substring(0, 19));
+				values.put(Entries.COLUMN_NAME_RESOURCE_URI, entry.getString(Entries.COLUMN_NAME_RESOURCE_URI));
+				
 				// check if mugshot is gravatar (full url) or from server
-				boolean gravatar = isValidUrl(user
-						.getString(Entries.COLUMN_NAME_MUGSHOT));
+				boolean gravatar = isValidUrl(user.getString(Entries.COLUMN_NAME_MUGSHOT));
 				if (gravatar)
-					values.put(Entries.COLUMN_NAME_MUGSHOT,
-							user.getString(Entries.COLUMN_NAME_MUGSHOT));
+					values.put(Entries.COLUMN_NAME_MUGSHOT,	user.getString(Entries.COLUMN_NAME_MUGSHOT));
 				else
-					values.put(
-							Entries.COLUMN_NAME_MUGSHOT,
-							NoisetracksApplication.DOMAIN
-									+ user.getString(Entries.COLUMN_NAME_MUGSHOT));
-				values.put(Entries.COLUMN_NAME_USERNAME,
-						user.getString(Entries.COLUMN_NAME_USERNAME));
-				values.put(Entries.COLUMN_NAME_UUID,
-						entry.getString(Entries.COLUMN_NAME_UUID));
-				values.put(Entries.COLUMN_NAME_SCORE,
-						entry.getInt(Entries.COLUMN_NAME_SCORE));
-				values.put(Entries.COLUMN_NAME_VOTE,
-						entry.getInt(Entries.COLUMN_NAME_VOTE));
-				values.put(Entries.COLUMN_NAME_TYPE,
-						Entries.TYPE.DOWNLOADED.ordinal()); // set type to
-															// DOWNLOADED
+					values.put(Entries.COLUMN_NAME_MUGSHOT,	NoisetracksApplication.DOMAIN + user.getString(Entries.COLUMN_NAME_MUGSHOT));
+				values.put(Entries.COLUMN_NAME_USERNAME, user.getString(Entries.COLUMN_NAME_USERNAME));
+				values.put(Entries.COLUMN_NAME_UUID, entry.getString(Entries.COLUMN_NAME_UUID));
+				values.put(Entries.COLUMN_NAME_SCORE, entry.getInt(Entries.COLUMN_NAME_SCORE));
+				values.put(Entries.COLUMN_NAME_VOTE, entry.getInt(Entries.COLUMN_NAME_VOTE));
+				values.put(Entries.COLUMN_NAME_TYPE, Entries.TYPE.DOWNLOADED.ordinal()); // set type to DOWNLOADED
+				
+				
+				Uri uri = Uri.parse(NoisetracksApplication.DOMAIN + entry.getJSONObject("audiofile").getString("file"));
+				Bundle params = new Bundle();
+    			NoisetracksRequest r = new NoisetracksRequest(Verb.GET, uri, params);
+    		    try {
+					executor.executeRequest(r, context);
+				} catch (PostmanException e) {
+					Log.w(TAG, e.toString());
+				}
 
 				// add entry to database
 				context.getContentResolver().insert(Entries.CONTENT_URI, values);

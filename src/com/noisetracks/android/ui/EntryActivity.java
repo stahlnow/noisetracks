@@ -1,5 +1,6 @@
 package com.noisetracks.android.ui;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.ParseException;
@@ -10,6 +11,8 @@ import org.scribe.model.Verb;
 
 import com.noisetracks.android.NoisetracksApplication;
 import com.noisetracks.android.R;
+import com.noisetracks.android.audio.Sampler;
+import com.noisetracks.android.audio.VorbisDecoder;
 import com.noisetracks.android.client.NoisetracksRequest;
 import com.noisetracks.android.client.SQLLoaderCallbacks;
 import com.noisetracks.android.helper.FixedSpeedScroller;
@@ -27,16 +30,14 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.media.AudioFormat;
 import android.media.AudioManager;
-import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnCompletionListener;
-import android.media.MediaPlayer.OnErrorListener;
-import android.media.MediaPlayer.OnPreparedListener;
-import android.media.MediaPlayer.OnSeekCompleteListener;
+import android.media.AudioTrack;
+import android.media.AudioTrack.OnPlaybackPositionUpdateListener;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
+import android.os.Environment;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
@@ -50,6 +51,7 @@ import android.view.View.OnClickListener;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -65,22 +67,37 @@ import com.handmark.pulltorefresh.library.PullToRefreshBase;
 import com.handmark.pulltorefresh.library.PullToRefreshBase.OnRefreshListener;
 
 public class EntryActivity extends SherlockFragmentActivity implements
-		OnRefreshListener<ViewPager>, OnPageChangeListener, OnPreparedListener,
-		OnErrorListener, OnCompletionListener, OnSeekCompleteListener {
+		OnRefreshListener<ViewPager>, OnPageChangeListener, OnPlaybackPositionUpdateListener, OnCheckedChangeListener {
 
 	public static final String ID = "id";
 	
 	private static final String TAG = "EntryActivity";
-	private static final int UPDATE_FREQUENCY = 1;
 	
 	private Cursor mCursor;
-	private final Handler handler = new Handler();
-	private static MediaPlayer player;
+	
+	private static VorbisDecoder mVorbisDecoder;
+	private static AudioTrack mTrack;
+	
+	/**
+	 * Buffer size in bytes
+	 * Calculation is: signal_duration_in_seconds * sample_rate * num_channels * 2.
+	 * (Convert 16-bit values to bytes by multiplication of 2).
+	 */
+	private int mBufferSize;
+	private static byte[] mBuffer;
+	
+	private int mPosition = 0;
+	private boolean mLooping;
+	private static int mLoopStart;
+	private static int mLoopEnd;
+	private static int mDuration;
+	
 	private String mSelect;
 	private PullToRefreshViewPager mPullToRefreshViewPager;
 	private ViewPager mPager;
 	private EntryPagerAdapter mAdapter;
-	private ImageButton mPlayBtn = null;
+	private static ImageButton mPlayBtn = null;
+	private static ToggleButton mLoopBtn = null;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -92,6 +109,9 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		setContentView(R.layout.entry_activity);
 
 		mPlayBtn = (ImageButton) findViewById(R.id.entry_play_pause);
+		mLoopBtn = (ToggleButton) findViewById(R.id.entry_loop);
+		mLoopBtn.setOnCheckedChangeListener(this);
+		
 		mPullToRefreshViewPager = (PullToRefreshViewPager) findViewById(R.id.entry_activity_pull_refresh_view_pager);
 		mPullToRefreshViewPager.setOnRefreshListener(this);
 		mPager = mPullToRefreshViewPager.getRefreshableView();
@@ -107,12 +127,12 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		
 		// Move cursor to right position and set view pager position
 		long id = getIntent().getLongExtra(ID, -1);						// sql _id of the selected entry
-		int position = -1;												// position in view pager used later
+		int item = -1;												// position in view pager used later
 		
 		if (mCursor != null) {
-			mCursor.moveToPosition(position);
+			mCursor.moveToPosition(item);
 			while (mCursor.moveToNext()) {
-				position++;
+				item++;
 				if (mCursor.getLong(mCursor.getColumnIndex(Entries._ID)) == id) {
 					// we got the right one ... cursor is at correct position and 'position' can be used for pager
 					break;
@@ -151,39 +171,28 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		} catch (IllegalArgumentException e) {
 		} catch (IllegalAccessException e) {
 		}
-
-		// Create media player
-		player = new MediaPlayer();
-		player.setOnPreparedListener(this);
-		player.setOnCompletionListener(this);
-		player.setOnErrorListener(this);
-		player.setAudioStreamType(AudioManager.STREAM_MUSIC);
 		
 		// Listen to page changes and select current page based on position calculated above
 		mPager.setOnPageChangeListener(this);
-		mPager.setCurrentItem(position, false);
-		if (position == 0) 
-			onPageSelected(mPager.getCurrentItem()); // explicitly select page 0 to properly initialize player
+		mPager.setCurrentItem(item, false);
+				
+		if (mPager.getCurrentItem() == 0) 
+			onPageSelected(mPager.getCurrentItem()); // for some reason, onPageSelected is not called on the first item. We do it here manually.
+
 	}
 
 	@Override
 	protected void onPause() {
-		
 		Log.d(TAG, "onPause");
-		
 		super.onPause();
-		
-		// Stop the seekbar handler from sending updates to UI
-		handler.removeCallbacks(updatePositionRunnable);
 
-		if (player != null) {
-			
-			if (player.isPlaying()) {
-				player.pause();
-			
+		if (mTrack != null) {
+			if (mTrack.getPlayState() == AudioTrack.PLAYSTATE_PLAYING) {
+				mTrack.pause();
 				if (isFinishing()) {
-					player.stop();
-					player.release();
+					mTrack.setPlaybackPositionUpdateListener(null);
+					mTrack.stop();
+					mTrack.release();
 				}
 			}
 		}
@@ -193,26 +202,30 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		}
 	}
 
+	
 	/*
 	 * Button click handler for 'play'
 	 */
 	public void play(View view) {
-		try {
-			if (player.isPlaying()) {
-				handler.removeCallbacks(updatePositionRunnable);
+		
+		if (mTrack != null) {
+	 		if (mTrack.getPlayState() == AudioTrack.PLAYSTATE_PLAYING) {
 				try {
-					player.pause();
+					Log.d(TAG, "pause");
+					mTrack.pause(); mPosition = mTrack.getPlaybackHeadPosition();
 					mPlayBtn.setImageResource(R.drawable.av_play);
-				} catch (IllegalStateException e) {}
+				} catch (IllegalStateException e) {
+					Log.e(TAG, "Error on pause(): " + e.toString());
+				}
 			} else {
 				try {
-					player.start();
+					Log.d(TAG, "play");
+					mTrack.setPlaybackHeadPosition(mPosition); mTrack.play();
 					mPlayBtn.setImageResource(R.drawable.av_pause);
-					updatePosition();
-				} catch (IllegalStateException e) {}
+				} catch (IllegalStateException e) {
+					Log.e(TAG, "Error on play(): " + e.toString());
+				}
 			}
-		} catch (NullPointerException e) {
-			// oops, player is null..
 		}
 	}
 
@@ -229,6 +242,24 @@ public class EntryActivity extends SherlockFragmentActivity implements
 	public void next(View view) {
 		mPager.setCurrentItem(mPager.getCurrentItem() + 1, true);
 	}
+	
+	@Override
+	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {		
+		if (isChecked) {
+			mLooping = true;
+			if (mTrack.getPlayState() != AudioTrack.PLAYSTATE_PLAYING) {
+				try {
+					Log.d(TAG, "play");
+					mTrack.setPlaybackHeadPosition(mLoopStart); mTrack.play();
+					mPlayBtn.setImageResource(R.drawable.av_pause);
+				} catch (IllegalStateException e) {
+					Log.e(TAG, "Error on play(): " + e.toString());
+				}
+			}
+		} else {
+			mLooping = false;
+		}
+	}
 
 	@Override
 	public void onPageScrollStateChanged(int state) {}
@@ -243,62 +274,110 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		
 		mAdapter.getCursor().moveToPosition(position);
 
-		if (player.isPlaying()) {
-			player.stop();
+		if (mTrack != null) {
+			try {
+				Log.d(TAG, "pause");
+				mTrack.pause();
+				mPlayBtn.setImageResource(R.drawable.av_play);
+			} catch (IllegalStateException e) {
+				Log.e(TAG, "Error on pause(): " + e.toString());
+			}
 		}
-		player.reset();
-
+		
+		String base = Environment.getExternalStorageDirectory().getPath() + "/Noisetracks";
+		String filepath = mAdapter.getCursor().getString(mAdapter.getCursor().getColumnIndex(Entries.COLUMN_NAME_FILENAME));
+		File ogg = new File(base + filepath);
 		try {
-			player.setDataSource(mAdapter.getCursor().getString(mAdapter.getCursor().getColumnIndex(Entries.COLUMN_NAME_FILENAME)));
-		} catch (IllegalArgumentException e) {
-			Log.w(TAG, e.toString());
-		} catch (SecurityException e) {
-			Log.w(TAG, e.toString());
-		} catch (IllegalStateException e) {
-			Log.w(TAG, e.toString());
+			mVorbisDecoder = new VorbisDecoder(ogg);
 		} catch (IOException e) {
-			Log.w(TAG, e.toString());
+			Log.e(TAG, "Could not open ogg file: " + e.toString());
 		}
-
-		// buffer and start media playback
-		player.prepareAsync();
+		
+		Log.i(TAG, "Length: " + mVorbisDecoder.getTimeLength() / 1000.0f + " Rate: " + mVorbisDecoder.getRate() + " Channels: " + mVorbisDecoder.getChannels());
+		
+		mBufferSize = (int)( (int)(Math.ceil(mVorbisDecoder.getTimeLength() / 1000.0f)) * mVorbisDecoder.getRate() * mVorbisDecoder.getChannels() * 2);
+		
+		mBuffer = new byte[mBufferSize];
+		
+		
+		try {
+			mVorbisDecoder.read(mBuffer, 0, mBufferSize);
+		} catch (IOException e) {
+			Log.e(TAG, "Error reading: " + e.toString());
+		}
+		
+		mTrack = new AudioTrack(
+        		AudioManager.STREAM_MUSIC,
+        		Sampler.SAMPLERATE,
+        		AudioFormat.CHANNEL_OUT_STEREO,
+        		AudioFormat.ENCODING_PCM_16BIT,
+        		mBufferSize,  
+        		AudioTrack.MODE_STATIC);
+		
+		mTrack.write(mBuffer, 0, mBuffer.length);
+		
+		mDuration = (int)(Math.floor(mVorbisDecoder.getTimeLength() / 1000.0f * Sampler.SAMPLERATE));
+		
+		mLooping = true;
+		if (mLooping) {
+			mLoopStart = 50000;
+			mLoopEnd = 100000;
+		} else {
+			mLoopStart = 0;
+			mLoopEnd = mDuration - 1;
+		}
+		mTrack.setPlaybackHeadPosition(mLoopStart);
+		mTrack.setNotificationMarkerPosition(mLoopEnd);
+		
+		mTrack.setPlaybackPositionUpdateListener(this);
+		mTrack.setPositionNotificationPeriod(64);
+		
+		mTrack.setPlaybackRate(AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC) * 2);
+		
+		Log.d(TAG, "play");
+		mTrack.play();
+		mPlayBtn.setImageResource(R.drawable.av_pause);
+		
+		Log.i(TAG, "length is: " + mDuration);
 
 	}
-
+	
 	@Override
-	public void onPrepared(MediaPlayer player) {
-		if (!player.isPlaying()) {
-			player.start();
-			mPlayBtn.setImageResource(R.drawable.av_pause);
-
+	public void onMarkerReached(AudioTrack track) {
+		
+		if (track != null) {
 			try {
-				EntryDetailFragment f = (EntryDetailFragment)mAdapter.getFragmentAtPosition(mPager.getCurrentItem());
-				f.mSeekBar.setMax(player.getDuration());
-				updatePosition();
-			} catch (NullPointerException e) {
-				Log.w(TAG, "Could not get fragment: " + e.toString());
+				mTrack.pause();
+				if (mLooping) {
+					mTrack.setPlaybackHeadPosition(mLoopStart);
+					mTrack.setNotificationMarkerPosition(mLoopEnd);
+					mTrack.setPlaybackPositionUpdateListener(this);
+					mTrack.play();
+					mPlayBtn.setImageResource(R.drawable.av_pause);
+				} else {
+					mPosition = 0;
+					mTrack.setPlaybackHeadPosition(mPosition);
+					mTrack.setNotificationMarkerPosition(mDuration - 1);
+					mTrack.setPlaybackPositionUpdateListener(this);
+					mPlayBtn.setImageResource(R.drawable.av_play);
+				}
+			} catch (IllegalStateException e) {
+				Log.e(TAG, "Error onMarkerReached(): " + e.toString());
 			}
 		}
 	}
 
-	private void updatePosition() {
-		handler.removeCallbacks(updatePositionRunnable);
+	@Override
+	public void onPeriodicNotification(AudioTrack track) {
 		try {
 			EntryDetailFragment f = (EntryDetailFragment)mAdapter.getFragmentAtPosition(mPager.getCurrentItem());
-			f.mSeekBar.setProgress(player.getCurrentPosition());
+			f.mSeekBar.setProgress(track.getPlaybackHeadPosition());
 		} catch (NullPointerException e) {
 			Log.w(TAG, "Could not get fragment: " + e.toString());
+		} catch (IllegalStateException e) {
+			Log.w(TAG, "Warning: " + e.toString());
 		}
-
-		handler.postDelayed(updatePositionRunnable, UPDATE_FREQUENCY);
 	}
-
-	private final Runnable updatePositionRunnable = new Runnable() {
-		public void run() {
-			updatePosition();
-		}
-	};
-	
 	
 
 	@Override
@@ -319,38 +398,6 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		return super.onOptionsItemSelected(item);
 	}
 
-	@Override
-	public void onCompletion(MediaPlayer mp) {
-		mPlayBtn.setImageResource(R.drawable.av_play);
-		try {
-			EntryDetailFragment f = (EntryDetailFragment)mAdapter.getFragmentAtPosition(mPager.getCurrentItem());
-			f.mSeekBar.setProgress(player.getDuration());
-		} catch (NullPointerException e) {
-			Log.w(TAG, "Could not get fragment: " + e.toString());
-		}
-		handler.removeCallbacks(updatePositionRunnable);
-		// auto move to next item TODO: add as an option in preferences
-		//mPager.setCurrentItem(mPager.getCurrentItem() + 1, true);
-	}
-
-	@Override
-	// TODO use VLC instead of poor android media player
-	public boolean onError(MediaPlayer mp, int what, int extra) {
-		Log.e(TAG, "onError: " + what + "/" + extra);
-		if (what == -38) {	 // -38 seems not to be documented anywhere
-			handler.removeCallbacks(updatePositionRunnable);
-			player.reset();
-			Toast.makeText(this, "Ground Control to Major Tom: \"Code " + what + ".\"", Toast.LENGTH_SHORT).show();
-		}
-		return false;
-	}
-
-	@Override
-	public void onSeekComplete(MediaPlayer mp) {
-		if (!player.isPlaying()) {
-			player.start();
-		}
-	}
 	
 	public void requery() {
 		// requery
@@ -378,10 +425,12 @@ public class EntryActivity extends SherlockFragmentActivity implements
 	/**
 	 *  EntryDetailFragment defines the view of EntryActivity
 	 */
-	public static class EntryDetailFragment extends Fragment implements OnCheckedChangeListener, ServerInteractionResponseInterface {
+	public static class EntryDetailFragment extends Fragment implements OnCheckedChangeListener, ServerInteractionResponseInterface, OnSeekBarChangeListener {
 		ServerInteractionHelper mServerHelper;
 		
 		private SeekBar mSeekBar;
+		private SeekBar mSeekBarLoopStart;
+		private SeekBar mSeekBarLoopEnd;
 		private TextView mTVScore;
 		private HttpImageManager mHttpImageManager;
 
@@ -465,42 +514,31 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		 * The Fragment's UI
 		 */
 		@Override
-		public View onCreateView(LayoutInflater inflater, ViewGroup container,
-				Bundle savedInstanceState) {
+		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 			
 			mServerHelper = ServerInteractionHelper.getInstance(getActivity());
 
 			View v = inflater.inflate(R.layout.entry_detail, container, false);
 			ImageView mugshot = (ImageView) v.findViewById(R.id.entry_mugshot);
 			TextView username = (TextView) v.findViewById(R.id.entry_username);
-			TextView recordedAgo = (TextView) v
-					.findViewById(R.id.entry_recorded_ago);
-			ImageView spectrogram = (ImageView) v
-					.findViewById(R.id.entry_spectrogram);
-			mSeekBar = (SeekBar) v.findViewById(R.id.seekbar);
+			TextView recordedAgo = (TextView) v.findViewById(R.id.entry_recorded_ago);
+			ImageView spectrogram = (ImageView) v.findViewById(R.id.entry_spectrogram);
 			ImageButton trash = (ImageButton) v.findViewById(R.id.entry_delete);
 			mTVScore = (TextView) v.findViewById(R.id.score);
-			mToggleButtonVoteUp = (ToggleButton) v
-					.findViewById(R.id.vote_up);
-			mToggleButtonVoteDown = (ToggleButton) v
-					.findViewById(R.id.vote_down);
+			mToggleButtonVoteUp = (ToggleButton) v.findViewById(R.id.vote_up);
+			mToggleButtonVoteDown = (ToggleButton) v.findViewById(R.id.vote_down);
 
-			mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-				@Override
-				public void onStopTrackingTouch(SeekBar seekBar) {
-				}
-
-				@Override
-				public void onStartTrackingTouch(SeekBar seekBar) {
-				}
-
-				@Override
-				public void onProgressChanged(SeekBar sb, int progress, boolean fromUser) {
-					if (fromUser) {
-						player.seekTo(sb.getProgress()); // update player position
-					}
-				}
-			});
+			mSeekBar = (SeekBar) v.findViewById(R.id.seekbar);
+			mSeekBar.setOnSeekBarChangeListener(this);
+			mSeekBar.setMax(mDuration);
+			
+			mSeekBarLoopStart = (SeekBar) v.findViewById(R.id.seekbarLoopStart);
+			mSeekBarLoopStart.setOnSeekBarChangeListener(this);
+			mSeekBarLoopStart.setMax(mDuration - 2048);
+			
+			mSeekBarLoopEnd = (SeekBar) v.findViewById(R.id.seekbarLoopEnd);
+			mSeekBarLoopEnd.setOnSeekBarChangeListener(this);
+			mSeekBarLoopEnd.setMax(mDuration - 1);
 
 			mTVScore.setText("Score: " + mScore);
 
@@ -742,6 +780,38 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			
 		}
 
+		@Override
+		public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+			if (fromUser) {
+				try {
+					if (seekBar.getId() == R.id.seekbar) {
+						mTrack.pause();
+						mTrack.setPlaybackHeadPosition(progress);
+						mTrack.play();
+						mPlayBtn.setImageResource(R.drawable.av_pause);
+					} else if (seekBar.getId() == R.id.seekbarLoopStart) {
+						mTrack.pause();
+						mTrack.setPlaybackHeadPosition(progress);
+						mLoopStart = progress;
+						mTrack.play();
+						mPlayBtn.setImageResource(R.drawable.av_pause);
+					} else if (seekBar.getId() == R.id.seekbarLoopEnd) {
+						mLoopEnd = progress;
+					} 
+				} catch (IllegalStateException e) {
+					Log.e(TAG, "Error onProgressChanged(): " + e.toString());
+				}
+			}
+		}
+
+		@Override
+		public void onStartTrackingTouch(SeekBar seekBar) {
+		}
+
+		@Override
+		public void onStopTrackingTouch(SeekBar seekBar) {
+		}
+
 		
 
 	}
@@ -765,4 +835,5 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		}
 	}
 
+	
 }

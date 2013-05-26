@@ -37,7 +37,8 @@ public class PCMPlayer {
 			rate,
 			channelConfig,
 			AudioFormat.ENCODING_PCM_16BIT);
-		int bufferLength=4*audioBufferLength;
+		int bufferLength=4*audioBufferLength * 16; // * 16
+		Log.v(TAG, "bufferLength: " + bufferLength);
 		try {
 			m_track=new AudioTrack(
 				AudioManager.STREAM_MUSIC,
@@ -45,7 +46,7 @@ public class PCMPlayer {
 				channelConfig,
 				AudioFormat.ENCODING_PCM_16BIT,
 				bufferLength,
-				AudioTrack.MODE_STREAM); // MODE_STREAM
+				AudioTrack.MODE_STATIC); // MODE_STREAM
 		}
 		catch (Exception e) {
 			IOException ioe=new IOException("Failed to initialize audio.");
@@ -200,13 +201,13 @@ public class PCMPlayer {
 			reportFinished();
 			synchronized (m_lock) {
 				if (m_state==STATE_CLOSED) {
-					//log("finished");
+					log("finished");
 					break;
 				}
 				if ((m_readerBufferLength!=0) ||
 					(m_state!=STATE_READING && m_state!=STATE_PLAYING))
 				{
-					//log("buffer is not empty or non-reading state, waiting...");
+					log("buffer is not empty or non-reading state, waiting...");
 					Simply.waitNoLock(m_lock);
 					continue;
 				}
@@ -215,14 +216,15 @@ public class PCMPlayer {
 			Exception error=null;
 			try {
 				read=m_decoder.read(m_readerBuffer,0,m_readerBuffer.length);
-				//log("read: "+read);
+				log("read: "+read);
 			}
 			catch (IOException e) {
 				error=e;
+				log("error reading");
 			}
 			synchronized (m_lock) {
 				if (m_state!=STATE_READING && m_state!=STATE_PLAYING) {
-					//log("state changed, looping");
+					log("state changed, looping");
 					continue;
 				}
 				if (error!=null) {
@@ -230,7 +232,7 @@ public class PCMPlayer {
 					continue;
 				}
 				if (read==-1 && m_state!=STATE_READING) {
-					//log("EOF reached");
+					log("EOF reached");
 					setStateNotify(STATE_PLAYING_LAST);
 					continue;
 				}
@@ -247,17 +249,17 @@ public class PCMPlayer {
 			synchronized (m_lock) {
 				if (m_state==STATE_CLOSED) {
 					if (shandle!=null) {
-						//log("deleting synchronizer handle...");
+						log("deleting synchronizer handle...");
 						shandle.unregister();
 						shandle=null;
 					}
-					//log("finished");
+					log("finished");
 					break;
 				}
 				if (m_state!=STATE_PLAYING && m_state!=STATE_PLAYING_LAST) {
-					//log("non-playing state, waiting...");
+					log("non-playing state, waiting...");
 					if (shandle!=null) {
-						//log("deleting synchronizer handle...");
+						log("deleting synchronizer handle...");
 						shandle.unregister();
 						shandle=null;
 					}
@@ -265,47 +267,47 @@ public class PCMPlayer {
 					continue;
 				}
 				if (m_playerBufferPosition==m_playerBufferLength) {
-					//log("buffer is empty");
+					log("buffer is empty");
 					if (m_state==STATE_PLAYING_LAST) {
-						//log("reached EOF, finishing");
+						log("reached EOF, finishing");
 						finish(null);
 						continue;
 					}
 					if (m_readerBufferLength==0) {
-						//log("reader buffer empty, waiting...");
+						log("reader buffer empty, waiting...");
 						Simply.waitNoLock(m_lock);
 						continue;
 					}
 					swapBuffers();
 					m_lock.notifyAll();
 					if (m_playerBufferLength<=0) {
-						//log("buffer length is invalid, looping");
+						log("buffer length is invalid, looping");
 						m_playerBufferLength=0;
 						continue;
 					}
 				}
 				if (shandle==null && m_playSynchronizer!=null) {
-					//log("creating synchronizer handle...");
+					log("creating synchronizer handle...");
 					shandle=m_playSynchronizer.register();
 				}
 			}
 			if (shandle!=null) {
-				//log("synchronizing...");
+				log("synchronizing...");
 				if (!shandle.synchronize()) {
-					//log("synchronization interrupted...");
+					log("synchronization interrupted...");
 					continue;
 				}
-				//log("synchronized!");
+				log("synchronized!");
 			}
 			int written=m_track.write(
 				m_playerBuffer,
 				m_playerBufferPosition,
 				m_playerBufferLength-m_playerBufferPosition);
 			
-			//log("written: "+written);
+			log("written: "+written);
 			if (written<0) {
 				synchronized (m_lock) {
-					//log("write error at play state "+m_track.getPlayState());
+					log("write error at play state "+m_track.getPlayState());
 					if (m_state==STATE_PLAYING || m_state==STATE_PLAYING_LAST) {
 						finish(new IOException(
 							String.format("Audio failed to play (%d).",written)

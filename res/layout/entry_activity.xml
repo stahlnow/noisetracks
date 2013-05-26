@@ -19,7 +19,7 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="84dp"
+        android:layout_height="140dp"
         android:layout_gravity="bottom"
         android:background="@color/lightest_grey"
         android:orientation="horizontal"
@@ -28,7 +28,7 @@
         <ImageButton
             android:id="@+id/entry_previous"
             android:layout_width="100dp"
-            android:layout_height="100dp"
+            android:layout_height="80dp"
             android:layout_alignParentBottom="true"
             android:layout_alignParentLeft="true"
             android:layout_marginLeft="3dp"
@@ -41,7 +41,7 @@
         <ImageButton
             android:id="@+id/entry_play_pause"
             android:layout_width="100dp"
-            android:layout_height="100dp"
+            android:layout_height="80dp"
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
             android:background="@color/transparent"
@@ -53,7 +53,7 @@
         <ImageButton
             android:id="@+id/entry_next"
             android:layout_width="100dp"
-            android:layout_height="100dp"
+            android:layout_height="80dp"
             android:layout_alignParentBottom="true"
             android:layout_alignParentRight="true"
             android:layout_marginRight="3dp"
@@ -62,6 +62,23 @@
             android:onClick="next"
             android:src="@drawable/av_next"
             tools:ignore="HardcodedText" />
+
+        <ToggleButton
+            android:id="@+id/entry_loop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/entry_previous"
+            android:layout_alignRight="@+id/entry_previous"
+            android:background="@drawable/btn_loop"
+            android:checked="false"
+            android:contentDescription="loop"
+            android:focusable="false"
+            android:focusableInTouchMode="false"
+            android:orientation="vertical"
+            android:textOff=""
+            android:textOn=""
+            tools:ignore="HardcodedText" />
+
     </RelativeLayout>
 
 </LinearLayout>

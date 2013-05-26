@@ -99,7 +99,34 @@
             android:padding="0dp"
             android:progressDrawable="@drawable/seekbar_progress"
             android:secondaryProgress="0"
-            android:thumb="@drawable/scroll_thumb" />
+            android:thumb="@null" />
+        
+        <SeekBar
+            android:id="@+id/seekbarLoopStart"
+            android:layout_width="fill_parent"
+            android:layout_height="40sp"
+            android:layout_marginBottom="@dimen/entry_margin_top_bottom"
+            android:layout_marginLeft="@dimen/entry_margin_left_right"
+            android:layout_marginRight="@dimen/entry_margin_left_right"
+            android:layout_marginTop="@dimen/entry_margin_top_bottom"
+            android:padding="0dp"
+            android:progressDrawable="@null"
+            android:secondaryProgress="0"
+            android:thumb="@drawable/seekbar_thumb" />
+
+        <SeekBar
+            android:id="@+id/seekbarLoopEnd"
+            android:layout_width="fill_parent"
+            android:layout_height="40sp"
+            android:layout_marginLeft="@dimen/entry_margin_left_right"
+            android:layout_marginRight="@dimen/entry_margin_left_right"
+            android:layout_marginTop="@dimen/entry_margin_top_bottom"
+            android:layout_alignBottom="@+id/entry_spectrogram"
+            android:padding="0dp"
+            android:progressDrawable="@null"
+            android:secondaryProgress="0"
+            android:thumb="@drawable/seekbar_thumb" />
+        
     </RelativeLayout>
 
     <!-- Footer -->
@@ -122,7 +149,7 @@
             android:gravity="right"
             android:text="12:41 PM · 23 Mar 13"
             android:textColor="@color/medium_grey"
-            android:textSize="12dp"
+            android:textSize="12sp"
             tools:ignore="HardcodedText" />
 
         <View
@@ -147,7 +174,7 @@
                 android:layout_marginRight="@dimen/entry_margin_left_right"
                 android:text="SCORE: 155"
                 android:textColor="@color/medium_grey"
-                android:textSize="12dp"
+                android:textSize="12sp"
                 tools:ignore="HardcodedText" />
 
             <ToggleButton
@@ -204,7 +231,7 @@
                 android:layout_marginLeft="@dimen/entry_margin_left_right"
                 android:alpha="0.25"
                 android:background="@null"
-                android:visibility="invisible"
+                android:visibility="visible"
                 android:contentDescription="download"
                 android:orientation="vertical"
                 android:src="@drawable/ic_action_download"
@@ -220,7 +247,7 @@
                 android:focusable="false"
                 android:focusableInTouchMode="false"
                 android:orientation="vertical"
-                android:visibility="invisible"
+                android:visibility="visible"
                 android:textOff=""
                 android:textOn=""
                 tools:ignore="HardcodedText" />
@@ -247,7 +274,7 @@
                 android:layout_marginRight="@dimen/entry_margin_left_right"
                 android:alpha="0.25"
                 android:background="@null"
-                android:visibility="invisible"
+                android:visibility="visible"
                 android:contentDescription="share"
                 android:src="@drawable/ic_action_share"
                 tools:ignore="HardcodedText" />

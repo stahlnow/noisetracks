@@ -5,6 +5,10 @@ import java.io.IOException;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
+import android.media.AudioTrack.OnPlaybackPositionUpdateListener;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -32,9 +36,9 @@ public class Noisetracks extends SherlockActivity {
     	
 		super.onCreate(savedInstanceState);
 		
-		testPCM();
+		//testPCM();
 		
-		/*
+		
 		Intent intent = this.getIntent();
 		
 		if (AuthenticationService.accountExists(this)) {
@@ -46,7 +50,7 @@ public class Noisetracks extends SherlockActivity {
 		
 		intent = new Intent(Noisetracks.this, AuthenticateActivity.class);
 		startActivityForResult(intent, LOGIN_REQUEST);
-		*/
+		
     }
    
     @Override
@@ -94,7 +98,10 @@ public class Noisetracks extends SherlockActivity {
 			startConverter();
 		}
 	};
+	
+	
     
+	
     private void testPCM() {	
     	
 		File dir = new File(Environment.getExternalStorageDirectory().getPath(), "Noisetracks/test");
@@ -102,6 +109,56 @@ public class Noisetracks extends SherlockActivity {
     	ogg = new File(dir, "test.ogg");
     	raw = new File(dir, "test.ogg.raw");
     	
+    	
+    	try {
+    		VorbisDecoder vd = new VorbisDecoder(ogg);
+			int sr = vd.getRate();
+			int l = vd.getTimeLength();
+			int ch = vd.getChannels();
+			Log.i(TAG, "Infos: Length " + l + " Rate " + sr + " Channels: " + ch);
+    		
+			int size = sr * 6 * 4;
+    		
+			byte[] buffer = new byte[size];
+			int read = vd.read(buffer, 0, size);
+			Log.i(TAG, "read " + read);
+			
+			
+			
+			// ie for 500ms 44100*4 / 2 = 88100  bytes for stereo playing). 
+			
+			
+	        AudioTrack track = new AudioTrack(
+	        		AudioManager.STREAM_MUSIC,
+	        		sr,
+	        		AudioFormat.CHANNEL_OUT_STEREO,
+	        		AudioFormat.ENCODING_PCM_16BIT,
+	        		size,
+	        		AudioTrack.MODE_STATIC);
+
+	        Log.v(TAG, "loop end " + sr*l);
+	        
+	        int start = buffer.length / ch / 2 / 2;
+	        int stop = buffer.length / ch / 2 / 2 + 16000;
+	        track.setLoopPoints(
+	        		start,
+	        		stop,
+	        		-1);
+	        		
+	        track.write( buffer, 0, buffer.length );
+			
+	        Log.i(TAG, "try to play..");
+	        track.setPlaybackHeadPosition(start);
+	        track.play();
+			
+	        vd.close();
+		} catch (IOException e) {
+			Log.e(TAG, e.toString());
+		}
+    	
+    	
+    	
+    	/*
     	// check if already converted
     	boolean isConverted = Vorbis2RawConverter.isConvertedFile(ogg,raw);
     	
@@ -123,14 +180,19 @@ public class Noisetracks extends SherlockActivity {
 			} catch (IOException e) {
 				Log.e(TAG, "Error preparing: " + e.toString());
 			}
+			
 			try {
 				player.play();
+				//player.getPosition();
 			} catch (IOException e) {
 				Log.e(TAG, "Error playing: " + e.toString());
 			}
 			
+			
     	}
+    	*/
     }
+	
     
     private static PCMDecoder createDecoder(File file) throws IOException {
 		String name=file.getName();
@@ -291,7 +353,14 @@ public class Noisetracks extends SherlockActivity {
 		private boolean m_finished;
 		private Exception m_finishError;
 	}
-    
+
+
+
+
+
+
+
+	
     
     
 }
