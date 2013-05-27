@@ -41,7 +41,7 @@ public class NoisetracksProvider extends ContentProvider {
     /**
      * The database version
      */
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     /**
      * Projection maps used to select columns from the database
@@ -67,7 +67,11 @@ public class NoisetracksProvider extends ContentProvider {
         Entries.COLUMN_NAME_UUID,
         Entries.COLUMN_NAME_TYPE,
         Entries.COLUMN_NAME_SCORE,
-        Entries.COLUMN_NAME_VOTE
+        Entries.COLUMN_NAME_VOTE,
+        Entries.COLUMN_NAME_LOOP,
+        Entries.COLUMN_NAME_LOOP_START,
+        Entries.COLUMN_NAME_LOOP_END,
+        Entries.COLUMN_NAME_PITCH
     };
     
     /*
@@ -157,6 +161,10 @@ public class NoisetracksProvider extends ContentProvider {
         sEntriesProjectionMap.put(Entries.COLUMN_NAME_TYPE, Entries.COLUMN_NAME_TYPE);
         sEntriesProjectionMap.put(Entries.COLUMN_NAME_SCORE, Entries.COLUMN_NAME_SCORE);
         sEntriesProjectionMap.put(Entries.COLUMN_NAME_VOTE, Entries.COLUMN_NAME_VOTE);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_LOOP, Entries.COLUMN_NAME_LOOP);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_LOOP_START, Entries.COLUMN_NAME_LOOP_START);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_LOOP_END, Entries.COLUMN_NAME_LOOP_END);
+        sEntriesProjectionMap.put(Entries.COLUMN_NAME_PITCH, Entries.COLUMN_NAME_PITCH);
 
         // Same for profiles table.
         sProfilesProjectionMap = new HashMap<String, String>();
@@ -204,6 +212,10 @@ public class NoisetracksProvider extends ContentProvider {
                    + Entries.COLUMN_NAME_TYPE + " INTEGER,"
                    + Entries.COLUMN_NAME_SCORE + " INTEGER,"
                    + Entries.COLUMN_NAME_VOTE + " INTEGER,"
+                   + Entries.COLUMN_NAME_LOOP + " INTEGER,"
+                   + Entries.COLUMN_NAME_LOOP_START + " INTEGER,"
+                   + Entries.COLUMN_NAME_LOOP_END + " INTEGER,"
+                   + Entries.COLUMN_NAME_PITCH + " INTEGER,"
                    + "UNIQUE(" + Entries.COLUMN_NAME_UUID + ")" //  ON CONFLICT REPLACE see insert(...)
                    + ");");
            
@@ -484,6 +496,22 @@ public class NoisetracksProvider extends ContentProvider {
             }
             if (values.containsKey(Entries.COLUMN_NAME_UUID) == false) {
             	values.put(Entries.COLUMN_NAME_UUID, UUID.randomUUID().toString());
+            }
+            
+            if (values.containsKey(Entries.COLUMN_NAME_LOOP) == false) {
+            	values.put(Entries.COLUMN_NAME_LOOP, 0);
+            }
+            
+            if (values.containsKey(Entries.COLUMN_NAME_LOOP_START) == false) {
+            	values.put(Entries.COLUMN_NAME_LOOP_START, 0);
+            }
+            
+            if (values.containsKey(Entries.COLUMN_NAME_LOOP_END) == false) {
+            	values.put(Entries.COLUMN_NAME_LOOP_END, 0);
+            }
+            
+            if (values.containsKey(Entries.COLUMN_NAME_PITCH) == false) {
+            	values.put(Entries.COLUMN_NAME_PITCH, 0);
             }
             
             // Performs the insert and returns the ID of the new entry.

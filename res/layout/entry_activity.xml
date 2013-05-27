@@ -69,6 +69,7 @@
             android:layout_height="wrap_content"
             android:layout_above="@+id/entry_previous"
             android:layout_alignRight="@+id/entry_previous"
+            android:layout_marginBottom="@dimen/entry_margin_top_bottom"
             android:background="@drawable/btn_loop"
             android:checked="false"
             android:contentDescription="loop"
@@ -77,6 +78,34 @@
             android:orientation="vertical"
             android:textOff=""
             android:textOn=""
+            tools:ignore="HardcodedText" />
+        
+        <SeekBar
+            android:id="@+id/seekbarPitch"
+            android:layout_width="fill_parent"
+            android:layout_height="40sp"
+            android:layout_above="@+id/entry_previous"
+            android:layout_alignRight="@+id/entry_next"
+            android:layout_alignLeft="@+id/entry_play_pause"
+            android:layout_marginBottom="@dimen/entry_margin_top_bottom"
+            android:padding="0dp"
+            android:max="200"
+            android:progress="100"
+            android:progressDrawable="@null"
+            android:secondaryProgress="0"
+            android:thumb="@drawable/seekbar_thumb_white" />
+        
+        <TextView
+            android:id="@+id/txtPitch"
+            android:layout_width="wrap_content"
+            android:layout_height="40sp"
+            android:layout_above="@+id/entry_previous"
+            android:layout_alignRight="@+id/entry_next"
+            android:layout_marginBottom="@dimen/entry_margin_top_bottom"
+            android:layout_marginRight="60dp"
+            android:textColor="@color/white"
+            android:textSize="32sp"
+            android:text="0"
             tools:ignore="HardcodedText" />
 
     </RelativeLayout>

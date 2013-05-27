@@ -67,7 +67,7 @@ import com.handmark.pulltorefresh.library.PullToRefreshBase;
 import com.handmark.pulltorefresh.library.PullToRefreshBase.OnRefreshListener;
 
 public class EntryActivity extends SherlockFragmentActivity implements
-		OnRefreshListener<ViewPager>, OnPageChangeListener, OnPlaybackPositionUpdateListener, OnCheckedChangeListener {
+		OnRefreshListener<ViewPager>, OnPageChangeListener, OnPlaybackPositionUpdateListener, OnCheckedChangeListener, OnSeekBarChangeListener {
 
 	public static final String ID = "id";
 	
@@ -87,7 +87,7 @@ public class EntryActivity extends SherlockFragmentActivity implements
 	private static byte[] mBuffer;
 	
 	private int mPosition = 0;
-	private boolean mLooping;
+	
 	private static int mLoopStart;
 	private static int mLoopEnd;
 	private static int mDuration;
@@ -98,6 +98,8 @@ public class EntryActivity extends SherlockFragmentActivity implements
 	private EntryPagerAdapter mAdapter;
 	private static ImageButton mPlayBtn = null;
 	private static ToggleButton mLoopBtn = null;
+	private static TextView mTxtPitch;
+	private static SeekBar mSeekBarPitch;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -111,6 +113,10 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		mPlayBtn = (ImageButton) findViewById(R.id.entry_play_pause);
 		mLoopBtn = (ToggleButton) findViewById(R.id.entry_loop);
 		mLoopBtn.setOnCheckedChangeListener(this);
+		
+		mTxtPitch = (TextView) findViewById(R.id.txtPitch);
+		mSeekBarPitch = (SeekBar) findViewById(R.id.seekbarPitch);
+		mSeekBarPitch.setOnSeekBarChangeListener(this);
 		
 		mPullToRefreshViewPager = (PullToRefreshViewPager) findViewById(R.id.entry_activity_pull_refresh_view_pager);
 		mPullToRefreshViewPager.setOnRefreshListener(this);
@@ -201,6 +207,12 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			mCursor.close();
 		}
 	}
+	
+	@Override
+	protected void onResume() {
+		super.onResume();
+		requery();
+	}
 
 	
 	/*
@@ -243,23 +255,30 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		mPager.setCurrentItem(mPager.getCurrentItem() + 1, true);
 	}
 	
+	/*
+	 * Loop clicked
+	 */
 	@Override
 	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {		
-		if (isChecked) {
-			mLooping = true;
-			if (mTrack.getPlayState() != AudioTrack.PLAYSTATE_PLAYING) {
-				try {
-					Log.d(TAG, "play");
-					mTrack.setPlaybackHeadPosition(mLoopStart); mTrack.play();
-					mPlayBtn.setImageResource(R.drawable.av_pause);
-				} catch (IllegalStateException e) {
-					Log.e(TAG, "Error on play(): " + e.toString());
-				}
-			}
-		} else {
-			mLooping = false;
+		setLoop(isChecked);
+	}
+	
+
+	/*
+	 * Pitch changed
+	 */
+	@Override
+	public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+		if (fromUser) {
+			setPitch(progress-100); // note: progress bar value is 0 ... 200, pitch is -100 ... +100
 		}
 	}
+
+	@Override
+	public void onStartTrackingTouch(SeekBar seekBar) {}
+
+	@Override
+	public void onStopTrackingTouch(SeekBar seekBar) {}
 
 	@Override
 	public void onPageScrollStateChanged(int state) {}
@@ -317,22 +336,10 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		mTrack.write(mBuffer, 0, mBuffer.length);
 		
 		mDuration = (int)(Math.floor(mVorbisDecoder.getTimeLength() / 1000.0f * Sampler.SAMPLERATE));
-		
-		mLooping = true;
-		if (mLooping) {
-			mLoopStart = 50000;
-			mLoopEnd = 100000;
-		} else {
-			mLoopStart = 0;
-			mLoopEnd = mDuration - 1;
-		}
-		mTrack.setPlaybackHeadPosition(mLoopStart);
-		mTrack.setNotificationMarkerPosition(mLoopEnd);
-		
-		mTrack.setPlaybackPositionUpdateListener(this);
+		mTrack.setNotificationMarkerPosition(mDuration-1);
 		mTrack.setPositionNotificationPeriod(64);
+		mTrack.setPlaybackPositionUpdateListener(this);
 		
-		mTrack.setPlaybackRate(AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC) * 2);
 		
 		Log.d(TAG, "play");
 		mTrack.play();
@@ -342,13 +349,51 @@ public class EntryActivity extends SherlockFragmentActivity implements
 
 	}
 	
+	public static void setLoop(boolean looping) {
+		
+		mLoopBtn.setChecked(looping);
+		
+		if (mLoopEnd == 0) {
+			mLoopEnd = mDuration -1;
+		}
+		
+		if (looping) {
+			
+			mTrack.pause();
+			mTrack.setPlaybackHeadPosition(mLoopStart);
+			mTrack.setNotificationMarkerPosition(mLoopEnd);
+			//mTrack.setPlaybackPositionUpdateListener(this);
+			
+			mTrack.play();
+			mPlayBtn.setImageResource(R.drawable.av_pause);
+			
+			
+		} else {
+			mTrack.setPlaybackHeadPosition(0);
+			mTrack.setNotificationMarkerPosition(mDuration-1);
+			//mTrack.setPlaybackPositionUpdateListener(this);
+		}
+	}
+	
+	public static void setPitch(int pitch) {
+		
+		mTxtPitch.setText((pitch > 0 ? "+" : "") + Integer.toString(pitch) + "%");
+		mSeekBarPitch.setProgress(pitch+100);
+		
+		if (mTrack.setPlaybackRate(
+				AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC) + 
+				AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC) * pitch / 100) != AudioTrack.SUCCESS) {
+			Log.w(TAG, "Could not change pitch.");
+		}
+	}
+	
 	@Override
 	public void onMarkerReached(AudioTrack track) {
 		
 		if (track != null) {
 			try {
 				mTrack.pause();
-				if (mLooping) {
+				if (mLoopBtn.isChecked()) {
 					mTrack.setPlaybackHeadPosition(mLoopStart);
 					mTrack.setNotificationMarkerPosition(mLoopEnd);
 					mTrack.setPlaybackPositionUpdateListener(this);
@@ -431,6 +476,10 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		private SeekBar mSeekBar;
 		private SeekBar mSeekBarLoopStart;
 		private SeekBar mSeekBarLoopEnd;
+		
+		private boolean mIsLooping;
+		private int mPitch;
+		
 		private TextView mTVScore;
 		private HttpImageManager mHttpImageManager;
 
@@ -482,6 +531,10 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			args.putInt(Entries.COLUMN_NAME_VOTE, cursor.getInt(cursor.getColumnIndex(Entries.COLUMN_NAME_VOTE)));
 			args.putInt(Entries.COLUMN_NAME_SCORE, cursor.getInt(cursor.getColumnIndex(Entries.COLUMN_NAME_SCORE)));
 			args.putInt(Entries.COLUMN_NAME_TYPE, cursor.getInt(cursor.getColumnIndex(Entries.COLUMN_NAME_TYPE)));
+			args.putInt(Entries.COLUMN_NAME_LOOP, cursor.getInt(cursor.getColumnIndex(Entries.COLUMN_NAME_LOOP)));
+			args.putInt(Entries.COLUMN_NAME_LOOP_START, cursor.getInt(cursor.getColumnIndex(Entries.COLUMN_NAME_LOOP_START)));
+			args.putInt(Entries.COLUMN_NAME_LOOP_END, cursor.getInt(cursor.getColumnIndex(Entries.COLUMN_NAME_LOOP_END)));
+			args.putInt(Entries.COLUMN_NAME_PITCH, cursor.getInt(cursor.getColumnIndex(Entries.COLUMN_NAME_PITCH)));
 			
 			f.setArguments(args);
 			return f;
@@ -507,7 +560,15 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			mVote = getArguments() != null ? getArguments().getInt(Entries.COLUMN_NAME_VOTE) : null;
 			mScore = getArguments() != null ? getArguments().getInt(Entries.COLUMN_NAME_SCORE) : null;
 			mType = getArguments() != null ? getArguments().getInt(Entries.COLUMN_NAME_TYPE) : null;
-			 
+			
+			mIsLooping = getArguments() != null ? getArguments().getInt(Entries.COLUMN_NAME_LOOP) == 1 : false;
+			
+			mLoopStart = getArguments() != null ? getArguments().getInt(Entries.COLUMN_NAME_LOOP_START) : 0;
+			mLoopEnd = getArguments() != null ? getArguments().getInt(Entries.COLUMN_NAME_LOOP_END) : 0;
+			
+			
+			mPitch = getArguments() != null ? getArguments().getInt(Entries.COLUMN_NAME_PITCH) : 0;
+			
 		}
 
 		/**
@@ -515,7 +576,7 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		 */
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-			
+			Log.v(TAG, "Fragment onCreateView");
 			mServerHelper = ServerInteractionHelper.getInstance(getActivity());
 
 			View v = inflater.inflate(R.layout.entry_detail, container, false);
@@ -534,11 +595,17 @@ public class EntryActivity extends SherlockFragmentActivity implements
 			
 			mSeekBarLoopStart = (SeekBar) v.findViewById(R.id.seekbarLoopStart);
 			mSeekBarLoopStart.setOnSeekBarChangeListener(this);
-			mSeekBarLoopStart.setMax(mDuration - 2048);
+			mSeekBarLoopStart.setMax(mDuration - 2);
+			mSeekBarLoopStart.setProgress(mLoopStart);
 			
 			mSeekBarLoopEnd = (SeekBar) v.findViewById(R.id.seekbarLoopEnd);
 			mSeekBarLoopEnd.setOnSeekBarChangeListener(this);
 			mSeekBarLoopEnd.setMax(mDuration - 1);
+			mSeekBarLoopEnd.setProgress(mLoopEnd);
+			
+			setLoop(mIsLooping); // TODO test if OK
+			
+			setPitch(mPitch);
 
 			mTVScore.setText("Score: " + mScore);
 
@@ -682,6 +749,34 @@ public class EntryActivity extends SherlockFragmentActivity implements
 		}
 		
 		@Override
+		public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+			if (fromUser) {
+				try {
+					if (seekBar.getId() == R.id.seekbar) {
+						mTrack.pause();
+						mTrack.setPlaybackHeadPosition(progress);
+						mTrack.play();
+						mPlayBtn.setImageResource(R.drawable.av_pause);
+					} else if (seekBar.getId() == R.id.seekbarLoopStart) {
+						mLoopStart = progress;
+						setLoop(true);
+					} else if (seekBar.getId() == R.id.seekbarLoopEnd) {
+						mLoopEnd = progress;
+						setLoop(true);
+					} 
+				} catch (IllegalStateException e) {
+					Log.e(TAG, "Error onProgressChanged(): " + e.toString());
+				}
+			}
+		}
+
+		@Override
+		public void onStartTrackingTouch(SeekBar seekBar) { }
+
+		@Override
+		public void onStopTrackingTouch(SeekBar seekBar) { }
+		
+		@Override
 		public void onServerResult(String result, String requestId) {
 			
 			if (requestId.equals("VOTE")) {
@@ -779,40 +874,6 @@ public class EntryActivity extends SherlockFragmentActivity implements
             }
 			
 		}
-
-		@Override
-		public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-			if (fromUser) {
-				try {
-					if (seekBar.getId() == R.id.seekbar) {
-						mTrack.pause();
-						mTrack.setPlaybackHeadPosition(progress);
-						mTrack.play();
-						mPlayBtn.setImageResource(R.drawable.av_pause);
-					} else if (seekBar.getId() == R.id.seekbarLoopStart) {
-						mTrack.pause();
-						mTrack.setPlaybackHeadPosition(progress);
-						mLoopStart = progress;
-						mTrack.play();
-						mPlayBtn.setImageResource(R.drawable.av_pause);
-					} else if (seekBar.getId() == R.id.seekbarLoopEnd) {
-						mLoopEnd = progress;
-					} 
-				} catch (IllegalStateException e) {
-					Log.e(TAG, "Error onProgressChanged(): " + e.toString());
-				}
-			}
-		}
-
-		@Override
-		public void onStartTrackingTouch(SeekBar seekBar) {
-		}
-
-		@Override
-		public void onStopTrackingTouch(SeekBar seekBar) {
-		}
-
-		
 
 	}
 

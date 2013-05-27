@@ -187,7 +187,29 @@ public final class NoisetracksContract {
          */
         public static final String COLUMN_NAME_VOTE = "vote";
         
+        /**
+         * Column that indicates if the entry should be looped
+         * <P>Type: INTEGER</P>
+         */
+        public static final String COLUMN_NAME_LOOP = "loop";
         
+        /**
+         * Column for loop in point, default is 0.
+         * <P>Type: INTEGER</P>
+         */
+        public static final String COLUMN_NAME_LOOP_START = "loopstart";
+        
+        /**
+         * Column for loop out point, default is 0.
+         * <P>Type: INTEGER</P>
+         */
+        public static final String COLUMN_NAME_LOOP_END = "loopend";
+        
+        /**
+         * Column for pitch / playback rate in percent. Can be value of -100 to +100.
+         * <P>Type: INTEGER</P>
+         */
+        public static final String COLUMN_NAME_PITCH = "pitch";
     }
 
     
